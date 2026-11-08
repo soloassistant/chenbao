@@ -61,9 +61,18 @@ ok('v3 对函数执行权显式 REVOKE', Boolean(revoke));
 for (const who of ['public', 'anon', 'authenticated']) {
   ok(`v3 REVOKE 主体含 ${who}（缺一不可）`, revokedFor.includes(who));
 }
-const grant = v3Code.match(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.purge_my_h5_data\(\)\s+TO\s+authenticated\s*;/i);
-ok('v3 GRANT EXECUTE 只授回 authenticated', Boolean(grant));
-ok('v3 REVOKE 在 GRANT 之前（先收回再授回）', Boolean(revoke && grant) && revoke.index < grant.index);
+// ⚠️ 必须收集**全部** GRANT EXECUTE（matchAll），不能只取第一条：
+//    否则在正确语句后面追加一条 `GRANT EXECUTE ... TO anon` 也能过门禁（假绿）。
+//    断言集合**恰为** {authenticated}，并额外做一条反向断言。
+const grants = [...v3Code.matchAll(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.purge_my_h5_data\(\)\s+TO\s+([^;]+);/gi)];
+const grantTargets = grants.flatMap((m) => m[1].split(',').map((s) => s.trim().toLowerCase()));
+ok('v3 至少有一条 GRANT EXECUTE', grants.length >= 1);
+ok('v3 GRANT EXECUTE 的目标主体集合恰为 {authenticated}（多授一个主体即红）',
+  grantTargets.length > 0 && grantTargets.every((x) => x === 'authenticated'));
+ok('v3 不存在 GRANT EXECUTE TO anon / PUBLIC（追加反向授权也挡）',
+  !grantTargets.some((x) => x === 'anon' || x === 'public'));
+ok('v3 REVOKE 在第一条 GRANT 之前（先收回再授回）',
+  Boolean(revoke && grants[0]) && revoke.index < grants[0].index);
 ok('v3 不再宣称「REVOKE EXECUTE 不需要」（错误设计说明已删）', !/REVOKE EXECUTE 不需要/.test(v3));
 
 console.log('\n── 2b. v8 PUBLIC + authenticated 的 TRUNCATE/REFERENCES/TRIGGER 收回资产 ──');
@@ -76,15 +85,18 @@ for (const table of ['user_kv', 'feedback', 'llm_events']) {
     `REVOKE\\s+TRUNCATE,\\s+REFERENCES,\\s+TRIGGER\\s+ON\\s+TABLE\\s+public\\.${table}\\s+FROM\\s+([^;]+);`, 'i'
   ));
   const who = m ? m[1].split(',').map((s) => s.trim().toLowerCase()) : [];
-  ok(`v8 收回 ${table} 的 TRUNCATE/REFERENCES/TRIGGER（PUBLIC + authenticated）`,
+  ok(`v8 收回 ${table} 的 TRUNCATE/REFERENCES/TRIGGER（PUBLIC + authenticated 两主体都在）`,
     Boolean(m) && who.includes('public') && who.includes('authenticated'));
-  ok(`v8 ${table} 的 REVOKE 主体 PUBLIC 在 authenticated 之前（继承通道先断）`,
-    Boolean(m) && who.indexOf('public') >= 0 && who.indexOf('public') < who.indexOf('authenticated'));
+  // 不再断言「PUBLIC 在 authenticated 之前」：REVOKE 的主体列表顺序**没有语义**，
+  // 两种写法的权限结果完全相同，断言顺序只会产生「改动了但行为没变」的假红。
   // 期望值必须留白：只给只读观测语句（has_table_privilege），不写「收回后应只剩哪些权」。
   ok(`v8 给出 ${table} 的逐项只读核查（has_table_privilege）`, new RegExp(
     `has_table_privilege\\('authenticated',\\s*'public\\.${table}',\\s*'(SELECT|UPDATE)'`, 'i'
   ).test(v8Code));
 }
+// 反向断言：把三项非功能权限授回任何主体都是回归（追加 GRANT 也要被抓住）。
+ok('v8 没有把 TRUNCATE/REFERENCES/TRIGGER 授回任何主体',
+  !/GRANT\s+[^;]*(TRUNCATE|REFERENCES|TRIGGER)/i.test(v8Code));
 ok('v8 把「权项期望值」标成待线上实测（不写成断言）', /待线上实测/.test(v8));
 ok('v8 明确列出 feedback 可能继承 UPDATE/DELETE 这个待实测点', /feedback 可能还持有 UPDATE \/ DELETE/.test(v8));
 ok('v8 文件头标注「待执行」（本会话无 DB 执行通道）', /待执行/.test(v8));
@@ -93,7 +105,21 @@ console.log('\n── 3. 客户端接线 ──');
 const db = read('src/services/cloudDb.ts');
 ok('cloudDb 未部署（PGRST202）如实返回 not-deployed', /PGRST202/.test(db) && /'not-deployed'/.test(db));
 ok('cloudDb 真失败返回 failed（不假装 ok）', /return 'failed'/.test(db));
+// 42501 的两种成因必须分开判（2026-11-08 复审）：
+//   会话已过期 → 请求实际以 anon 发出 → 灰度态，可 info；
+//   带有效会话仍被拒 → authenticated 的 EXECUTE 被改坏 → **所有用户都清不掉数据**，必须 error。
+// 判不出来就保持不确定表述，绝不能把真故障也吞成「预期态」。
+ok('cloudDb 用 getSession() 判断本次请求是否带有效会话',
+  /const session = await getSession\(\)/.test(db) && /const hadSession = Boolean\(session\)/.test(db));
+ok('cloudDb 42501 无会话分支 → denied-anon（灰度，info 级）',
+  /if \(!hadSession\)[\s\S]{0,200}return 'denied-anon';/.test(db) && /console\.info\('[^']*42501[^']*without session/.test(db));
+ok('cloudDb 42501 有会话分支 → denied-authenticated（真故障，不并入灰度）',
+  /return 'denied-authenticated';/.test(db));
+ok('cloudDb 有会话的 42501 留 console.error 痕迹（不是 info）',
+  /console\.error\('[^']*42501 WITH active session[\s\S]{0,200}return 'denied-authenticated';/.test(db));
 const mine = read('src/pages/mine/index.tsx');
+ok('MinePage 把 denied-authenticated 当错误留痕（不并入灰度分支）',
+  /status === 'failed'[^\n]*status === 'denied-authenticated'/.test(mine));
 ok('注销前发起 purgeMyH5Data', /purgeMyH5Data\(\)/.test(mine));
 ok('注销前清云端 user_kv（kvClear）', /kvClear\(\)/.test(mine));
 const purgeAt = mine.indexOf('purgeMyH5Data()');
