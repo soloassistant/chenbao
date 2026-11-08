@@ -50,7 +50,7 @@ const check = (name, desc, cond) => {
 };
 
 /** 造一个带 purgeMyH5Data 的沙箱：stub getCloudDatabase / unwrap 依赖 / console */
-async function makeSandbox({ db, errors }) {
+async function makeSandbox({ db, errors, session = { user: { id: 'u1' } } }) {
   const sandbox = {
     console: { warn: () => {}, error: (...a) => errors.push(a.join(' ')), info: () => {}, log: () => {} },
     JSON, Math, Date, Number, String, Array, Object, Promise, Error,
@@ -58,6 +58,8 @@ async function makeSandbox({ db, errors }) {
   sandbox.globalThis = sandbox;
   // purgeMyH5Data 源码里引用 getCloudDatabase / PGRST202 判据走 res.error.code
   sandbox.getCloudDatabase = async () => db;
+  // 42501 分流依赖「本次是否带有效会话」：session=null 模拟会话已过期的匿名请求
+  sandbox.getSession = async () => session;
   // 切片是 TS 源码（含类型标注）——过 esbuild 再进 vm（否则 SyntaxError）
   const js = (await transform(slice, { loader: 'ts', format: 'cjs', logLevel: 'silent' })).code;
   vm.createContext(sandbox);
@@ -100,7 +102,33 @@ const PGRST202 = { code: 'PGRST202', message: 'Could not find the function publi
       r === 'failed' && errors.some((e) => /purge_my_h5_data failed/.test(e)));
   }
 
-  // ── ④ 成功：ok ──
+  // ── ④a 42501 分流：无会话 → denied-anon（灰度，不写 error） ──
+  {
+    const errors = [];
+    const sb = await makeSandbox({
+      db: { rpc: async () => ({ data: null, error: { code: '42501', message: 'permission denied' } }) },
+      errors,
+      session: null,
+    });
+    const r = await sb.__p.purgeMyH5Data();
+    check('PG4a', '42501 + 无会话 → denied-anon（灰度态，不写 console.error）',
+      r === 'denied-anon' && errors.length === 0);
+  }
+
+  // ── ④b 42501 分流：有有效会话仍被拒 → denied-authenticated（真故障，必须留 error） ──
+  {
+    const errors = [];
+    const sb = await makeSandbox({
+      db: { rpc: async () => ({ data: null, error: { code: '42501', message: 'permission denied' } }) },
+      errors,
+      session: { user: { id: 'u1' } },
+    });
+    const r = await sb.__p.purgeMyH5Data();
+    check('PG4b', '42501 + 有有效会话 → denied-authenticated 且 console.error 留痕（真故障不许静默）',
+      r === 'denied-authenticated' && errors.length > 0);
+  }
+
+  // ── ⑤ 成功：ok ──
   {
     const errors = [];
     const sb = await makeSandbox({
@@ -124,11 +152,17 @@ const PGRST202 = { code: 'PGRST202', message: 'Could not find the function publi
     .replace(/--[^\n]*/g, '');
   const rvk = sqlCode.match(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.purge_my_h5_data\(\)\s+FROM\s+([^;]+);/i);
   const rvkWho = rvk ? rvk[1].split(',').map((s) => s.trim().toLowerCase()) : [];
-  const grt = sqlCode.match(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.purge_my_h5_data\(\)\s+TO\s+authenticated\s*;/i);
+  // ⚠️ 必须收集**全部** GRANT EXECUTE（matchAll）：只取第一条时，在正确语句后面追加
+  //    一条 `GRANT EXECUTE ... TO anon` 仍能过门禁（假绿）。
+  const grts = [...sqlCode.matchAll(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.purge_my_h5_data\(\)\s+TO\s+([^;]+);/gi)];
+  const grtTargets = grts.flatMap((m) => m[1].split(',').map((s) => s.trim().toLowerCase()));
+  const grt = grts[0];
   check('PG6', 'v3 SQL：REVOKE 三个主体齐全（PUBLIC / anon / authenticated）',
     Boolean(rvk) && ['public', 'anon', 'authenticated'].every((x) => rvkWho.includes(x)));
-  check('PG7', 'v3 SQL：GRANT EXECUTE 只授回 authenticated', Boolean(grt));
-  check('PG8', 'v3 SQL：REVOKE 在 GRANT 之前（先收回再授回）',
+  check('PG7', 'v3 SQL：GRANT EXECUTE 目标集合恰为 {authenticated}（多授主体即红）',
+    grtTargets.length > 0 && grtTargets.every((x) => x === 'authenticated') &&
+      !grtTargets.some((x) => x === 'anon' || x === 'public'));
+  check('PG8', 'v3 SQL：REVOKE 在第一条 GRANT 之前（先收回再授回）',
     Boolean(rvk && grt) && rvk.index < grt.index);
 
   // ── ⑦ 窄不变式：注销完成文案不得宣称云端记录已删除 ──

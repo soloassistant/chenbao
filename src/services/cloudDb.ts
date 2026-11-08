@@ -18,7 +18,7 @@
  * 生产构建剔除，留痕必须用 console.error）。
  */
 
-import { getCloudDatabase } from './cloudAuth';
+import { getCloudDatabase, getSession } from './cloudAuth';
 import type { DbResponse } from './cloudAuth';
 
 /** user_kv 一行（同步键） */
@@ -151,13 +151,31 @@ export async function kvClear(): Promise<number | null> {
  * 函数未部署时 PostgREST 返回 PGRST202，本函数如实返回 'not-deployed'，调用方静默跳过，
  * 线上行为与未接此函数时完全一致（零破坏）；只有真实错误才 console.error 留痕。
  * 返回值是状态不是布尔——什么时候都不能把「没删成」说成「已清除」。
+ *
+ * 42501（权限不足）必须按成因分开判（2026-11-08 复审）：
+ *   · 会话已过期 → 请求实际以 anon 发出 → 'denied-anon'，属灰度态（登录后补删即可）；
+ *   · 带有效会话仍被拒 → authenticated 的 EXECUTE 被改坏 → 'denied-authenticated'，
+ *     这是**所有用户都清不掉数据**的真故障，必须留 console.error，绝不能吞成「预期态」。
  */
-export async function purgeMyH5Data(): Promise<'ok' | 'not-deployed' | 'failed' | 'no-db'> {
+export async function purgeMyH5Data(): Promise<
+  'ok' | 'not-deployed' | 'denied-anon' | 'denied-authenticated' | 'failed' | 'no-db'
+> {
   const db = await getCloudDatabase();
   if (!db) return 'no-db';
+  // 先取会话（这是「本次请求是否带有效会话」的唯一可信判据；localStorage 里有残留不代表有效）。
+  const session = await getSession();
+  const hadSession = Boolean(session);
   const res = await db.rpc<{ purged?: boolean }>('purge_my_h5_data', {});
   if (res.error) {
     if (res.error.code === 'PGRST202') return 'not-deployed';
+    if (res.error.code === '42501') {
+      if (!hadSession) {
+        console.info('[cloudDb] purge_my_h5_data 42501 without session (anon request):', res.error.message || '');
+        return 'denied-anon';
+      }
+      console.error('[cloudDb] purge_my_h5_data 42501 WITH active session — authenticated 的 EXECUTE 可能被收回，三表残留未清偿:', res.error.message || '');
+      return 'denied-authenticated';
+    }
     console.error('[cloudDb] purge_my_h5_data failed:', res.error.code || '', res.error.message || '');
     return 'failed';
   }

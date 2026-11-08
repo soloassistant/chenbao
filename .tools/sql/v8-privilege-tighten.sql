@@ -20,10 +20,12 @@
 -- ======================================================================
 -- §A 收回三项（本文件唯一的写操作；脚本已写、待平台执行）
 -- ======================================================================
--- 两个主体都要收回，PUBLIC 写在前面：
+-- 两个主体都要在收回列表里（**顺序无关** —— REVOKE 的主体列表没有语义）：
 --   这三项可能来自 PUBLIC 的默认授权，authenticated 会经 PUBLIC 继承；
 --   只写 `FROM authenticated` 是**无效收紧** —— 执行后 authenticated 仍可 TRUNCATE
 --   绕过 RLS 清空整表，而门禁只看文本里有 REVOKE 会照样全绿。
+--   `FROM PUBLIC, authenticated` 与 `FROM authenticated, PUBLIC` 权限结果完全相同，
+--   门禁只断言「两个主体都在」，不判顺序（判顺序会是「改动了但行为没变」的假红）。
 -- anon 的行级权限由 v2-db-anon-revoke.sql 处理（该脚本是否已执行同样待核实）；
 -- service_role 不受影响（v2 第 8 步显式 GRANT ALL）。
 -- 客户端只用行级 SELECT/INSERT/UPDATE/DELETE，上述三项**不** GRANT 回来。

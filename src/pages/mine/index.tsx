@@ -1047,9 +1047,13 @@ function MinePage() {
       // 'not-deployed' —— 属预期灰度状态，console.info 会被生产构建剔除，无需留痕；
       // 真失败才 console.error。必须在 signOut 之前把请求发出去（RLS 按 auth.uid()
       // 收敛，登出后调用会被数据库侧拒绝）。
+      // 42501 按成因分流（2026-11-08 复审）：'denied-anon' = 会话已过期、请求实际以
+      // anon 发出，属灰度态（完成页走工单补删）；'denied-authenticated' = 带有效会话
+      // 仍被拒，说明 authenticated 的 EXECUTE 被改坏，**所有用户都清不掉数据** ——
+      // 必须走 console.error，绝不能和灰度态一起静默。
       void purgeMyH5Data()
         .then((status) => {
-          if (status === 'failed' || status === 'no-db') {
+          if (status === 'failed' || status === 'no-db' || status === 'denied-authenticated') {
             console.error(`[MinePage] purgeMyH5Data = ${status} — 三表残留未清偿，需人工核查`);
           } else {
             console.info('[MinePage] purgeMyH5Data =', status);
