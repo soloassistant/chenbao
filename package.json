@@ -27,6 +27,7 @@
     "verify:login-bind": "node .tools/verify-login-bind-gate.mjs",
     "verify:sxm": "node .tools/verify-sxm-decision.mjs",
     "verify:sync": "node .tools/verify-sync-conflict.mjs",
+    "verify:sync-pull": "node .tools/verify-sync-pull.mjs",
     "verify:watchlist-sync": "node .tools/verify-watchlist-sync.mjs",
     "verify:health-consent": "node .tools/verify-health-consent.mjs",
     "verify:account": "node .tools/verify-account-isolation.mjs",
