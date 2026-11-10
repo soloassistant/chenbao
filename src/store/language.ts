@@ -1169,6 +1169,24 @@ const zh = {
   'learn.speakProgress': '已跟读 {count}/{total} 句',
   'learn.speakDone': '跟读完成！',
 
+  /* ---- A Level 真题库（第三方链接索引，2026-11-10）---- */
+  'papers.title': 'A Level 真题库',
+  'papers.subtitle': '共 {count} 份历年试卷（含评分标准），按考试局、科目、单元浏览',
+  'papers.boardLabel': '考试局',
+  'papers.subjectLabel': '科目',
+  'papers.unitLabel': '单元',
+  'papers.paperCount': '{count} 份试卷',
+  'papers.yearLabel': '{year} 年',
+  'papers.sessionLabel': '{m} 月',
+  'papers.qp': '试卷',
+  'papers.ms': '答案',
+  'papers.copiedHint': '链接已复制，去浏览器打开即可',
+  'papers.openFailed': '打不开这个链接，稍后再试',
+  'papers.sourceNote': '试卷与评分标准存放在第三方站点，本应用只提供链接索引、不保存副本。版权归 Pearson Edexcel、AQA 等考试局所有，仅供个人备考参考，请勿转载或商用。',
+  'papers.sourceVisit': '前往源站',
+  'papers.entryTitle': 'A Level 真题库',
+  'papers.entryDesc': 'Edexcel / AQA 历年试卷与评分标准',
+
   // 资讯类目的展示名（唯一来源见 src/utils/categoryLabel.ts）。
   // 为什么要单独做一套键：类目 tag 是**数据层写入的中文串**（RSS 源的 tag / 垂类热榜的 tag），
   // 直接渲染会导致 en 语言下混进中文，与整站双语不一致。
@@ -2647,6 +2665,24 @@ const en: Record<keyof typeof zh, string> = {
   'learn.speakSkip': 'Skip this line',
   'learn.speakProgress': '{count}/{total} lines repeated',
   'learn.speakDone': 'Speaking complete!',
+
+  /* ---- A Level past papers (third-party link index, 2026-11-10) ---- */
+  'papers.title': 'A Level past papers',
+  'papers.subtitle': '{count} past papers with mark schemes, browsable by board, subject and unit',
+  'papers.boardLabel': 'Board',
+  'papers.subjectLabel': 'Subject',
+  'papers.unitLabel': 'Unit',
+  'papers.paperCount': '{count} papers',
+  'papers.yearLabel': '{year}',
+  'papers.sessionLabel': 'Month {m}',
+  'papers.qp': 'Paper',
+  'papers.ms': 'Marks',
+  'papers.copiedHint': 'Link copied — open it in your browser',
+  'papers.openFailed': 'Could not open this link, try again later',
+  'papers.sourceNote': 'Papers and mark schemes are hosted by a third-party site. This app only indexes links and keeps no copies. Copyright belongs to Pearson Edexcel, AQA and other boards; for personal exam preparation only — do not redistribute or use commercially.',
+  'papers.sourceVisit': 'Visit source site',
+  'papers.entryTitle': 'A Level past papers',
+  'papers.entryDesc': 'Edexcel / AQA papers and mark schemes',
 
   'cat.life': 'Digital life',
   'cat.tech': 'Tech',

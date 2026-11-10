@@ -445,3 +445,40 @@
   font-size: $font-size-xs;
   color: $color-text-secondary;
 }
+
+/* A Level 真题库入口（2026-11-10）：与社区入口同款卡片，独立命名便于单独调整 */
+.papersEntry {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  // 同样右侧留 160rpx 避让 FAB 悬浮球
+  margin: 0 160rpx $spacing-md $page-padding;
+  padding: $spacing-lg;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  text-align: left;
+  cursor: pointer;
+}
+
+.papersIcon {
+  font-size: 48rpx;
+}
+
+.papersTextWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.papersTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.papersDesc {
+  display: block;
+  margin-top: 4rpx;
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}

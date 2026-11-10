@@ -295,6 +295,16 @@ function LearnPage() {
           </View>
           <Text className={styles.courseArrow}>›</Text>
         </View>
+
+        {/* A Level 真题库：试卷在第三方站点，页内只做索引与跳转 */}
+        <View className={styles.papersEntry} onClick={() => Taro.navigateTo({ url: '/pages/papers/index' })}>
+          <Text className={styles.papersIcon}>📄</Text>
+          <View className={styles.papersTextWrap}>
+            <Text className={styles.papersTitle}>{t('papers.entryTitle')}</Text>
+            <Text className={styles.papersDesc}>{t('papers.entryDesc')}</Text>
+          </View>
+          <Text className={styles.courseArrow}>›</Text>
+        </View>
         <Text className={styles.footerText}>{t('learn.moreComing')}</Text>
       </View>
     </View>

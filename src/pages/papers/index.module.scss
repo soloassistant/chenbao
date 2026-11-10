@@ -1,0 +1,297 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  padding: $spacing-md $page-padding $spacing-xl;
+  background: $color-bg-page;
+  box-sizing: border-box;
+  color: $color-text-primary;
+}
+
+.header {
+  margin-bottom: $spacing-md;
+}
+
+.back {
+  // 返回键视觉只有文字高度，透明外扩到可点（44px 手感线）
+  @include hit-expand(16rpx, 24rpx);
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+  cursor: pointer;
+}
+
+.backIcon {
+  font-size: 34rpx;
+  line-height: 1;
+  color: $color-text-secondary;
+}
+
+.backText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.title {
+  display: block;
+  margin-top: $spacing-xs;
+  font-size: 40rpx;
+  font-weight: $font-weight-semibold;
+  line-height: 1.3;
+}
+
+.subtitle {
+  display: block;
+  margin-top: $spacing-xs;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: 1.5;
+}
+
+/* 考试局 / 科目：两排 chip 式切换 */
+.tabRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.tab {
+  @include hit-expand(0, 12rpx);
+  display: flex;
+  align-items: center;
+  min-height: 64rpx;
+  padding: 0 $spacing-md;
+  border-radius: $radius-button;
+  background: $color-bg-card;
+  border: 1rpx solid $color-border;
+  cursor: pointer;
+}
+
+.tabActive {
+  background: $color-primary-strong;
+  border-color: $color-primary-strong;
+}
+
+.tabText {
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+}
+
+.tabTextActive {
+  color: $color-text-white;
+  font-weight: $font-weight-semibold;
+}
+
+.tabSm {
+  @include hit-expand(0, 12rpx);
+  display: flex;
+  align-items: center;
+  min-height: 56rpx;
+  padding: 0 $spacing-md;
+  border-radius: $radius-button;
+  background: $color-bg-card;
+  border: 1rpx solid $color-border;
+  cursor: pointer;
+}
+
+.tabSmActive {
+  border-color: $color-primary-strong;
+}
+
+.tabSmText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.tabSmTextActive {
+  color: $color-primary-strong;
+  font-weight: $font-weight-semibold;
+}
+
+.subjectMeta {
+  margin-left: auto;
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+/* 单元：一行横向滚动，不做折行（32 个单元折行会吃掉两屏） */
+.unitBar {
+  width: 100%;
+  white-space: nowrap;
+  margin-bottom: $spacing-md;
+}
+
+.unitBarInner {
+  display: flex;
+  gap: 12rpx;
+  padding: 4rpx 0;
+}
+
+.unitChip {
+  @include hit-expand(0, 8rpx);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 104rpx;
+  padding: 10rpx $spacing-sm;
+  border-radius: $radius-md;
+  background: $color-bg-card;
+  border: 1rpx solid $color-border;
+  cursor: pointer;
+}
+
+.unitChipActive {
+  border-color: $color-primary-strong;
+  background: rgba(199, 55, 26, 0.08);
+}
+
+.unitCode {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  line-height: 1.2;
+}
+
+.unitCodeActive {
+  color: $color-primary-strong;
+}
+
+.unitName {
+  margin-top: 2rpx;
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  line-height: 1.2;
+}
+
+.unitNameActive {
+  color: $color-primary-strong;
+}
+
+/* 考季列表 */
+.list {
+  display: block;
+}
+
+.yearBlock {
+  margin-bottom: $spacing-md;
+}
+
+.yearTitle {
+  display: block;
+  margin: 0 0 $spacing-xs 4rpx;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-text-secondary;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: 18rpx $spacing-md;
+  margin-bottom: 12rpx;
+  background: $color-bg-card;
+  border: 1rpx solid $color-border;
+  border-radius: $radius-md;
+}
+
+.rowLeft {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  min-width: 0;
+}
+
+.rowDate {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+}
+
+.variantTag {
+  padding: 2rpx 10rpx;
+  border-radius: $radius-xs;
+  background: rgba(199, 55, 26, 0.1);
+  font-size: $font-size-xs;
+  color: $color-primary-strong;
+  line-height: 1.4;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex: 0 0 auto;
+}
+
+.action {
+  @include hit-expand(0, 10rpx);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56rpx;
+  padding: 0 $spacing-md;
+  border-radius: $radius-button;
+  background: $color-primary-strong;
+  cursor: pointer;
+}
+
+.actionText {
+  font-size: $font-size-sm;
+  color: $color-text-white;
+}
+
+.actionGhost {
+  @include hit-expand(0, 10rpx);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56rpx;
+  padding: 0 $spacing-md;
+  border-radius: $radius-button;
+  background: $color-bg-page;
+  border: 1rpx solid $color-border;
+  cursor: pointer;
+}
+
+.actionGhostText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+/* 缺链接时只降透明度，不移除节点：行高与对齐不能跳 */
+.actionDisabled {
+  opacity: 0.4;
+}
+
+/* 来源与版权：必须常驻，不是可折叠的说明 */
+.note {
+  margin-top: $spacing-lg;
+  padding: $spacing-md;
+  background: $color-bg-card;
+  border: 1rpx solid $color-border;
+  border-radius: $radius-md;
+}
+
+.noteText {
+  display: block;
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  line-height: 1.7;
+}
+
+.noteLink {
+  @include hit-expand(0, 8rpx);
+  display: inline-flex;
+  align-items: center;
+  margin-top: $spacing-sm;
+  cursor: pointer;
+}
+
+.noteLinkText {
+  font-size: $font-size-sm;
+  color: $color-primary-strong;
+}
