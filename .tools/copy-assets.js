@@ -15,8 +15,10 @@ const dist = path.resolve(root, process.argv[2] || 'dist');
 const src = path.resolve(root, 'src/assets');
 
 // 可用 HOTSPOT_LIVE_URL 覆盖（测试负路径时指到一个必然失败的地方）
+// 2026-11-10：仓库已改名 9-8 → chenbao，旧地址恒 404（每次构建都打印 MISSING）。
+// 与 src/services/cloud.ts 的 LIVE_HOTSPOT_URL 必须指向同一份数据。
 const LIVE_HOTSPOT_URL =
-  process.env.HOTSPOT_LIVE_URL || 'https://soloassistant.github.io/9-8/api/hotspot.json';
+  process.env.HOTSPOT_LIVE_URL || 'https://soloassistant.github.io/chenbao/api/hotspot.json';
 const HOTSPOT_OUT = path.join(dist, 'api/hotspot.json');
 
 const jobs = [

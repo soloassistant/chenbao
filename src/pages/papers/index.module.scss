@@ -48,10 +48,11 @@
   line-height: 1.5;
 }
 
-/* 考试局 / 科目：两排 chip 式切换 */
+/* 考试局 / 科目：两排 chip 式切换。高考有 11 个科目，允许折行 */
 .tabRow {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: $spacing-sm;
   margin-bottom: $spacing-sm;
 }
@@ -252,7 +253,8 @@
   min-height: 56rpx;
   padding: 0 $spacing-md;
   border-radius: $radius-button;
-  background: $color-bg-page;
+  // 白底 + 描边：之前用页面底色，落在白卡上几乎看不出来，像被禁用
+  background: $color-bg-card;
   border: 1rpx solid $color-border;
   cursor: pointer;
 }

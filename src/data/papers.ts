@@ -12,12 +12,14 @@ import raw from './papers.json';
 export interface PaperSession {
   /** 年份，如 2026 */
   y: number;
-  /** 月份，1 / 6 / 10 */
+  /** 月份，1 / 5 / 6 / 10 */
   m: number;
-  /** 试卷（Question Paper）直链，缺失为空串 */
+  /** 试卷（Question Paper / 试题）直链，缺失为空串 */
   qp: string;
-  /** 评分标准（Mark Scheme）直链，缺失为空串 */
+  /** 评分标准（Mark Scheme / 答案）直链，缺失为空串 */
   ms: string;
+  /** 同年同单元内的区分标记，如高考「数学」的文/理、综合的文/理 */
+  tag?: string | null;
 }
 
 export interface PaperUnit {

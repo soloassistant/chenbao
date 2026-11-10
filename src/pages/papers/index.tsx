@@ -16,6 +16,14 @@ import { openExternalPage } from '@/utils/externalLink';
 import { pressableProps } from '@/utils/a11y';
 import styles from './index.module.scss';
 
+/** 各来源的落地页：页脚「前往源站」按当前考试局走，避免把人送到不相干的站点 */
+const BOARD_SOURCE: Record<string, string> = {
+  edexcel: 'https://alevelclouds.com',
+  aqa: 'https://alevelclouds.com',
+  gaokao: 'https://gaokao.eol.cn/e_html/gk/gkst/',
+  ap: 'https://apcentral.collegeboard.org/'
+};
+
 export default function PapersPage() {
   const t = useT();
   const { theme } = useThemeStore();
@@ -156,10 +164,12 @@ export default function PapersPage() {
           <View key={yg.year} className={styles.yearBlock}>
             <Text className={styles.yearTitle}>{t('papers.yearLabel', { year: yg.year })}</Text>
             {yg.rows.map((row) => (
-              <View key={`${row.code}-${row.y}-${row.m}`} className={styles.row}>
+              <View key={`${row.code}-${row.y}-${row.m}-${row.tag || ''}`} className={styles.row}>
                 <View className={styles.rowLeft}>
                   <Text className={styles.rowDate}>{t('papers.sessionLabel', { m: row.m })}</Text>
-                  {row.variant ? <Text className={styles.variantTag}>{row.code}</Text> : null}
+                  {row.tag || row.variant ? (
+                    <Text className={styles.variantTag}>{row.tag || row.code}</Text>
+                  ) : null}
                 </View>
                 <View className={styles.rowActions}>
                   <View
@@ -191,7 +201,7 @@ export default function PapersPage() {
         <Text className={styles.noteText}>{t('papers.sourceNote')}</Text>
         <View
           className={styles.noteLink}
-          onClick={() => void open(PAPERS_SOURCE)}
+          onClick={() => void open(BOARD_SOURCE[board.id] || PAPERS_SOURCE)}
           {...pressableProps(t('papers.sourceVisit'))}
         >
           <Text className={styles.noteLinkText}>{t('papers.sourceVisit')} ↗</Text>
