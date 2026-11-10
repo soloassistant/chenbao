@@ -134,6 +134,17 @@ export function recordPermissionResult(name: PermissionName, granted: boolean): 
 }
 
 /**
+ * 清零拒绝计数，但**不改 agreed**。
+ * H5 跳不了系统设置页（openAppSetting 直接返回 false），降级态若只提示「平台不支持」，
+ * 用户 ≥3 次拒绝后永远走不回授权流程 —— 需要这个「再试一次」的出口。
+ * 不能用 recordPermissionResult(name, true) 代替：那会把未授权记成已同意（假授权）。
+ */
+export function resetPermissionDenials(name: PermissionName): void {
+  const rec = readPermission(name);
+  writePermission(name, { agreed: rec.agreed, deniedCount: 0, updatedAt: Date.now() });
+}
+
+/**
  * 是否还应弹权限说明弹窗（降级判定出口）：
  * 已同意不弹；连续拒绝达到 PERMISSION_DENY_LIMIT 次不再弹（调用方改渲染轻量提示条 +「去设置」）。
  */

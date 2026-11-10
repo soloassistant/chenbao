@@ -37,6 +37,7 @@ import {
   isDeniedDegraded,
   openAppSetting,
   recordPermissionResult,
+  resetPermissionDenials,
   shouldShowDialog
 } from '@/utils/permission';
 import type { LocateFailReason } from '@/utils/permission';
@@ -491,6 +492,14 @@ function BriefingPage() {
   const handleOpenLocSetting = async () => {
     const ok = await openAppSetting('location');
     if (!ok) {
+      // H5 没有系统设置页可跳（openAppSetting 直接 return false）。降级态若只提示
+      // 「平台不支持」，≥3 次拒绝后用户永远走不回授权流程 —— 清零拒绝计数并重新弹说明框。
+      if (!isWeapp) {
+        resetPermissionDenials('location');
+        setLocDeniedBar(false);
+        setShowLocDialog(true);
+        return;
+      }
       Taro.showToast({ title: t('perm.platformUnsupported'), icon: 'none' });
       return;
     }

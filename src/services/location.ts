@@ -44,7 +44,7 @@ async function ensureCrossBorderConsent(): Promise<boolean> {
   const body = t('perm.locCrossBody')
   // 文案缺失时**不能弹一个空框让人点同意**（等于没有告知）——直接按不同意处理
   if (!title || !body) {
-    console.warn('[Location] 出境同意文案缺失，已跳过定位（不发起 getLocation）')
+    console.error('[Location] 出境同意文案缺失，已跳过定位（不发起 getLocation）')
     return false
   }
   try {
@@ -56,7 +56,7 @@ async function ensureCrossBorderConsent(): Promise<boolean> {
     })
     if (!res.confirm) return false
   } catch (err) {
-    console.warn('[Location] 出境同意弹窗失败，已跳过定位（不发起 getLocation）:', err)
+    console.error('[Location] 出境同意弹窗失败，已跳过定位（不发起 getLocation）:', err)
     return false
   }
   try {
@@ -67,7 +67,7 @@ async function ensureCrossBorderConsent(): Promise<boolean> {
     })
   } catch (err) {
     // 记录失败不阻断本次使用（用户已明确同意），只是下次会再问一次
-    console.warn('[Location] 出境同意记录写入失败（下次会重新征求）:', err)
+    console.error('[Location] 出境同意记录写入失败（下次会重新征求）:', err)
   }
   return true
 }
@@ -101,13 +101,13 @@ export async function locateCity(): Promise<string | null> {
     if (!granted) {
       // ensurePermission 内已按类别 mark（denied / blocked / insecure / timeout / unavailable）
       if (!getLastLocateFailure()) markLocateFailure('denied')
-      console.warn('[Location] 位置权限未授权，已跳过定位（不发起 getLocation）')
+      console.error('[Location] 位置权限未授权，已跳过定位（不发起 getLocation）')
       return null
     }
     // 出境单独同意闸门：未同意 → 不采集坐标、不向第三方发起任何请求
     if (!(await ensureCrossBorderConsent())) {
       markLocateFailure('denied')
-      console.warn('[Location] 未取得坐标出境单独同意，已跳过定位（不发起 getLocation）')
+      console.error('[Location] 未取得坐标出境单独同意，已跳过定位（不发起 getLocation）')
       return null
     }
     const pos = await Taro.getLocation({ type: 'wgs84' })
@@ -129,7 +129,7 @@ export async function locateCity(): Promise<string | null> {
     return city
   } catch (err) {
     markLocateFailure(classifyLocationError(err))
-    console.warn('[Location] locateCity failed:', err)
+    console.error('[Location] locateCity failed:', err)
     return null
   }
 }
