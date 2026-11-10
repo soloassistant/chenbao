@@ -35,7 +35,9 @@
   height: 34PX;
   flex-shrink: 0;
   border-radius: 10PX;
-  background: $color-primary;
+  /* 白字在 $color-primary(#ff7a45) 上只有 2.59:1，桌面左栏 12 页全部不过 AA。
+     复用主题里已有的深橙 $color-primary-strong(#c7371a)，白字约 5.27:1。 */
+  background: $color-primary-strong;
 }
 
 .logoText {
