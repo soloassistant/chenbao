@@ -394,7 +394,16 @@ const J_POINTS = [
   ['src/components/ConsentGate/index.module.scss', 'consentAgree', '--brand-strong', '首启同意按钮（每个新用户第一个按钮）'],
   ['src/pages/learnCommunity/index.module.scss', 'postButton', 'color-primary-strong', '社区发布'],
   ['src/pages/inbox/index.module.scss', 'extractButton', '--brand-strong', 'AI 提取'],
-  ['src/pages/mine/index.module.scss', 'subCard', '--brand-strong', '付费卡底（卡内 14 处文字）']
+  ['src/pages/mine/index.module.scss', 'subCard', '--brand-strong', '付费卡底（卡内 14 处文字）'],
+  // 2026-11-10：真实渲染门禁在登录屏逮到的 3 处橙底 2.59:1（浅橙 #ff7a45 白字/勾选符未达 AA），
+  // 改 strong 变体 #c7371a（5.26:1）。静态清单补锁，否则下次回归仍漏。
+  ['src/pages/login/index.module.scss', 'codeBtn', '$color-primary-strong', '获取验证码按钮底色（白字压浅橙 2.59:1）'],
+  ['src/pages/login/index.module.scss', 'privacyBox', '$color-primary-strong', '隐私勾选符（☐ 压白卡 2.59:1）'],
+  ['src/pages/login/index.module.scss', 'rememberBox', '$color-primary-strong', '记住登录勾选符（☑ 压白卡 2.59:1）'],
+  // 2026-11-10：真实渲染门禁第二轮在登录屏又逮到 2 处 4.32:1（卡片半透叠 .screen 桃色渐变，真实底色≈#FFEAE1；
+  // $color-text-tertiary(#657080) 压它 4.32:1 未达 AA 4.5）；改 secondary(#4e5969)≈6.1:1。静态清单补锁。
+  ['src/pages/login/index.module.scss', 'privacyText', '$color-text-secondary', '隐私说明（tertiary 压桃色底 4.32:1）'],
+  ['src/pages/login/index.module.scss', 'rememberHint', '$color-text-secondary', '记住登录提示（tertiary 压桃色底 4.32:1）']
 ];
 for (const [file, cls, expect, why] of J_POINTS) {
   try {

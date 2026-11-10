@@ -63,6 +63,7 @@
     "verify:modal-text": "node .tools/verify-modal-text.mjs",
     "verify:locate-copy": "node .tools/verify-locate-copy.mjs",
     "verify:contrast": "node .tools/verify-contrast-strong.mjs",
+    "verify:contrast-render": "node .tools/verify-contrast-render.mjs",
     "verify:util": "node .tools/verify-util-logic.mjs",
     "test:question-bank": "node .tools/test-question-bank.mjs",
     "test:question-bank-repo": "node .tools/test-question-bank-repo.mjs",

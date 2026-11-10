@@ -209,7 +209,8 @@
   align-items: center;
   justify-content: center;
   border-radius: $radius-md;
-  background: $color-primary;
+  // 白字压浅橙 #ff7a45 仅 2.59:1（未达 AA）；改用 strong 变体 #c7371a（5.26:1），与全站主按钮同源。
+  background: $color-primary-strong;
   transition: transform $transition-fast, opacity $transition-fast;
 
   &:active {
@@ -267,7 +268,8 @@
   font-size: $font-size-lg;
   line-height: 1;
   margin-right: $spacing-sm;
-  color: $color-primary;
+  // 勾选符压白卡 2.59:1（未达 AA）；改 strong 变体 #c7371a（5.26:1）。
+  color: $color-primary-strong;
   flex-shrink: 0;
 }
 
@@ -279,7 +281,9 @@
 .privacyText {
   display: block;
   font-size: $font-size-xs;
-  color: $color-text-tertiary;
+  // 卡片半透（rgba(255,255,255,0.92)）叠在 .screen 桃色渐变上，真实底色 ≈#FFEAE1；
+  // $color-text-tertiary(#657080) 压它只有 4.32:1（未达 AA 4.5）；改 secondary(#4e5969) ≈6.1:1。
+  color: $color-text-secondary;
   line-height: $line-height-normal;
 }
 
@@ -309,7 +313,8 @@
   font-size: $font-size-lg;
   line-height: 1;
   margin-right: $spacing-sm;
-  color: $color-primary;
+  // 勾选符压白卡 2.59:1（未达 AA）；改 strong 变体 #c7371a（5.26:1）。
+  color: $color-primary-strong;
   flex-shrink: 0;
 }
 
@@ -328,7 +333,8 @@
 .rememberHint {
   display: block;
   font-size: $font-size-xs;
-  color: $color-text-tertiary;
+  // 同 privacyText：桃色渐变透出，tertiary 4.32:1 不达标；secondary ≈6.1:1。
+  color: $color-text-secondary;
   line-height: $line-height-normal;
   margin-top: 2rpx;
 }

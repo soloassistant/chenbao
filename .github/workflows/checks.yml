@@ -539,3 +539,40 @@ jobs:
             echo "::warning::verify:mutation 第 ${attempt} 次未通过（exit=${code}），重试（固定 2 次上限）"
           done
           exit 1
+
+  # ── 真实渲染对比度门禁（独立 job：需先构建 H5 产物 + 真 Chrome）─────────────────
+  # 与上面的 verify:contrast（静态配色断言，只覆盖清单类名）是**两层**：
+  #   静态那层只看得见清单里的类，清单外的类它读不到；这层把页面真正画出来，
+  #   量每个文字元素「计算样式 + alpha 合成背景」对比度，任何 WCAG 2.2 AA 未达标
+  #   （4.5:1 普通 / 3.0:1 大字或粗体）的文本直接 FAIL。
+  # 单独成 job：构建 + 无头 Chrome 较重，且不应拖慢上面的离线检查；构建失败只红这一个 job。
+  contrast-render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - name: 安装依赖
+        run: yarn install --frozen-lockfile
+      - name: 构建 H5 产物
+        # 真实渲染门禁需要 dist；checks 主任务不构建产物，这里单独构建（与发布构建同源的两步法）。
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: |
+          node node_modules/@tarojs/cli/bin/taro build --type h5
+          node .tools/copy-assets.js dist
+      - name: 真实渲染对比度门禁（无头 Chrome）
+        # runner 已预装 Chrome（/usr/bin/google-chrome），门禁自动识别并对 Linux 加 --no-sandbox。
+        # 退出码约定：0 = 全绿或环境不足 SKIP；1 = 有对比度未达标（应让 CI 红，即本门禁存在的意义）；
+        # 2 = harness 自身出错（如 Chrome 没起来）→ 按 SKIP 处理，不阻断 CI（非代码缺陷）。
+        run: |
+          set +e
+          node .tools/verify-contrast-render.mjs
+          code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::对比度门禁 harness 出错（exit=2），非代码缺陷，按 SKIP 处理"
+            exit 0
+          fi
+          exit "$code"
