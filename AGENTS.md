@@ -11,8 +11,8 @@
 
 - **项目根**：`D:/Agent/晨报`（`git rev-parse --show-toplevel` 即此；`D:/Agent` 根下还有别的项目，别动）
 - **H5 产品入口**：WorkBuddy 应用面板发布（发布目录、发布后四查、为什么不能用 gh-pages，统一见 §4）
-- **H5 静态镜像**：https://soloassistant.github.io/9-8/ —— 云端能力不可用，仅静态外壳 + 热点镜像
-- **代码仓库**：https://github.com/soloassistant/9-8（**public** ⇒ 任何进库文件都视为对外公开）
+- **H5 静态镜像**：https://soloassistant.github.io/chenbao/ —— 云端能力不可用，仅静态外壳 + 热点镜像
+- **代码仓库**：https://github.com/soloassistant/chenbao（**public** ⇒ 任何进库文件都视为对外公开）
 
 ## 2. 技术栈
 
@@ -213,7 +213,7 @@ npm run publish:check        # node .tools/verify-publish-live.mjs
 
 Taro 构建**先清空产物目录**，所以每次 `build:h5` 都会把 `dist/api/hotspot.json` 清掉。
 它是前端兜底链的第 3 跳（`src/services/cloud.ts:41`：
-`/api/hotspot` → `soloassistant.github.io/9-8/api/hotspot.json` → `./api/hotspot.json`），
+`/api/hotspot` → `soloassistant.github.io/chenbao/api/hotspot.json` → `./api/hotspot.json`），
 此前只能靠人**手动备份/还原** —— 而实践证据是它真的丢过一次。
 
 现在由 `.tools/copy-assets.js`（`build:h5` 的后置步骤）**在发现它缺失时**从 gh-pages 取一份当日数据补回。

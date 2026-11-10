@@ -99,7 +99,7 @@ export function subscribeDegraded(cb: (actions: string[]) => void): () => void {
  *  优先取新鲜的，取不到才退回烘焙版（离网 / 被墙时页面仍不为空）。
  *
  *  GitHub Pages 对该文件返回 `Access-Control-Allow-Origin: *`（已实测），故可跨域直取。 */
-const LIVE_HOTSPOT_URL = 'https://soloassistant.github.io/9-8/api/hotspot.json'
+const LIVE_HOTSPOT_URL = 'https://soloassistant.github.io/chenbao/api/hotspot.json'
 
 /** 同源烘焙副本（发布时由 .tools/copy-assets.js 从 gh-pages 落盘）。
  *  2026-10-30 新增到优先级第一位：它是**同源**请求 —— 无跨域 DNS/TLS、无 CORS 预检，
