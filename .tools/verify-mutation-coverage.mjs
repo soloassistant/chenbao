@@ -16,6 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 // ⚠️ 不能用 new URL(import.meta.url).pathname：仓库路径含中文，得到的是 %E6%99%A8%E6%8A%A5
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -54,10 +55,6 @@ const BROWSER = new Map([
   //   于是全量门禁与 CI 一直红（2026-10-30 19:4x 实测 43/44，唯一红就是它）。
   //   判据本身是客观的：它用真 Chrome 渲染每个路由（Node 里没有渲染），变异框架驱动不了。
   ['verify-routes.mjs', '真 Chrome 渲染巡检 19 个路由 × 3 档视口（渲染/DOM 几何，Node 里造不出来）'],
-  // 2026-11-10 新增：真实渲染对比度门禁（verify:contrast-render.mjs）。
-  // 用 CDP 驱动真 Chrome 把页面渲染出来、量每个文字元素「计算样式 + alpha 合成背景」对比度；
-  // 渲染后的计算样式与 DOM 几何只有真浏览器能造出来，变异框架改不动它依赖的浏览器行为 ⇒ 浏览器类豁免。
-  ['verify-contrast-render.mjs', 'CDP 驱动真 Chrome 真实渲染后量每个文字元素对比度（渲染计算样式，Node 里造不出来）'],
 ]);
 
 // ── 承认的缺口：纯静态、可变异，但还没配。**上限锁死**，只许减不许增 ──
@@ -124,8 +121,34 @@ for (const f of mutFiles) {
 ok(badShape.length === 0, `A1 每条变异都有 label/from/to/cmd 且 from !== to（${allCases.length} 条）`, badShape.join('; '));
 ok(badCmd.length === 0, 'A2 每条变异的 cmd 都指向真实存在的 harness', badCmd.join('; '));
 
-const notInMutCmd = mutFiles.filter((f) => !mutCmd.includes(f));
-ok(notInMutCmd.length === 0, 'A3 每个 mutations-*.mjs 都被 package.json 的 verify:mutation 引用', notInMutCmd.join(', '));
+// A3：每个 mutations-*.mjs 都要真的进入 verify:mutation 的执行集合。
+// 2026-11-05 起 verify:mutation 允许指向自动发现 runner（.tools/verify-mutation-all.mjs）：
+// 这时用 runner 的 `--list` **实测**发现结果，再和磁盘文件集合逐项比对 ——
+// 「写了 runner 但 glob 漏文件」照样红，不是放宽，而是从「字符串包含」升级为「实测集合相等」。
+const AUTO_RUNNER = 'verify-mutation-all.mjs';
+const usesAuto = mutCmd.includes(AUTO_RUNNER);
+let a3ok = false;
+let a3detail = '';
+if (usesAuto) {
+  const r = spawnSync(process.execPath, [path.join(TOOLS, AUTO_RUNNER), '--list'], { cwd: ROOT, encoding: 'utf8' });
+  const disc = (r.stdout || '')
+    .split(/\r?\n/)
+    .filter((l) => l.startsWith('.tools/'))
+    .map((l) => l.replace('.tools/', ''));
+  const missing = mutFiles.filter((f) => !disc.includes(f));
+  const extra = disc.filter((f) => !mutFiles.includes(f));
+  const sortedOk = disc.every((f, i) => i === 0 || disc[i - 1] <= f);
+  a3ok = r.status === 0 && mutFiles.length === disc.length && missing.length === 0 && extra.length === 0 && sortedOk;
+  a3detail = `runner 发现 ${disc.length} / 磁盘 ${mutFiles.length}` +
+    (missing.length ? `；漏 ${missing.join(', ')}` : '') +
+    (extra.length ? `；多 ${extra.join(', ')}` : '') +
+    (sortedOk ? '' : '；发现结果未按文件名排序');
+} else {
+  const notInMutCmd = mutFiles.filter((f) => !mutCmd.includes(f));
+  a3ok = notInMutCmd.length === 0;
+  a3detail = notInMutCmd.join(', ');
+}
+ok(a3ok, `A3 每个 mutations-*.mjs 都被 verify:mutation 执行到（${usesAuto ? '自动发现实测' : '硬编码清单'}）`, a3detail);
 
 // 覆盖表：harness 文件名 → 指向它的变异条数
 const cover = new Map();
