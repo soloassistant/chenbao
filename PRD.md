@@ -265,4 +265,4 @@ H5 主链路
 - CI：`checks` / `contrast-render` / `deploy-h5` / `pages` 四条流水线全绿
   - 此前 `checks` 连红三次（文档门禁页面数过期、变异脚本漏接、真实渲染对比度假红）
   - `deploy-h5` **从未绿过**：`node-version: 20` 与 `engines.node: >=22` 冲突，依赖都装不上
-- 门禁规模：88 个 verify 脚本、58 个变异用例文件、27 个云函数离线门禁断言
+- 门禁规模：88 个 verify 脚本、58 个变异用例文件、28 个云函数离线门禁断言
