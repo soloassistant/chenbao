@@ -82,6 +82,7 @@
     "verify:identity": "node .tools/audit-identity.mjs",
     "verify:login-errors": "node .tools/verify-login-errors.mjs",
     "verify:publish-preflight": "node .tools/verify-deploy-fresh.mjs --publish",
+    "launch:readiness": "node .tools/launch-readiness.mjs",
     "verify:mutation": "node .tools/verify-mutation-all.mjs",
     "verify:openid-redaction": "node .tools/verify-openid-redaction.mjs",
     "verify:memory-injection": "node .tools/verify-memory-injection.mjs",
