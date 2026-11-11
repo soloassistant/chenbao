@@ -21,8 +21,10 @@ export default [
     //   所以这条变异专门证明「阻断」本身有判别力。
     label: '续费确认取消后不再阻断（会重复下单扣费）',
     file: 'src/pages/membership/index.tsx',
-    from: '      if (!ok) return;',
-    to: '      // 变异：取消后不再阻断，继续往下扣费',
+    // 2026-11-11：H5 分支也有一处续费确认（缩进 8 空格），原锚点变成 2 处 ⇒
+    // 带上下一行 setPaying 把它框死在小程序三通道那一段。
+    from: '      if (!ok) return;\n    }\n    setPaying(true);',
+    to: '      // 变异：取消后不再阻断\n    }\n    setPaying(true);',
     cmd: 'node .tools/verify-batch1.js'
   },
   {

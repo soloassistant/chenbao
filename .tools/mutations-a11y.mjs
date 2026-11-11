@@ -84,10 +84,12 @@ export default [
   },
   {
     // 2026-11-04：翻月按钮回退到 32×32（又低于 44px）。A14 必须判红。
-    label: '日历翻月去掉透明外扩（热区退回 32×32）',
+    label: '日历翻月热区退回 32×32（盒子从 88rpx 缩回 64rpx）',
     file: 'src/pages/calendar/index.module.scss',
-    from: '  @include hit-expand(12rpx, 12rpx);',
-    to: '  /* mutation: no hit-expand */',
+    // 2026-11-11：#64 把这里的做法从「透明外扩」改成「实际盒子 88rpx」，
+    // 原锚点 @include hit-expand 已不存在 ⇒ 变异改为把盒子缩回 64rpx。
+    from: '  width: 88rpx;\n  height: 88rpx;',
+    to: '  width: 64rpx;\n  height: 64rpx;',
     cmd: 'node .tools/verify-a11y-keyboard.mjs --no-browser'
   }
 ];

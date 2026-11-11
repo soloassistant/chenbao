@@ -78,8 +78,10 @@ export default [
   {
     label: '页面不声明 actions（别的页面的降级横幅会串到这一页）',
     file: 'src/pages/library/index.tsx',
-    from: "<DemoDataHint actions={['webSearch', 'getHotspot']} />",
-    to: '<DemoDataHint />',
+    // 2026-11-11：#61 给这个组件加了 onRetry，自闭合写法已不存在 ⇒
+    // 变异改成「把 actions 属性整个删掉」（语义不变：不声明 = 横幅退回全局口径）。
+    from: "actions={['webSearch', 'getHotspot']}",
+    to: '',
     cmd: 'node .tools/verify-h5-coverage.mjs'
   }
 ];

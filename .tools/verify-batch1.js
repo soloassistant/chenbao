@@ -174,6 +174,18 @@ assert(
     subscribedIdx + subscribedBlock.length <= payingIdx
 );
 
+// B-3b 每一处续费确认都必须阻断（2026-11-11）
+//     背景：H5 支付分支也有一处同样的「已订阅再点订阅」确认（channel === 'wechat_h5'）。
+//     上面 B/tsx/confirmBlocks 只检查**第一处**，第二处漏掉守卫时仍然全绿 ——
+//     这里要求「阻断语句的数量 ≥ 确认弹窗的数量」，任一处被删都会让数量对不上。
+const renewTitleCount = (membership.match(/title: t\('mine\.renewTitle'\)/g) || []).length;
+const guardCount = (membership.match(/if \(!ok\) return;/g) || []).length;
+assert(
+  'B/tsx/confirmAllBlocks',
+  renewTitleCount > 0 && guardCount >= renewTitleCount,
+  `确认弹窗 ${renewTitleCount} 处 / 阻断 ${guardCount} 处`
+);
+
 // B-4 按钮文案三分支：paying / 已订阅（续费）/ 未订阅
 //     只在**按钮块内**断言，避免命中页面别处同名字符串而假绿。
 //     ⚠️ 按钮 JSX 现在多行书写（`<Button` 与 `className` 不在同一行），
