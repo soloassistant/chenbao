@@ -76,6 +76,62 @@ export async function recordPromoOrder(code: string): Promise<boolean> {
   }
 }
 
+/**
+ * H5 支付成功后核销「已付款凭证」→ 服务端写订单并发权益（v9）。
+ *
+ * 为什么客户端只是「转交」：凭证明文里有 orderId/plan/amount/paidAt/owner/sig，
+ * 但 sig 只有支付网关能出（HMAC 用服务端密钥），服务端函数验签通过才落单。
+ * 客户端**不传天数、不传金额判定** —— 天数与金额白名单都在函数里，验签后再比对。
+ *
+ * 返回值语义（调用方必须区分，不能一律当成功）：
+ *   'granted'    本次开通（已落订单，权益应立刻刷新）
+ *   'already'    之前已核销过（重复点击/重放），权益同样有效
+ *   'unsigned'   函数未部署或未授权（PGRST202 / 权限错误）→ 需人工兜底，不谎报开通
+ *   'rejected'   验签/归属/金额不通过 → 服务端明确拒绝
+ *   'no-session' 未登录
+ *   'db-error'   网络或未知错误
+ */
+export type RedeemPaidResult = 'granted' | 'already' | 'unsigned' | 'rejected' | 'no-session' | 'db-error';
+
+export async function recordPaidOrder(claim: {
+  orderId: string;
+  planId: string;
+  amountCents: number;
+  paidAt: number;
+  ownerId: string;
+  sig: string;
+}): Promise<RedeemPaidResult> {
+  if (!(await getSession())) return 'no-session';
+  const db = await getCloudDatabase();
+  if (!db) return 'db-error';
+  try {
+    const res = await db.rpc('redeem_paid_order', {
+      p_order_id: claim.orderId,
+      p_plan_id: claim.planId,
+      p_amount_cents: claim.amountCents,
+      p_paid_at: claim.paidAt,
+      p_owner_id: claim.ownerId,
+      p_sig: claim.sig
+    });
+    if (res.error) {
+      const code = String(res.error.code || '');
+      const msg = String(res.error.message || '');
+      console.error('[subscription] redeem_paid_order failed:', code, msg);
+      // 函数未部署/未授权：PGRST202 = 函数不在 schema 缓存里；42501 = 权限不足
+      if (code === 'PGRST202' || code === '42501' || /permission denied|could not find/i.test(msg)) {
+        return 'unsigned';
+      }
+      return 'rejected';
+    }
+    const body = (res.data ?? null) as { ok?: boolean; already?: boolean } | null;
+    if (!body || body.ok !== true) return 'rejected';
+    return body.already === true ? 'already' : 'granted';
+  } catch (err) {
+    console.error('[subscription] redeem_paid_order threw:', err instanceof Error ? err.message : String(err));
+    return 'db-error';
+  }
+}
+
 export interface RestoreResult {
   /** 是否发生了恢复动作（本地落后于云端时 true） */
   restored: boolean;

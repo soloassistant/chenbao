@@ -23,7 +23,8 @@
  */
 
 import { createServer } from 'node:http';
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 /* ---------------- 配置 ---------------- */
 
@@ -31,6 +32,9 @@ const PORT = Number(process.env.PORT || 8080);
 const PROVIDER = process.env.PAY_GATEWAY_PROVIDER || 'xunhupay';
 const APPID = process.env.XUNHUPAY_APPID || '';
 const APPSECRET = process.env.XUNHUPAY_APPSECRET || '';
+/** 与数据库 app_secrets.pay_gateway_hmac 必须是**同一个值**：网关用它签已付款凭证，
+ *  SQL 函数用它验签。两边不一致 ⇒ 所有核销都会「验签失败」（且只在真实付款后才暴露）。 */
+const HMAC_SECRET = process.env.PAY_GATEWAY_HMAC_SECRET || '';
 /** 聚合支付的下单/查单地址（不同服务商不同，用环境变量覆盖） */
 const API_CREATE =
   process.env.PAY_API_CREATE || 'https://api.xunhupay.com/payment/do.html';
@@ -51,11 +55,39 @@ const PLANS = {
 /* ---------------- 订单账本（内存 + 可选 JSONL 审计） ---------------- */
 
 /**
- * 订单态在内存里维护：本服务的职责是「签名 + 查单」，
- * 真正的权益发放仍由服务端（orders 表）决定 —— 这里不越权发权益。
- * 进程重启后内存丢失是可接受的：查单会回落到向服务商查询（见 queryRemote）。
+ * 订单账本（内存 + 落盘）
+ *
+ * 为什么要落盘：`/order/claim` 签发凭证时**必须知道这笔订单的 plan 与金额**，
+ * 而那两项是下单时定的。进程重启后内存清空的话，用户付完钱回来就签不出凭证
+ * ⇒ 「钱收了、权益开不了」。默认落在 `PAY_LEDGER_FILE`（缺省 ./pay-orders.json）。
+ *
+ * ⚠️ 单实例假设：多实例部署需要换成共享存储（Redis/PG），否则 A 实例下的单
+ *    B 实例查不到。这一点写进部署说明，别当它不存在。
  */
 const orders = new Map();
+const LEDGER_FILE = process.env.PAY_LEDGER_FILE || '';
+
+function loadLedger() {
+  if (!LEDGER_FILE || !existsSync(LEDGER_FILE)) return;
+  try {
+    const rows = JSON.parse(readFileSync(LEDGER_FILE, 'utf8'));
+    for (const o of Array.isArray(rows) ? rows : []) {
+      if (o && o.orderId) orders.set(o.orderId, o);
+    }
+    console.log(`[pay-gateway] 账本已载入 ${orders.size} 笔`);
+  } catch (err) {
+    console.error('[pay-gateway] 账本载入失败（继续启动，但重启后的订单签不出凭证）:', String(err?.message || err));
+  }
+}
+
+function persistLedger() {
+  if (!LEDGER_FILE) return;
+  try {
+    writeFileSync(LEDGER_FILE, JSON.stringify([...orders.values()], null, 0), 'utf8');
+  } catch (err) {
+    console.error('[pay-gateway] 账本落盘失败:', String(err?.message || err));
+  }
+}
 
 function newOrderId() {
   return `h5p_${Date.now()}_${randomBytes(4).toString('hex')}`;
@@ -205,7 +237,13 @@ const server = createServer(async (req, res) => {
   if (req.method === 'OPTIONS') return send(res, 204, '');
 
   if (url.pathname === '/health') {
-    return send(res, 200, { ok: true, configured: isConfigured(), provider: PROVIDER });
+    return send(res, 200, {
+      ok: true,
+      configured: isConfigured(),
+      // 只报「有没有配」，绝不回显 secret 本身
+      claimReady: isConfigured() && HMAC_SECRET.length >= 32,
+      provider: PROVIDER
+    });
   }
 
   if (url.pathname === '/order/create' && req.method === 'POST') {
@@ -222,9 +260,14 @@ const server = createServer(async (req, res) => {
     const plan = PLANS[body.planId];
     // 金额只认服务端价格表：前端传 price 一律忽略（否则 1 分钱买年付）
     if (!plan) return send(res, 400, { error: 'invalid-plan' });
+    // 账号绑定：凭证要能证明「这笔订单属于谁」，所以在下单时就记下来。
+    // 不接受在 claim 时指定 owner（那等于让人自选归属）。
+    const ownerId = typeof body.ownerId === 'string' ? body.ownerId.trim() : '';
+    if (!ownerId || ownerId.length > 64) return send(res, 400, { error: 'missing-owner' });
 
     const order = {
       orderId: newOrderId(),
+      ownerId,
       planId: body.planId,
       priceFen: plan.priceFen,
       months: plan.months,
@@ -246,6 +289,7 @@ const server = createServer(async (req, res) => {
       return send(res, 502, { error: 'gateway-error', message: remote.reason });
     }
     order.payUrl = remote.payUrl;
+    persistLedger();
     return send(res, 200, { orderId: order.orderId, payUrl: remote.payUrl });
   }
 
@@ -259,12 +303,71 @@ const server = createServer(async (req, res) => {
 
     try {
       const remote = await queryRemote(orderId);
-      if (remote.status === 'paid' && local) local.status = 'paid';
+      if (remote.status === 'paid' && local) {
+        local.status = 'paid';
+        local.paidAt = local.paidAt || Math.floor(Date.now() / 1000);
+        persistLedger();
+      }
       return send(res, 200, { status: remote.status });
     } catch (err) {
       // 上游不通时**不能**说 closed/failed：用户可能已经付了款
       return send(res, 200, { status: 'unknown', message: String(err?.message || err) });
     }
+  }
+
+  /**
+   * 签发「已付款凭证」—— 这是 H5 权益闭环的交接点。
+   *
+   * 前端拿到凭证后调数据库函数 `redeem_paid_order`，由服务端验签并发权益。
+   * **只有确认已付的订单才签**；未付/未配置一律拒绝，绝不签一张“预支”的凭证。
+   * payload 口径必须与 v9 SQL 逐字符一致：order_id|plan_id|amount_cents|paid_at(epoch 秒)
+   */
+  if (url.pathname === '/order/claim' && req.method === 'GET') {
+    if (!isConfigured()) return send(res, 503, { error: 'unconfigured' });
+    if (!HMAC_SECRET || HMAC_SECRET.length < 32) {
+      // 与「未配置商户参数」同等对待：签不出可信凭证就不签，让页面如实提示
+      return send(res, 503, { error: 'unconfigured-claim', message: '缺 PAY_GATEWAY_HMAC_SECRET（需与数据库 app_secrets 同一个值）' });
+    }
+    const orderId = url.searchParams.get('orderId') || '';
+    if (!orderId) return send(res, 400, { error: 'missing-orderId' });
+
+    const order = orders.get(orderId);
+    if (!order) return send(res, 404, { error: 'unknown-order' });
+
+    // 本地没有已付结论时，向上游确认一次（回调可能丢）
+    if (order.status !== 'paid') {
+      try {
+        const remote = await queryRemote(orderId);
+        if (remote.status === 'paid') {
+          order.status = 'paid';
+          order.paidAt = order.paidAt || Math.floor(Date.now() / 1000);
+          persistLedger();
+        }
+      } catch {
+        /* 上游不通 → 下面按未付处理（不签凭证），交给页面显示「待确认」 */
+      }
+    }
+    if (order.status !== 'paid') {
+      return send(res, 409, { error: 'not-paid', status: order.status });
+    }
+
+    if (!order.ownerId) {
+      // 老账本（加 owner 绑定之前下的单）签不出有效凭证：如实拒绝，别签个必失败的
+      return send(res, 409, { error: 'legacy-order', message: '该订单缺少账号绑定，请重新下单' });
+    }
+    const paidAt = order.paidAt || Math.floor(Date.now() / 1000);
+    // 口径必须与 v9 SQL 逐字符一致：
+    //   order_id|plan_id|amount_cents|paid_at|owner_id
+    const payload = `${order.orderId}|${order.planId}|${order.priceFen}|${paidAt}|${order.ownerId}`;
+    const sig = createHmac('sha256', HMAC_SECRET).update(payload, 'utf8').digest('hex');
+    return send(res, 200, {
+      orderId: order.orderId,
+      planId: order.planId,
+      amountCents: order.priceFen,
+      paidAt,
+      ownerId: order.ownerId,
+      sig
+    });
   }
 
   if (url.pathname === '/notify' && (req.method === 'POST')) {
@@ -286,7 +389,11 @@ const server = createServer(async (req, res) => {
     const order = orders.get(orderId);
     if (order) {
       const paid = String(params.status || params.return_code || '').toUpperCase();
-      order.status = paid === 'OD' || paid === 'SUCCESS' ? 'paid' : order.status;
+      if (paid === 'OD' || paid === 'SUCCESS') {
+        order.status = 'paid';
+        order.paidAt = order.paidAt || Math.floor(Date.now() / 1000);
+        persistLedger();
+      }
     }
     // 聚合支付一般要求回纯文本 success，否则会重试
     return send(res, 200, 'success');
@@ -297,6 +404,7 @@ const server = createServer(async (req, res) => {
 
 const isMain = process.argv[1] && process.argv[1].endsWith('index.mjs');
 if (isMain) {
+  loadLedger();
   server.listen(PORT, () => {
     console.log(`[pay-gateway] listening on ${PORT} provider=${PROVIDER} configured=${isConfigured()}`);
     if (!isConfigured()) {

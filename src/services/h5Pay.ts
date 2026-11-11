@@ -78,38 +78,25 @@ async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | 'timeout'>
   }
 }
 
-function authHeaders(): Record<string, string> | null {
-  // 只认会话里的 access token；不读、不传用户 id（与 cloudDb 同口径）
-  try {
-    const raw =
-      (typeof window !== 'undefined' && window.localStorage.getItem('wb-session')) || '';
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { data?: { access_token?: string } } | { access_token?: string };
-    const token =
-      (parsed as { data?: { access_token?: string } }).data?.access_token ||
-      (parsed as { access_token?: string }).access_token ||
-      '';
-    if (!token) return null;
-    return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-  } catch {
-    return null;
-  }
-}
+/* 网关不校验 Bearer：凭证的可信性来自 HMAC 签名 + 下单时绑定的 ownerId，
+ * 权益归属由数据库函数用 auth.uid() 校验（见 .tools/sql/v9-h5-paid-orders.sql）。
+ * 这里刻意不自己解析会话 —— 会话键是 `workbuddy-cloud.session.<publishableKey>`，
+ * 早期版本写死成 `wb-session` 取不到 token，会让下单永远走 no-session。 */
 
 /**
  * 下单。**永不抛**（与 cloudStorage / cloudOrders 同口径）：调用方只看 state。
  */
-export async function createH5Order(planId: string): Promise<H5PayOrder> {
+export async function createH5Order(planId: string, ownerId: string): Promise<H5PayOrder> {
   if (!isH5PayConfigured()) return { state: 'unconfigured' };
-  const headers = authHeaders();
-  if (!headers) return { state: 'no-session' };
+  // ownerId 必须来自会话（不是用户输入）：它决定这笔订单的权益归谁
+  if (!ownerId) return { state: 'no-session' };
 
   try {
     const res = await withTimeout(
       fetch(`${GATEWAY}/order/create`, {
         method: 'POST',
-        headers,
-        body: JSON.stringify({ planId })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, ownerId })
       }),
       10000
     );
@@ -131,12 +118,11 @@ export async function createH5Order(planId: string): Promise<H5PayOrder> {
  */
 export async function queryH5Order(orderId: string): Promise<H5PayQuery> {
   if (!isH5PayConfigured()) return { state: 'unconfigured', status: 'unknown' };
-  const headers = authHeaders();
-  if (!headers) return { state: 'no-session', status: 'unknown' };
+  if (!orderId) return { state: 'gateway-error', status: 'unknown', detail: 'missing orderId' };
 
   try {
     const res = await withTimeout(
-      fetch(`${GATEWAY}/order/query?orderId=${encodeURIComponent(orderId)}`, { headers }),
+      fetch(`${GATEWAY}/order/query?orderId=${encodeURIComponent(orderId)}`),
       8000
     );
     if (res === 'timeout') return { state: 'timeout', status: 'unknown' };
@@ -157,4 +143,68 @@ export function redirectToPayUrl(payUrl: string): boolean {
   if (!/^https:\/\//i.test(payUrl)) return false;
   window.location.href = payUrl;
   return true;
+}
+
+/* ---------------- 已付款凭证（权益闭环的交接点） ---------------- */
+
+export interface H5PayClaim {
+  orderId: string;
+  planId: string;
+  amountCents: number;
+  /** Unix 秒；必须与数据库函数验签的 payload 同源 */
+  paidAt: number;
+  /** 下单时绑定的账号；数据库函数要求它等于 auth.uid() */
+  ownerId: string;
+  sig: string;
+}
+
+export type H5ClaimResult =
+  | { state: 'ok'; claim: H5PayClaim }
+  | { state: 'not-paid' } // 上游还没确认收款：页面显示「待确认」，不催不谎报
+  | { state: 'unconfigured' }
+  | { state: 'no-session' }
+  | { state: 'timeout' }
+  | { state: 'gateway-error'; detail?: string };
+
+/**
+ * 取「已付款凭证」。网关只对**确认已付**的订单签发；未付返 409 not-paid。
+ * 永不抛。凭证本身不带任何权限 —— 能否开通由服务端 `redeem_paid_order` 验签决定。
+ */
+export async function claimH5Order(orderId: string): Promise<H5ClaimResult> {
+  if (!isH5PayConfigured()) return { state: 'unconfigured' };
+  if (!orderId) return { state: 'gateway-error', detail: 'missing orderId' };
+  try {
+    const res = await withTimeout(
+      fetch(`${GATEWAY}/order/claim?orderId=${encodeURIComponent(orderId)}`),
+      8000
+    );
+    if (res === 'timeout') return { state: 'timeout' };
+    if (res.status === 409) return { state: 'not-paid' };
+    if (res.status === 503) return { state: 'unconfigured' };
+    if (!res.ok) return { state: 'gateway-error', detail: `HTTP ${res.status}` };
+    const body = (await res.json()) as Partial<H5PayClaim>;
+    if (
+      !body?.orderId ||
+      !body.planId ||
+      typeof body.amountCents !== 'number' ||
+      !body.paidAt ||
+      !body.ownerId ||
+      !body.sig
+    ) {
+      return { state: 'gateway-error', detail: 'claim 字段不全' };
+    }
+    return {
+      state: 'ok',
+      claim: {
+        orderId: body.orderId,
+        planId: body.planId,
+        amountCents: body.amountCents,
+        paidAt: Number(body.paidAt),
+        ownerId: String(body.ownerId),
+        sig: String(body.sig)
+      }
+    };
+  } catch (err) {
+    return { state: 'gateway-error', detail: String((err as Error)?.message || err) };
+  }
 }
