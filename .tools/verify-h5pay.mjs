@@ -162,13 +162,20 @@ ok(
   'E3 函数只用 auth.uid() 定归属，不接受客户端传 owner',
   /v_uid\s+text\s*:=\s*auth\.uid\(\)::text/.test(sql) && /p_owner_id\s*<>\s*v_uid/.test(sql)
 );
+// ⚠️ 判据必须看**条件本身**，不能只看错误文案：把 `IF <比对> THEN` 改成 `IF false THEN`
+// 时文案还在、门禁却仍绿 —— 这条漏洞是被变异测试（「1 分钱买年付」）抓出来的。
 ok(
   'E4 天数与金额由服务端白名单决定，客户端传入只用于比对',
-  /v_months := CASE p_plan_id/.test(sql) && /v_expect_cents := CASE p_plan_id/.test(sql) && /金额与套餐不符/.test(sql)
+  /v_months := CASE p_plan_id/.test(sql) &&
+    /v_expect_cents := CASE p_plan_id/.test(sql) &&
+    /IF p_amount_cents IS DISTINCT FROM v_expect_cents THEN/.test(sql) &&
+    /金额与套餐不符/.test(sql)
 );
 ok(
   'E5 验签失败必须抛错（不许「没配密钥就放行」）',
   /v_secret IS NULL OR length\(v_secret\) < 32[\s\S]{0,80}RAISE EXCEPTION/.test(sql) &&
+    // 条件必须真的在比 sig，而不是只留一句「验签失败」的文案
+    /IF v_expect IS DISTINCT FROM lower\(coalesce\(p_sig, ''\)\) THEN/.test(sql) &&
     /支付凭证验签失败/.test(sql)
 );
 ok(
