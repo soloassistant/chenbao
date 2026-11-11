@@ -60,7 +60,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # ⚠️ 必须与 package.json 的 engines.node（>=22）对齐：低于 22 时 yarn 在
+          #    「Validating package.json」就报 incompatible module —— 依赖都装不上，
+          #    门禁还没开始跑就红了。本流水线此前写的是 20，**从来没绿过**
+          #    （checks 一直红 → workflow_run 不触发；手动触发就撞这一条）。
+          #    checks.yml 早就为此改成了 22，这里漏改。
+          node-version: 22
           cache: yarn
 
       - name: 安装依赖
