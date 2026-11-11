@@ -134,7 +134,9 @@ function ruleBlocks(src, sel) {
 }
 
 const TOUCH = [
-  ['src/pages/calendar/index.module.scss', '.navButton', 'hit', '日历翻月'],
+  // 2026-11-11：#64 把翻月箭头从「透明外扩」改成「实际盒子 88rpx（44px）」——
+  //   两种都是合法做法（视觉不变 + 热区达标），判据认『盒子』这一种。
+  ['src/pages/calendar/index.module.scss', '.navButton', 'box', '日历翻月'],
   ['src/pages/calendar/index.module.scss', '.cell', 'min', '日历日期格'],
   ['src/pages/library/index.module.scss', '.aiEditBtn', 'hit', '设置 兴趣/清除/重置统计'],
   ['src/pages/library/index.module.scss', '.sourceEntry', 'hit', '来源⚙'],
@@ -160,7 +162,9 @@ for (const [file, sel, mode, why] of TOUCH) {
       ? /@include\s+hit-expand\(/.test(body)
       : mode === 'min'
         ? /min-height:\s*88rpx/.test(body)
-        : /&::before[\s\S]*?background:\s*transparent/.test(body)
+        : mode === 'box'
+          ? /width:\s*88rpx/.test(body) && /height:\s*88rpx/.test(body)
+          : /&::before[\s\S]*?background:\s*transparent/.test(body)
   );
   if (!ok) touchBad.push(`${why}(${sel})`);
 }
