@@ -215,7 +215,7 @@ export interface HistoryEntry {
 }
 
 /** 支付通道（三端自动识别：weapp→wechat, alipay→alipay, tt→douyin） */
-export type PayChannel = 'wechat' | 'alipay' | 'douyin';
+export type PayChannel = 'wechat' | 'alipay' | 'douyin' | 'wechat_h5';
 
 /** 创建订单返回 —— 含通道 + 支付拉起参数（三通道统一结构） */
 export interface CreateOrderResult {

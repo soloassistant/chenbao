@@ -66,6 +66,8 @@ export default defineConfig<'webpack5'>(async (merge) => {
     // （不用 config.env 字段——Taro 4.1.9 webpack5-runner 对其处理有坑，会破坏 taro-loader entry 分析）
     defineConstants: {
       TARO_APP_CLOUD_ENV: JSON.stringify(process.env.TARO_APP_CLOUD_ENV || ''),
+      // H5 支付网关地址（聚合支付）：留空 = 未开通，页面如实降级到促销码
+      H5_PAY_GATEWAY: JSON.stringify(process.env.H5_PAY_GATEWAY || ''),
     },
     copy: {
       patterns: [

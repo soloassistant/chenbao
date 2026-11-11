@@ -442,6 +442,12 @@ jobs:
         # 断言用内存库真实执行，直接看「删了哪几条、留了哪几条」。
         run: npm run verify:purge
 
+      - name: H5 支付网关回归
+        # 守四件事：签名口径（篡改金额/订单号/换密钥必拒）、未配置时 503 而非假地址、
+        # 金额只认服务端价格表（前端传 price 一律忽略）、前端不含商户密钥。
+        # 网关本体在 server/pay-gateway（聚合支付，密钥只走环境变量）。
+        run: npm run verify:h5pay
+
       - name: 权益回滚失败对账回归
         # 退款两段提交的收尾：refundOrder 已把退款事实写对，但扣权益失败时只留
         # entitlementRollbackStatus='failed'，此前**没有任何东西会去扫它** —— 用户被退了钱

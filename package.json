@@ -57,6 +57,7 @@
     "verify:cloudflow": "node .tools/verify-cloudfunctions-flow.mjs",
     "verify:funds": "node .tools/verify-funds-idempotency.mjs",
     "verify:purge": "node .tools/verify-refund-attempts-purge.mjs",
+    "verify:h5pay": "node .tools/verify-h5pay.mjs",
     "verify:rollbacks": "node .tools/verify-entitlement-rollbacks.mjs",
     "verify:deploy": "node .tools/verify-deploy-preflight.mjs",
     "verify:briefing": "node .tools/verify-briefing-structure.js",

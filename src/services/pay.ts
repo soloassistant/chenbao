@@ -16,6 +16,7 @@
 
 import Taro from '@tarojs/taro';
 import type { PayChannel, CreateOrderResult } from '@/types';
+import { isH5PayConfigured } from './h5Pay';
 
 /** 云函数 callFunction 返回的 result 字段结构（auth-alipay / auth-douyin 统一格式） */
 interface CloudResult {
@@ -26,14 +27,17 @@ interface CloudResult {
   [k: string]: unknown;
 }
 
-/** 当前运行环境对应的支付通道；H5 不支持真实支付返回 null */
+/** 当前运行环境对应的支付通道；H5 未配置网关时返回 null */
 export function getPayChannel(): PayChannel | null {
   // Taro 4 编译目标值：weapp / alipay / tt / h5
   const env = process.env.TARO_ENV;
   if (env === 'weapp') return 'wechat';
   if (env === 'alipay') return 'alipay';
   if (env === 'tt') return 'douyin';
-  return null; // h5 或其他
+  // H5：走聚合支付网关（密钥在服务端，见 server/pay-gateway）。
+  // 网关没配置就**不**给通道 —— 页面据此如实显示「未开通」并保留促销码兑换。
+  if (env === 'h5' && isH5PayConfigured()) return 'wechat_h5';
+  return null; // h5 未开通 / 其他端
 }
 
 /** 支付宝小程序运行时全局对象（Taro 类型未声明，用 unknown 收窄） */

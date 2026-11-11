@@ -33,6 +33,7 @@ import type { FeatureKey, UsageSummary } from '@/utils/featureUsage';
 import { readUsageSummary } from '@/utils/usageLog';
 import { clearReadStreak, getReadFreezeCards, getReadStreak } from '@/utils/readStreak';
 import styles from '../mine/index.module.scss';
+import { createH5Order, queryH5Order, readReturnedOrderId, redirectToPayUrl } from '@/services/h5Pay';
 
 /**
  * 会员中心（2026-10-26 从「我的」页拆出）。
@@ -112,7 +113,8 @@ const RENEW_STATUS_KEY: Record<RenewalCopyKey, LangKey> = {
 const CHANNEL_ICON: Record<string, string> = {
   wechat: '💬',
   alipay: '💰',
-  douyin: '🎵'
+  douyin: '🎵',
+  wechat_h5: '💬'
 };
 const CHANNEL_ICON_FALLBACK = '🧾';
 
@@ -394,6 +396,45 @@ function MembershipPage() {
 
   const unreadNotices = useMemo(() => notices.filter((n) => !n.read), [notices]);
 
+  /**
+   * H5 支付回跳：聚合支付付完会把用户送回本页，URL 带 `?h5pay_order=<orderId>`。
+   * 这里查真实状态（不是猜）：
+   *   paid   → 提示成功 + 刷新订单与权益（权益真值在服务端，刷新才拿得到）
+   *   closed → 如实说未完成
+   *   pending / unknown → 同一句话「还在确认」：上游不通时**不能**说失败（用户可能已付款）
+   * 处理完把参数从地址栏抹掉，避免刷新重复查/重复提示。
+   */
+  useEffect(() => {
+    const orderId = readReturnedOrderId();
+    if (!orderId) return;
+    let cancelled = false;
+    void (async () => {
+      const r = await queryH5Order(orderId);
+      if (cancelled) return;
+      if (r.status === 'paid') {
+        Taro.showToast({ title: t('mine.h5paySuccess'), icon: 'success' });
+        void loadOrders();
+        void reconcilePaidOrder(orderId);
+      } else if (r.status === 'closed') {
+        Taro.showToast({ title: t('mine.h5payClosed'), icon: 'none', duration: 2600 });
+      } else {
+        Taro.showToast({ title: t('mine.h5payPending'), icon: 'none', duration: 3000 });
+      }
+      try {
+        const url = new URL(location.href);
+        url.searchParams.delete('h5pay_order');
+        history.replaceState(null, '', url.toString());
+      } catch {
+        /* 非浏览器环境（测试/小程序）不需要清理 */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // 只在进页面时跑一次：orderId 来自地址栏，不是响应式状态
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* ---------------- 支付 ---------------- */
   const handleSubscribe = async () => {
     if (paying) return;
@@ -403,6 +444,48 @@ function MembershipPage() {
       // 网页端没有在线支付通道（getPayChannel 恒 null）。不再把人往小程序赶 ——
       // 小程序这条线不做了，指过去等于让用户去一个不存在的地方。
       Taro.showToast({ title: t('mine.payH5Unavailable'), icon: 'none', duration: 3000 });
+      return;
+    }
+
+    // H5：聚合支付网关。密钥在服务端（server/pay-gateway），前端只拿 payUrl 跳转，
+    // 付完回到本页由 URL 上的 h5pay_order 触发查单（见下面的回跳 effect）。
+    if (channel === 'wechat_h5') {
+      if (profile?.subscribed) {
+        const ok = await new Promise<boolean>((resolve) => {
+          Taro.showModal({
+            title: t('mine.renewTitle'),
+            content: t('mine.renewBody', { date: (profile.expiredAt || '').slice(0, 10) }),
+            cancelText: t('cancel'),
+            confirmText: t('mine.renewConfirm'),
+            success: (r) => resolve(!!r.confirm),
+            fail: () => resolve(false)
+          });
+        });
+        if (!ok) return;
+      }
+      setPaying(true);
+      try {
+        const created = await createH5Order(planId);
+        if (created.state === 'ok' && created.payUrl) {
+          if (!redirectToPayUrl(created.payUrl)) {
+            Taro.showToast({ title: t('mine.h5payBadUrl'), icon: 'none' });
+          }
+          // 跳转后本页就离开了；返回时靠 h5pay_order 查单
+          return;
+        }
+        // 每一种状态都有独立文案：未配置 ≠ 未登录 ≠ 超时 ≠ 网关报错
+        const key =
+          created.state === 'unconfigured'
+            ? 'mine.h5payUnconfigured'
+            : created.state === 'no-session'
+              ? 'mine.h5payNeedLogin'
+              : created.state === 'timeout'
+                ? 'mine.h5payTimeout'
+                : 'mine.h5payGatewayError';
+        Taro.showToast({ title: t(key), icon: 'none', duration: 3000 });
+      } finally {
+        setPaying(false);
+      }
       return;
     }
 
@@ -587,7 +670,8 @@ function MembershipPage() {
   const channelLabelKey = {
     wechat: 'mine.payChannelWechat',
     alipay: 'mine.payChannelAlipay',
-    douyin: 'mine.payChannelDouyin'
+    douyin: 'mine.payChannelDouyin',
+    wechat_h5: 'mine.payChannelWechatH5'
   } as Record<PayChannel, LangKey>;
   const isH5 = process.env.TARO_ENV === 'h5';
 
