@@ -9,6 +9,7 @@
  */
 import type { Question } from '@/types/questionBank';
 import { stemHash } from '@/utils/questionBank';
+import { EXTRA_QUESTIONS } from './questionBankSeedExtra';
 
 const STAMP = '2026-11-11T00:00:00.000Z';
 
@@ -369,5 +370,6 @@ export const SEED_QUESTIONS: Question[] = [
     explanation: '原子序数 6 表示 6 个质子；中性原子电子数 = 质子数 = 6。12 是质量数，不是电子数。',
     examSystem: 'ap', board: 'collegeboard', subject: 'chemistry', level: 'na',
     tags: ['atomic structure'], difficulty: 1, langCode: 'en'
-  })
+  }),
+  ...EXTRA_QUESTIONS
 ];

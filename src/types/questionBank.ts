@@ -27,12 +27,17 @@ export const LEVELS_BY_EXAM: Record<ExamSystem, readonly Level[]> = {
 
 /** subject 常量表：每个体系先只登记最小可用学科，避免任意字符串。 */
 export const SUBJECTS_BY_EXAM: Record<ExamSystem, readonly string[]> = {
-  gaokao: ['数学', '物理', '化学', '生物', '英语'],
-  zhongkao: ['数学', '物理', '化学'],
-  igcse: ['mathematics', 'physics', 'chemistry', 'biology', 'economics'],
-  alevel: ['mathematics', 'physics', 'chemistry', 'economics'],
-  ap: ['calculus', 'statistics', 'physics-1', 'chemistry', 'biology', 'microeconomics'],
-  ib: ['mathematics-aa', 'physics', 'chemistry', 'economics'],
+  gaokao: ['数学', '物理', '化学', '生物', '英语', '语文', '历史', '思想政治', '地理'],
+  zhongkao: ['数学', '物理', '化学', '语文', '英语', '道德与法治', '历史', '地理', '生物'],
+  igcse: ['mathematics', 'physics', 'chemistry', 'biology', 'economics',
+    'english-first-language', 'geography', 'history', 'computer-science', 'business-studies', 'psychology'],
+  alevel: ['mathematics', 'physics', 'chemistry', 'economics',
+    'biology', 'geography', 'psychology', 'computer-science', 'english-language'],
+  ap: ['calculus', 'statistics', 'physics-1', 'chemistry', 'biology', 'microeconomics',
+    'macroeconomics', 'psychology', 'human-geography', 'world-history',
+    'computer-science-a', 'environmental-science', 'physics-2', 'english-language'],
+  ib: ['mathematics-aa', 'mathematics-ai', 'physics', 'chemistry', 'economics',
+    'biology', 'history', 'language-a', 'visual-arts'],
   other: ['other']
 };
 
@@ -70,7 +75,42 @@ export const SYLLABUS_TOPICS: Record<string, readonly string[]> = {
   'ib:chemistry': ['atomic structure', 'bonding', 'stoichiometry', 'energetics', 'kinetics', 'equilibrium', 'acids and bases', 'organic chemistry'],
   'ib:economics': ['demand and supply', 'elasticity', 'market failure', 'macroeconomic policy', 'international trade'],
   // 原先 other:other 没有闭集，导致「其他」体系下的任何题都必被 validateQuestion 拒绝
-  'other:other': ['general']
+  'other:other': ['general'],
+  // 2026-11-11 第二轮：按各考试局官方科目清单补齐（见 README/提交说明）
+  'gaokao:语文': ['语言文字运用', '古代诗文阅读', '现代文阅读', '写作', '文学常识', '文言文实词虚词'],
+  'gaokao:历史': ['中国古代史', '中国近现代史', '世界古代史', '世界近现代史', '史料实证', '历史解释'],
+  'gaokao:思想政治': ['中国特色社会主义', '经济与社会', '政治与法治', '哲学与文化', '唯物辩证法', '认识论'],
+  'gaokao:地理': ['自然地理', '人文地理', '区域地理', '地图与等值线', '大气与气候', '水循环与洋流'],
+  'zhongkao:语文': ['字音字形', '古诗文默写', '文言文阅读', '现代文阅读', '作文'],
+  'zhongkao:英语': ['时态语态', '词汇与语法', '完形填空', '阅读理解', '书面表达'],
+  'zhongkao:道德与法治': ['成长中的我', '法治意识', '国情与责任', '权利义务', '国情教育'],
+  'zhongkao:历史': ['中国古代史', '中国近代史', '中国现代史', '世界史', '史料辨析'],
+  'zhongkao:地理': ['地球与地图', '世界地理', '中国地理', '气候与河流', '人口与资源'],
+  'zhongkao:生物': ['细胞与生物体', '生物圈与生态', '人体生理', '遗传与变异', '健康与免疫'],
+  'igcse:english-first-language': ['reading comprehension', 'summary', 'directed writing', 'composition', 'grammar and punctuation'],
+  'igcse:geography': ['map skills', 'rivers and coasts', 'weather and climate', 'population', 'urbanisation', 'economic development'],
+  'igcse:history': ['source analysis', 'the twentieth century', 'international relations', 'cause and consequence'],
+  'igcse:computer-science': ['algorithms', 'programming', 'data representation', 'computer systems', 'networks', 'databases'],
+  'igcse:business-studies': ['business activity', 'marketing', 'operations', 'finance', 'human resources'],
+  'igcse:psychology': ['memory', 'social influence', 'attachment', 'research methods', 'developmental psychology'],
+  'alevel:biology': ['cell structure', 'biological molecules', 'enzymes', 'genetics', 'photosynthesis', 'respiration', 'homeostasis'],
+  'alevel:geography': ['tectonics', 'coasts', 'hydrology', 'population change', 'globalisation', 'urban environments'],
+  'alevel:psychology': ['memory', 'attachment', 'social influence', 'research methods', 'cognition', 'psychopathology', 'learning'],
+  'alevel:computer-science': ['data structures', 'algorithms', 'programming', 'computer architecture', 'databases', 'networks'],
+  'alevel:english-language': ['text analysis', 'language and gender', 'child language acquisition', 'discourse', 'phonetics'],
+  'ap:macroeconomics': ['national income', 'inflation and unemployment', 'fiscal policy', 'monetary policy', 'economic growth', 'balance of payments'],
+  'ap:psychology': ['research methods', 'cognition', 'learning', 'developmental psychology', 'social psychology', 'abnormal psychology'],
+  'ap:human-geography': ['population and migration', 'culture', 'political geography', 'urban geography', 'agriculture', 'economic development'],
+  'ap:world-history': ['ancient civilizations', 'classical empires', 'trade networks', 'industrialization', 'decolonization', 'globalization'],
+  'ap:computer-science-a': ['primitive types', 'objects and classes', 'arrays and arraylists', 'recursion', 'sorting and searching', 'inheritance'],
+  'ap:environmental-science': ['ecosystems', 'biodiversity', 'population dynamics', 'energy resources', 'pollution', 'climate change'],
+  'ap:physics-2': ['fluids', 'thermodynamics', 'electrostatics', 'circuits', 'optics', 'modern physics'],
+  'ap:english-language': ['rhetorical situation', 'claims and evidence', 'reasoning and organization', 'style', 'argument writing'],
+  'ib:mathematics-ai': ['number and algebra', 'functions', 'geometry and trigonometry', 'statistics and probability', 'calculus', 'modelling'],
+  'ib:biology': ['cell biology', 'molecular biology', 'genetics', 'ecology', 'evolution', 'human physiology'],
+  'ib:history': ['source evaluation', '20th century wars', 'cold war', 'authoritarian states', 'historical investigation'],
+  'ib:language-a': ['textual analysis', 'literary genres', 'comparative study', 'rhetoric', 'written expression'],
+  'ib:visual-arts': ['elements and principles', 'artistic techniques', 'contextual analysis', 'curatorial practice', 'comparative study']
 };
 
 export interface QuestionOption { key: string; text: string }
