@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { useLanguageStore } from '@/store/language';
+import { runtimeIsEn } from './langRuntime';
 
 /**
  * 原先的 `getGreeting(hour)` 已删除（2026-10-24）。
@@ -19,7 +19,7 @@ import { useLanguageStore } from '@/store/language';
 export function formatEventTime(time: string): string {
   const d = dayjs(time);
   if (!d.isValid()) return time;
-  const en = useLanguageStore.getState().lang === 'en';
+  const en = runtimeIsEn();
   const today = dayjs().startOf('day');
   const diff = d.diff(today, 'day');
   const hm = d.format('HH:mm');
@@ -64,7 +64,7 @@ export function formatDate(time: string | Date, withTime = false): string {
   const d = dayjs(time);
   if (!d.isValid()) return String(time);
   // U-04：日期格式也得跟语言走，否则 en 页面上会出现「2026年11月3日」这种中文串
-  const en = useLanguageStore.getState().lang === 'en';
+  const en = runtimeIsEn();
   const sameYear = d.year() === dayjs().year();
   const date = en
     ? sameYear
@@ -80,7 +80,7 @@ export function formatDate(time: string | Date, withTime = false): string {
 export function fromNow(time: string): string {
   const d = dayjs(time);
   if (!d.isValid()) return time;
-  const en = useLanguageStore.getState().lang === 'en';
+  const en = runtimeIsEn();
   const diffMinutes = dayjs().diff(d, 'minute');
   if (diffMinutes < 1) return en ? 'just now' : '刚刚';
   if (diffMinutes < 60) return en ? `${diffMinutes} min ago` : `${diffMinutes} 分钟前`;

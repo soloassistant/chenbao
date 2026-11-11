@@ -71,7 +71,10 @@ ok(
 );
 ok(
   'B2 撤回后写入不再排推送（markDirty 短路）',
-  /const markDirty = \(key: string\) =>[\s\S]{0,220}if \(runtimeExcludedKeys\.has\(key\)\) return;/.test(sync)
+  // 判据只看「函数体前段有 runtimeExcludedKeys 短路」，不锁参数表：
+  // 2026-11-11 SY-05（#33）给 markDirty 加了 value 参数用于识别空数组，
+  // 旧正则死认 `(key: string)` 就误报成「撤回后仍会外传」—— 那是判据过窄，不是回归。
+  /const markDirty = \(key: string[^)]*\) =>[\s\S]{0,240}if \(runtimeExcludedKeys\.has\(key\)\) return;/.test(sync)
 );
 ok(
   'B3 撤回后删除本机记录不写删除占位、不排推送（removeItem 短路）',

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { create } from 'zustand';
 import Taro from '@tarojs/taro';
+import { setRuntimeLang } from '../utils/langRuntime';
 
 export type Lang = 'zh' | 'en';
 
@@ -3229,6 +3230,9 @@ export const useLanguageStore = create<LanguageState>((set) => ({
   lang: 'zh',
   setLang: (l) => {
     set({ lang: l });
+    // 同步给纯工具（date.ts 的日期格式）—— 它不能反向依赖本 store，
+    // 否则会把 Zustand/Taro/React 拖进纯工具，离线门禁加载即崩（见 langRuntime.ts 注释）。
+    setRuntimeLang(l);
     try {
       Taro.setStorageSync(STORAGE_KEY, l);
     } catch (err) {
@@ -3240,7 +3244,10 @@ export const useLanguageStore = create<LanguageState>((set) => ({
 // 模块加载时恢复本地选择
 try {
   const saved = Taro.getStorageSync(STORAGE_KEY) as Lang;
-  if (saved === 'zh' || saved === 'en') useLanguageStore.setState({ lang: saved });
+  if (saved === 'zh' || saved === 'en') {
+    useLanguageStore.setState({ lang: saved });
+    setRuntimeLang(saved);
+  }
 } catch (err) {
   console.warn('[LanguageStore] restore failed:', err);
 }

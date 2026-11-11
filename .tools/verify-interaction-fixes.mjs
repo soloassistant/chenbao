@@ -54,7 +54,12 @@ ok('A4 阅读原文调用 openExternalPage(item.url)', /openExternalPage\(\s*ite
 ok('A5 url 缺失有如实提示（if (!item.url)）', /if\s*\(\s*!item\.url\s*\)/.test(readBody));
 ok(
   'A6 复制态提示带来源（weapp 复制后告知去哪儿打开）',
-  /r === 'copied'/.test(readBody) && /来源：\$\{item\.source\}，链接已复制/.test(readBody)
+  // 2026-11-11：文案已随 #73（U-04）挪进 i18n 字典，判据改成
+  // ① 复制分支确实走 showToast（不是静默成功）；② 用的是带 source 的 i18n 键；
+  // ③ 字典中文文案仍必须同时出现「来源」与「已复制」两项信息（防止有人把键改空）。
+  /r === 'copied'/.test(readBody) &&
+    /t\('library\.sourceCopied',\s*\{\s*source:\s*item\.source\s*\}\)/.test(readBody) &&
+    /'library\.sourceCopied':\s*'来源：\{source\}，链接已复制'/.test(read('src/store/language.ts'))
 );
 
 /* ---------------- B. 时间块不被压缩 ---------------- */

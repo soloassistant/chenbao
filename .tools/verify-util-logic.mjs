@@ -576,6 +576,8 @@ assert('K0 briefing 页真的有「const today = …」判据（否则本组断�
 if (todayExprMatch) {
   // 把 pages/briefing 里真实的日期表达式拿出来，在「系统时区 Asia/Shanghai + 模拟 UTC 21:00
   // （= 北京次日 05:00）」下求值 —— 不复制一份实现来测，测的就是页面那一行。
+  // `date.ts` 现在通过无依赖的 `./langRuntime` 读当前语言（2026-11-11 解耦后），
+  // 不再拖进 store/Taro/React —— 这里直接按真实入口打包，无需任何桩。
   const builtDate = await esbuild.build({
     entryPoints: [path.join(ROOT, 'src/utils/date.ts')],
     bundle: true,
@@ -583,6 +585,7 @@ if (todayExprMatch) {
     format: 'cjs',
     platform: 'node',
     target: 'node18',
+    alias: { '@': path.join(ROOT, 'src') },
     logLevel: 'silent'
   });
   const tmpDate = path.join(ROOT, '.tools', `.tmp-daykey-${process.pid}.cjs`);
