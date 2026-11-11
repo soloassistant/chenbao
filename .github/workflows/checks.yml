@@ -72,6 +72,13 @@ jobs:
       - name: 类型检查
         run: npm run typecheck
 
+      - name: ESLint
+        # 2026-11-11 接入：lint 长期游离在 CI 之外 —— 一次 no-shadow
+        #（briefing/index.tsx 里局部 dayKey 遮蔽了 date.dayKey 的同名函数）
+        # 就这样潜伏了两个多月没人看见，直到本轮人工评审才发现。
+        # lint 不进 CI 等于没写。
+        run: npm run lint
+
       # 名字里**不写条数**：写死条数在这类断言集上是维护陷阱（加一项就要改名字，
       # 忘了改就变成一个会骗人的标签 —— 本项目已因「判据写死字面量」吃过一次假红）。
       - name: 自检（全量验收断言）
@@ -376,6 +383,13 @@ jobs:
         # 这里用 vm + 桩 SDK 把它们拉进日常射程：结构完整 / 能被加载 / 缺 OPENID 必须拒绝 /
         # 不用 _openid 查 / 不留硬编码 AppID。不联网、不需要微信凭据。
         run: npm run verify:cloudfunctions
+
+      - name: 云函数日志脱敏门禁
+        # 守 openid 不进日志：4 个云函数（auth-douyin / getBriefing / queryOrder /
+        # pay-callback）的日志里出现 openid 必须先过 maskId。
+        # 2026-11-11 合入 PR #57 时补上门禁接线 —— 此前脚本在仓库里但没人跑
+        #（PR 描述里就写着「该测试脚本未接入 verify:all」）。
+        run: npm run verify:openid-redaction
 
       - name: 云函数部署预检分支回归
         # deploy-cloud.mjs 是唯一会把代码推上微信云的路，但它没法在无凭据环境端到端跑。

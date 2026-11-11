@@ -152,6 +152,10 @@ const STRONG_POINTS = [
   ['src/pages/library/index.module.scss', 'newsSource', 'color-secondary-strong'],
   ['src/pages/library/index.module.scss', 'feedbackActive', '--brand-strong'],
   ['src/pages/library/index.module.scss', 'whyToggle', '--brand-strong'],
+  // 2026-11-11：真实渲染门禁（verify:contrast-render）实测「载入更多」按钮
+  // 文字 var(--brand-primary,#ee5a29) 压 var(--brand-soft,#FFF3EC) 只有 3.15:1。
+  // 它是可点的次级按钮，不是品牌主按钮 ⇒ 走 strong 档（#C7371A 压 #FFF3EC = 4.95:1）。
+  ['src/pages/library/index.module.scss', 'loadMore', '--brand-strong'],
   ['src/pages/calendar/index.module.scss', 'qaBtn', '--brand-strong'],
   ['src/pages/calendar/index.module.scss', 'syncButton', '--brand-strong'],
   ['src/pages/mine/index.module.scss', 'subButton', '--brand-strong'],

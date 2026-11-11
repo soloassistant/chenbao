@@ -433,8 +433,12 @@
   line-height: $button-height-md;
   text-align: center;
   font-size: $font-size-md;
-  color: var(--brand-primary, #ee5a29);
-  background: var(--brand-soft, rgba(0, 0, 0, 0.04));
+  // 2026-11-11 对比度修复（真实渲染门禁实测）：--brand-primary(#ee5a29) 压
+  // --brand-soft(#fff3ec) 只有 3.15:1，低于 WCAG AA 的 4.5:1。
+  // 改用 strong 档 #c7371a（白底 5.26:1 / 浅橙底 4.95:1），
+  // 与 ConsentGate / PartnerEntry / BurstBanner 的既有口径一致。
+  color: var(--brand-strong, #{$color-primary-strong});
+  background: var(--brand-soft, #fff3ec);
   border-radius: $radius-md;
 }
 

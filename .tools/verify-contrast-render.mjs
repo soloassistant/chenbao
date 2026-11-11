@@ -125,8 +125,23 @@ function measurePage() {
   // 文字可能压在渐变任一位置，故取与文字对比度最低的那一档 stop，避免漏报真问题。
   // ⚠️ 只读 backgroundColor 会漏掉渐变按钮（文字实际压在 background-image 上），
   // 上游 measure_render.mjs 也有此局限；这里补上渐变解析。
+  /** 把「上→下」的一串背景层叠成最终底色。
+   *  ⚠️ 2026-11-11 修一个**合成顺序** bug：原来每层都用「当前层压已有 base」叠，
+   *  而遍历是从元素自身**往上**走 ⇒ 祖先那层不透明底色把子层的半透明底直接盖掉了。
+   *  实测后果：视频时长标签 `rgba(0,0,0,.62)` 的深色底被祖先的 #faf6f0 覆盖，
+   *  门禁报 1.08:1 —— 而真实渲染里白字压在深底上是 6.4:1，完全可读 ⇒ **假红**。
+   *  现在改成：先把链上的层收集起来（元素自身在最上），再**从最底层往上叠**。
+   */
+  const compose = (stack) => {
+    let base = [255, 255, 255];
+    for (let i = stack.length - 1; i >= 0; i--) {
+      const c = stack[i];
+      base = [c[0] * c[3] + base[0] * (1 - c[3]), c[1] * c[3] + base[1] * (1 - c[3]), c[2] * c[3] + base[2] * (1 - c[3])];
+    }
+    return base;
+  };
   function bgContrast(textCol, el) {
-    let base = [255, 255, 255, 1];
+    const stack = [];
     let n = el;
     while (n) {
       const cs = getComputedStyle(n);
@@ -135,8 +150,9 @@ function measurePage() {
         const stops = (bi.match(/rgba?\([^)]*\)/g) || []).map(toRGBA).filter(Boolean)
           .concat((bi.match(/#[0-9a-f]{3,8}/gi) || []).map(toRGBA).filter(Boolean));
         if (stops.length) {
+          const base = compose(stack);
           let worst = Infinity;
-          let worstBase = base.slice(0, 3);
+          let worstBase = base;
           for (const s of stops) {
             const comp = [s[0] * s[3] + base[0] * (1 - s[3]), s[1] * s[3] + base[1] * (1 - s[3]), s[2] * s[3] + base[2] * (1 - s[3])];
             const r = ratio(textCol, comp);
@@ -147,12 +163,13 @@ function measurePage() {
       }
       const c = toRGBA(cs.backgroundColor);
       if (c && c[3] > 0) {
-        base = [c[0] * c[3] + base[0] * (1 - c[3]), c[1] * c[3] + base[1] * (1 - c[3]), c[2] * c[3] + base[2] * (1 - c[3]), 1];
+        stack.push(c);
         if (c[3] >= 1) break;
       }
       n = n.parentElement;
     }
-    return { ratio: ratio(textCol, base.slice(0, 3)), base: base.slice(0, 3) };
+    const base = compose(stack);
+    return { ratio: ratio(textCol, base), base };
   }
   const out = [];
   for (const el of document.querySelectorAll('*')) {
