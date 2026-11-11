@@ -282,6 +282,32 @@ node .tools/cdp-probe.mjs <url> 375 812 --init-script .tools/cdp-probe-session.j
 
 ## 4. 上线通道
 
+> **★★ 改代码必须走 PR，main 已上分支保护（2026-11-11 起，系统强制，不靠自觉）**
+>
+> 实测过的配置（`GET /repos/{o}/{r}/branches/main/protection`）：
+> `enforce_admins=true`（**管理员也绕不过**）、`required_pull_request_reviews.required_approving_review_count=0`
+> （必须走 PR，但单人可自合，不需要别人批准）、`required_status_checks.contexts=["checks"]`、
+> `allow_force_pushes=false`、`allow_deletions=false`。
+>
+> 直推会被 GitHub 拒绝，错误长这样：
+> ```
+> remote: - Changes must be made through a pull request.
+> remote: - Required status check "checks" is expected.
+> ```
+>
+> **正确流程**：推分支 → 开 PR → 等 `checks` 绿 → 合并（PR 里点 Merge 或 API 合并）。
+>
+> ⚠️ **两条踩过的坑**：
+> 1. `required_status_checks` **挡不住直推**（它只拦 PR 合并）。真正拦直推的是
+>    `required_pull_request_reviews` 存在这件事（哪怕批准数填 0）。只配 status checks 时
+>    直推照样成功 —— 第一版就这么配的，用空提交实测推上去了，属于「配了却没拦」的假安全。
+> 2. 单人仓库**不能**填 `required_approving_review_count >= 1`：自己不能批准自己的 PR，
+>    会把 main 彻底锁死。填 0 才能既强制 PR、又能自合。
+>
+> **解除方法（仅应急，别当日常）**：`PUT .../branches/main/protection` 传
+> `"required_pull_request_reviews": null` 即可临时放行直推；改完立刻改回来。
+> `allow_force_pushes` 没有独立子端点，也必须整体 PUT。
+
 **★★ 先说结论：云后端按 Origin 精确白名单，`gh-pages` 的源被 403 拒，云端能力在 gh-pages 上全不可用。**
 2026-10-23 逐 Origin 实测（同一路径 `/.cloud/database/rest/rpc/...` 的 OPTIONS 预检）：
 
