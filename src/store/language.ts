@@ -1307,7 +1307,6 @@ const zh = {
   'library.multiSource': '{n} 个来源',
   // U-04：资讯页剩余的口语化文案（toast/分享语/来源行/载入更多）
   'library.sourceLine': '来源',
-  'library.share': '分享',
   'library.appName': '私人晨报助理',
   'library.shareFrom': '（来自{app}）',
   'library.shareFromAi': '（来自{app}·AI 精选）',
@@ -2892,7 +2891,6 @@ const en: Record<keyof typeof zh, string> = {
   'library.affinityResetDone': 'Category preferences cleared',
   'library.multiSource': '{n} sources',
   'library.sourceLine': 'Source',
-  'library.share': 'Share',
   'library.appName': 'Morning Brief',
   'library.shareFrom': '(via {app})',
   'library.shareFromAi': '(via {app} · AI picks)',
