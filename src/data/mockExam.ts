@@ -64,7 +64,7 @@ export interface MockExamPlan {
 }
 
 export const MOCK_EXAM_SOURCE_NOTE =
-  '题目来自本地题库（自编练习题），按该真题的**考卷结构与考点范围**组卷；不是原卷真题，也不含真题内容。';
+  '题目来自本地题库（自编练习题），按该真题的考卷结构与考点范围组卷；不是原卷真题，也不含真题内容。';
 
 export const MOCK_EXAM_DEFAULT_COUNT = 20;
 export const MOCK_EXAM_DEFAULT_SCORE = 5;
