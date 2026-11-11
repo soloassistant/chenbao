@@ -9,7 +9,7 @@ import { useT, useLanguageStore } from '@/store/language';
 import type { LangKey } from '@/store/language';
 import { apiCreateOrder, type CreateOrderPayload } from '@/services/api';
 import { ordersListOwn, type CloudOrder } from '@/services/cloudOrders';
-import { recordPromoOrder } from '@/services/subscription';
+import { recordPaidOrder, recordPromoOrder } from '@/services/subscription';
 import { refreshEntitlement } from '@/services/entitlement';
 import { getPayChannel, getChannelAuth, invokePayment } from '@/services/pay';
 import type { PayChannel, PayOrder } from '@/types';
@@ -32,7 +32,7 @@ import { FEATURES } from '@/utils/featureUsage';
 import type { FeatureKey, UsageSummary } from '@/utils/featureUsage';
 import { readUsageSummary } from '@/utils/usageLog';
 import { clearReadStreak, getReadFreezeCards, getReadStreak } from '@/utils/readStreak';
-import { createH5Order, queryH5Order, readReturnedOrderId, redirectToPayUrl } from '@/services/h5Pay';
+import { claimH5Order, createH5Order, queryH5Order, readReturnedOrderId, redirectToPayUrl } from '@/services/h5Pay';
 import styles from '../mine/index.module.scss';
 
 /**
@@ -174,6 +174,8 @@ function MembershipPage() {
   const [readStreak, setReadStreak] = useState(0);
   const [readFreezeCards, setReadFreezeCards] = useState(0);
   const [promoOpen, setPromoOpen] = useState(false);
+  /** 支付已到账但权益没开成（函数未部署/凭证不属于本账号）—— 要显式告诉用户怎么兜底 */
+  const [h5ClaimIssue, setH5ClaimIssue] = useState<string | null>(null);
   /** U-11：支付前可读的条款/隐私弹层 */
   const [docView, setDocView] = useState<'terms' | 'privacy' | null>(null);
   const [promoInput, setPromoInput] = useState('');
@@ -398,11 +400,15 @@ function MembershipPage() {
 
   /**
    * H5 支付回跳：聚合支付付完会把用户送回本页，URL 带 `?h5pay_order=<orderId>`。
-   * 这里查真实状态（不是猜）：
-   *   paid   → 提示成功 + 刷新订单与权益（权益真值在服务端，刷新才拿得到）
-   *   closed → 如实说未完成
-   *   pending / unknown → 同一句话「还在确认」：上游不通时**不能**说失败（用户可能已付款）
-   * 处理完把参数从地址栏抹掉，避免刷新重复查/重复提示。
+   *
+   * 这里是「钱 → 权益」唯一的交接点，必须按真实状态分叉，不能一条 toast 走天下：
+   *   1) 查单：paid / closed / pending|unknown（线上游不通时说「待确认」，绝不说失败）
+   *   2) paid → 取「已付款凭证」（网关只对已付订单签发，带 HMAC 签名 + 下单账号）
+   *   3) 凭证交给服务端函数核销（验签 + 金额白名单 + 一单一发）→ 落 orders 表
+   *   4) 刷新权益（entitlement 从 orders 回放，**不写本地凭证**），界面才真的变会员
+   *
+   * 核销失败也绝不谎报「已开通」：unsigned（函数没部署）走人工兜底文案，
+   * rejected（验签/归属不过）说明这笔凭证不可信，两个都不是「成功」。
    */
   useEffect(() => {
     const orderId = readReturnedOrderId();
@@ -411,15 +417,44 @@ function MembershipPage() {
     void (async () => {
       const r = await queryH5Order(orderId);
       if (cancelled) return;
-      if (r.status === 'paid') {
-        Taro.showToast({ title: t('mine.h5paySuccess'), icon: 'success' });
-        void loadOrders();
-        void reconcilePaidOrder(orderId);
-      } else if (r.status === 'closed') {
+
+      if (r.status === 'closed') {
         Taro.showToast({ title: t('mine.h5payClosed'), icon: 'none', duration: 2600 });
-      } else {
+      } else if (r.status !== 'paid') {
+        // pending / unknown：上游不通时用户可能已经付了钱，不下结论
         Taro.showToast({ title: t('mine.h5payPending'), icon: 'none', duration: 3000 });
+      } else {
+        // —— 已付款：走核销，把权益真正落到服务端 ——
+        const claimed = await claimH5Order(orderId);
+        if (cancelled) return;
+        if (claimed.state !== 'ok') {
+          // 拿不到凭证（网关未配 secret / 未付 / 老订单缺账号绑定 / 超时）
+          Taro.showToast({ title: t('mine.h5payClaimFailed'), icon: 'none', duration: 3600 });
+        } else {
+          const redeemed = await recordPaidOrder(claimed.claim);
+          if (cancelled) return;
+          if (redeemed === 'granted' || redeemed === 'already') {
+            // 权益真值在服务端：必须刷新才知道到期日（不写本地凭证）
+            await refreshEntitlement();
+            if (cancelled) return;
+            // 权益真值刷新后要重拉 profile（apiLogin → buildProfileFromSession 读权益缓存），
+            // 否则页面还按免费档渲染，用户会以为「付了钱没生效」。
+            await init();
+            if (cancelled) return;
+            Taro.showToast({ title: t('mine.h5paySuccess'), icon: 'success' });
+            void loadOrders();
+            void reconcilePaidOrder(orderId);
+          } else if (redeemed === 'unsigned') {
+            // 函数没部署/没授权：钱已到账但开不了。如实说明并给人工兜底指引
+            setH5ClaimIssue(t('mine.h5payNeedManual', { orderId }));
+          } else if (redeemed === 'no-session') {
+            setH5ClaimIssue(t('mine.h5payNeedLoginRetry', { orderId }));
+          } else {
+            setH5ClaimIssue(t('mine.h5payRejected', { orderId }));
+          }
+        }
       }
+
       try {
         const url = new URL(window.location.href);
         url.searchParams.delete('h5pay_order');
@@ -465,7 +500,8 @@ function MembershipPage() {
       }
       setPaying(true);
       try {
-        const created = await createH5Order(planId);
+        const ownerId = useUserStore.getState().profile?.openid || '';
+        const created = await createH5Order(planId, ownerId);
         if (created.state === 'ok' && created.payUrl) {
           if (!redirectToPayUrl(created.payUrl)) {
             Taro.showToast({ title: t('mine.h5payBadUrl'), icon: 'none' });
@@ -769,6 +805,21 @@ function MembershipPage() {
               </Text>
               <Text className={styles.reconcileDismiss} onClick={() => setReconcileIssue(null)}>
                 关闭
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* 支付已到账但权益没开成：钱收了就必须给说法，不能只在控制台留一行日志。
+            三种原因各有不同处置（函数没部署 / 未登录 / 凭证不属于本账号），
+            共同点都是「带订单号，让客服能凭它人工开通」。 */}
+        {h5ClaimIssue ? (
+          <View className={styles.reconcileCard}>
+            <Text className={styles.reconcileTitle}>{t('mine.h5claimIssueTitle')}</Text>
+            <Text className={styles.reconcileText}>{h5ClaimIssue}</Text>
+            <View className={styles.reconcileActions}>
+              <Text className={styles.reconcileDismiss} onClick={() => setH5ClaimIssue(null)}>
+                {t('mine.h5claimIssueDismiss')}
               </Text>
             </View>
           </View>

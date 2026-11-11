@@ -148,5 +148,79 @@ ok(
   !/total_fee|totalFee/.test(h5pay)
 );
 
+/* ---------------- E. 权益闭环（支付 → 权益）---------------- */
+
+const sql = read('.tools/sql/v9-h5-paid-orders.sql');
+const subSrc = read('src/services/subscription.ts');
+
+ok('E1 v9 迁移存在且声明可重复执行', sql.length > 2000 && /幂等/.test(sql));
+ok(
+  'E2 入账函数是 SECURITY DEFINER（否则写不进 orders）',
+  /CREATE OR REPLACE FUNCTION public\.redeem_paid_order[\s\S]{0,400}SECURITY DEFINER/.test(sql)
+);
+ok(
+  'E3 函数只用 auth.uid() 定归属，不接受客户端传 owner',
+  /v_uid\s+text\s*:=\s*auth\.uid\(\)::text/.test(sql) && /p_owner_id\s*<>\s*v_uid/.test(sql)
+);
+ok(
+  'E4 天数与金额由服务端白名单决定，客户端传入只用于比对',
+  /v_months := CASE p_plan_id/.test(sql) && /v_expect_cents := CASE p_plan_id/.test(sql) && /金额与套餐不符/.test(sql)
+);
+ok(
+  'E5 验签失败必须抛错（不许「没配密钥就放行」）',
+  /v_secret IS NULL OR length\(v_secret\) < 32[\s\S]{0,80}RAISE EXCEPTION/.test(sql) &&
+    /支付凭证验签失败/.test(sql)
+);
+ok(
+  'E6 一单一发：核销表以 order_id 为主键且 ON CONFLICT 幂等',
+  /CREATE TABLE IF NOT EXISTS public\.paid_order_claims[\s\S]{0,200}order_id\s+text\s+PRIMARY KEY/.test(sql) &&
+    /ON CONFLICT \(order_id\) DO NOTHING/.test(sql)
+);
+ok(
+  'E7 权限收口：PUBLIC/anon 不得有 EXECUTE，两张新表不得给客户端授权',
+  /REVOKE ALL ON FUNCTION public\.redeem_paid_order[\s\S]{0,120}FROM PUBLIC, anon, authenticated/.test(sql) &&
+    /GRANT EXECUTE ON FUNCTION public\.redeem_paid_order[\s\S]{0,80}TO authenticated/.test(sql) &&
+    /REVOKE ALL ON TABLE public\.app_secrets[\s\S]{0,80}FROM PUBLIC, anon, authenticated/.test(sql) &&
+    /REVOKE ALL ON TABLE public\.paid_order_claims[\s\S]{0,80}FROM PUBLIC, anon, authenticated/.test(sql)
+);
+// 只看**真实调用参数块**：`p_days` 在文件里出现过（那是讲历史后门的注释），
+// 全文件 grep 会误报 —— 这是「判据打错靶」，不是放宽。
+const redeemCall = /db\.rpc\('redeem_paid_order',\s*\{([\s\S]*?)\}\)/.exec(subSrc);
+ok(
+  'E8 客户端核销只转交凭证（不传 months / 不自己判天数）',
+  !!redeemCall &&
+    !/p_months|p_days|plan_days|months:/.test(redeemCall[1]) &&
+    /p_order_id/.test(redeemCall[1]) &&
+    /p_sig/.test(redeemCall[1])
+);
+ok(
+  'E9 核销结果区分「函数未部署」与「服务端拒绝」（不能都算失败也不能都算成功）',
+  /'unsigned'/.test(subSrc) && /'rejected'/.test(subSrc) && /PGRST202/.test(subSrc)
+);
+ok(
+  'E10 客户端拿不到 secret（权益不能靠前端自证）',
+  !/PAY_GATEWAY_HMAC_SECRET/.test(read('src/services/h5Pay.ts')) &&
+    !/PAY_GATEWAY_HMAC_SECRET/.test(subSrc)
+);
+
+// 网关侧：凭证口径必须与 SQL 逐字符一致（错一个分隔符就全部验签失败）
+ok(
+  'E11 网关签发口径与 SQL 拼串一致（order|plan|amount|paid_at|owner）',
+  /`\$\{order\.orderId\}\|\$\{order\.planId\}\|\$\{order\.priceFen\}\|\$\{paidAt\}\|\$\{order\.ownerId\}`/.test(gw) &&
+    /p_order_id \|\| '\|' \|\| p_plan_id \|\| '\|' \|\| p_amount_cents::text \|\| '\|' \|\| p_paid_at::text \|\| '\|' \|\| p_owner_id/.test(sql)
+);
+ok(
+  'E12 网关只对已付订单签凭证（未付 409，不签「预支」凭证）',
+  /if \(order\.status !== 'paid'\)[\s\S]{0,160}not-paid/.test(gw)
+);
+ok(
+  'E13 缺 HMAC 密钥时不签发（不是「没配就放行」）',
+  /unconfigured-claim/.test(gw)
+);
+ok(
+  'E14 下单必须带 ownerId（凭证要能证明归属）',
+  /missing-owner/.test(gw) && /ownerId,/.test(gw)
+);
+
 console.log(`\n[h5pay] PASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail > 0 ? 1 : 0);
