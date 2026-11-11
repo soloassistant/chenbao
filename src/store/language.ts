@@ -182,7 +182,7 @@ const zh = {
   'qb.loadFailedHint': '这不代表题库为空：可能是本机数据损坏或版本不兼容。',
   'qb.retry': '重新读取',
   // 学习闭环（2026-11-11）：空态给两条出路——载入示例题立即能做题，或去灵犀课堂上课
-  'qb.seedCta': '载入内置示例题（81 道，含解析）',
+  'qb.seedCta': '载入内置示例题（113 道，含解析）',
   'qb.seedNote': '示例题由我们自编，不来自任何真题；可随时删除或导入自己的题目。',
   'qb.seedDone': '已载入 {n} 道示例题',
   'qb.seedFailed': '载入失败，请稍后重试',
@@ -1768,7 +1768,7 @@ const en: Record<keyof typeof zh, string> = {
   'qb.loadFailedHint': 'This does not mean it is empty: local data may be corrupt or from an incompatible version.',
   'qb.retry': 'Reload',
   // Learning loop (2026-11-11): empty state offers two ways out — load samples, or take a class
-  'qb.seedCta': 'Load 81 built-in samples (with explanations)',
+  'qb.seedCta': 'Load 113 built-in samples (with explanations)',
   'qb.seedNote': 'Samples are written by us, not taken from any past paper. Delete them or import your own any time.',
   'qb.seedDone': 'Loaded {n} sample questions',
   'qb.seedFailed': 'Failed to load, try again later',

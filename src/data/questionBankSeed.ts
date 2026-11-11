@@ -10,6 +10,7 @@
 import type { Question } from '@/types/questionBank';
 import { stemHash } from '@/utils/questionBank';
 import { EXTRA_QUESTIONS } from './questionBankSeedExtra';
+import { MATH_QUESTIONS } from './questionBankSeedMath';
 
 const STAMP = '2026-11-11T00:00:00.000Z';
 
@@ -371,5 +372,6 @@ export const SEED_QUESTIONS: Question[] = [
     examSystem: 'ap', board: 'collegeboard', subject: 'chemistry', level: 'na',
     tags: ['atomic structure'], difficulty: 1, langCode: 'en'
   }),
-  ...EXTRA_QUESTIONS
+  ...EXTRA_QUESTIONS,
+  ...MATH_QUESTIONS
 ];

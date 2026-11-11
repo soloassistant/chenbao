@@ -77,7 +77,7 @@
 `learn` / `learnDetail` / `learnCommunity` / `questionBank` / `questionBankAnswer` /
 `questionBankMistakes` / `questionBankImport` / `papers` / `mockExam` / `mockExamResult`
 
-> 题库 + 历年真题库 + 解析 + 去灵犀课堂，这条链已经跑通（含每日一题、错题本、81 道内置示例题、
+> 题库 + 历年真题库 + 解析 + 去灵犀课堂，这条链已经跑通（含每日一题、错题本、113 道内置示例题、
 > 7 个考试体系）；2026-11-11 又把**真题库并进了题库页**（同一个入口下两个 tab），
 > 并按真题的考卷结构自动组模拟卷（卷面结构来自真题、题目来自本地题库，卷面写明「不是原卷真题」）。
 > 它服务「学习」而不是「安排好一天」，按红线属实验模块。

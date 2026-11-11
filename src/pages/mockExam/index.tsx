@@ -238,19 +238,16 @@ export default function MockExamPage() {
         >
           <Text>{t('mock.prev')}</Text>
         </View>
-        {idx < questions.length - 1 ? (
-          <View
-            className={styles.primaryBtn}
-            onClick={() => setIdx((i) => Math.min(questions.length - 1, i + 1))}
-            {...pressableProps(t('mock.next'))}
-          >
-            <Text className={styles.primaryText}>{t('mock.next')}</Text>
-          </View>
-        ) : (
-          <View className={styles.primaryBtn} onClick={finish} {...pressableProps(t('mock.submit'))}>
-            <Text className={styles.primaryText}>{t('mock.submit')}</Text>
-          </View>
-        )}
+        <View
+          className={styles.secondaryBtn}
+          onClick={() => setIdx((i) => Math.min(questions.length - 1, i + 1))}
+          {...pressableProps(t('mock.next'))}
+        >
+          <Text>{t('mock.next')}</Text>
+        </View>
+        <View className={styles.primaryBtn} onClick={finish} {...pressableProps(t('mock.submit'))}>
+          <Text className={styles.primaryText}>{t('mock.submit')}</Text>
+        </View>
       </View>
     </View>
   );
