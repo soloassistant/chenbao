@@ -533,13 +533,13 @@ function BriefingPage() {
   useEffect(() => {
     if (!briefing) return;
     const d = new Date();
-    const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const todayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const n = (briefing.events || []).length;
     pushNotify({
       kind: 'briefing',
       title: t('notify.briefingTitle'),
       desc: n > 0 ? t('notify.briefingDesc', { n }) : t('notify.briefingDescEmpty'),
-      dedupeKey: `briefing:${dayKey}`
+      dedupeKey: `briefing:${todayKey}`
     });
     // t 故意不进依赖：它每次渲染都可能换引用，进依赖会让这个 effect 反复跑。
     // eslint-disable-next-line react-hooks/exhaustive-deps
