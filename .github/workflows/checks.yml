@@ -391,6 +391,13 @@ jobs:
         #（PR 描述里就写着「该测试脚本未接入 verify:all」）。
         run: npm run verify:openid-redaction
 
+      - name: 提示注入门禁（长期记忆不得被提升为指令）
+        # 守 2026-11-11 评审指出的风险：长期记忆来自对话历史（不可信输入），
+        # 原来既被塞进 contextData 的 JSON、又被 system 追加「必须遵守」⇒ 注入成立。
+        # 现在守四条加固：指令层级倒置 / <user_memory> 边界 / 长度与条数上限 / 标记转义，
+        # 外加「H5 与云函数两侧同口径」（两边跑在不同运行时，只能各写一份实现）。
+        run: npm run verify:memory-injection
+
       - name: 云函数部署预检分支回归
         # deploy-cloud.mjs 是唯一会把代码推上微信云的路，但它没法在无凭据环境端到端跑。
         # 结果就是「缺配置 → exit 2」这一条验过，其余分支（AppID 写成 gh_、密钥不是 RSA、

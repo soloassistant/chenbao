@@ -84,6 +84,7 @@
     "verify:publish-preflight": "node .tools/verify-deploy-fresh.mjs --publish",
     "verify:mutation": "node .tools/verify-mutation-all.mjs",
     "verify:openid-redaction": "node .tools/verify-openid-redaction.mjs",
+    "verify:memory-injection": "node .tools/verify-memory-injection.mjs",
     "verify:contrast-render": "node .tools/verify-contrast-render.mjs",
     "verify:layout": "node .tools/verify-layout.mjs",
     "verify:routes": "node .tools/verify-routes.mjs",
