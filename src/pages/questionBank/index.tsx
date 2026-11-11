@@ -16,6 +16,7 @@ import { brandVars, useThemeStore } from '@/store/theme';
 import type { ExamSystem, Question } from '@/types/questionBank';
 import { filterQuestions, examSystemsOf, loadQuestionBank, subjectsOf } from '@/data/questionBankQuery';
 import { createQuestionBankRepo } from '@/data/questionBankRepo';
+import { createQuestionBankProgress } from '@/data/questionBankProgress';
 import { SEED_QUESTIONS } from '@/data/questionBankSeed';
 import { LINGXI_ENTRY_URL } from '@/config/partners';
 import { openExternalPage } from '@/utils/externalLink';
@@ -94,6 +95,29 @@ export default function QuestionBankPage() {
       console.error('[QuestionBank] seed failed:', err);
       Taro.showToast({ title: t('qb.seedFailed'), icon: 'none' });
     }
+  };
+
+  /** 每日一题：优先错题 → 没做过的题 → 全库随机。读进度失败则退回全库随机并留痕 */
+  const startPractice = () => {
+    if (questions.length === 0) {
+      Taro.showToast({ title: t('qb.practiceEmpty'), icon: 'none' });
+      return;
+    }
+    let pool = questions;
+    try {
+      const progress = createQuestionBankProgress(appStorage());
+      const wrong = progress.mistakes().map((e) => e.questionId);
+      const wrongPick = questions.find((q) => q.id === wrong[0]);
+      const answered = new Set(progress.list().map((e) => e.questionId));
+      const unseen = questions.filter((q) => !answered.has(q.id));
+      pool = wrongPick ? [wrongPick] : (unseen.length ? unseen : questions);
+    } catch (err) {
+      console.error('[QuestionBank] practice progress read failed:', err);
+    }
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    Taro.navigateTo({ url: `/pages/questionBankAnswer/index?id=${picked.id}` }).catch((err) =>
+      console.warn('[QuestionBank] navigate failed:', err)
+    );
   };
 
   const goLingxi = async () => {
@@ -194,6 +218,13 @@ export default function QuestionBankPage() {
         placeholder={t('qb.searchPlaceholder')}
         onInput={(e) => setKeyword(e.detail.value)}
       />
+
+      {questions.length > 0 ? (
+        <View className={styles.practice} onClick={startPractice} {...pressableProps(t('qb.practiceCta'))}>
+          <Text className={styles.practiceTitle}>{t('qb.practiceCta')} →</Text>
+          <Text className={styles.practiceDesc}>{t('qb.practiceHint', { total: questions.length })}</Text>
+        </View>
+      ) : null}
 
       {systems.length > 0 ? (
         <View className={styles.chips}>

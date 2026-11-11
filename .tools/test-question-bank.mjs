@@ -13,9 +13,9 @@ function assert(name, cond) {
   else fail++;
   console.log(`  ${cond ? 'PASS' : 'FAIL'}  ${name}`);
 }
-async function loadModule() {
+async function loadModule(entry = 'src/utils/questionBank.ts') {
   const built = await esbuild.build({
-    entryPoints: [path.join(ROOT, 'src/utils/questionBank.ts')],
+    entryPoints: [path.join(ROOT, entry)],
     bundle: true, write: false, format: 'cjs', platform: 'node', target: 'node18', logLevel: 'silent'
   });
   const sandbox = { module: { exports: {} }, exports: {}, console };
@@ -23,6 +23,7 @@ async function loadModule() {
   return sandbox.module.exports;
 }
 const { validateQuestion, normalizeStem, stemHash, findDuplicates, questionId } = await loadModule();
+const { SUBJECTS_BY_EXAM, SYLLABUS_TOPICS } = await loadModule('src/types/questionBank.ts');
 const STEM = '已知函数 $f(x)=x^{2}+2x$，求 $f(1)$ 的值。';
 const base = {
   id: 'q-base', stem: STEM, stemHash: stemHash(STEM),
@@ -56,7 +57,12 @@ assert('非法知识点整体 fail 且消息含 tag 与 syllabus', (() => {
   const r = validateQuestion(q({ knowledgeTags: ['函数与导数', '量子力学'] }));
   return r.ok === false && r.errors.some((e) => e.field === 'knowledgeTags' && e.message.includes('量子力学') && e.message.includes('gaokao:数学'));
 })());
-assert('未知 syllabus → field=subject', hasField(validateQuestion(q({ subject: '物理' })), 'subject', 'syllabus.unknown'));
+// 2026-11-11：闭集扩到多科目后，原先拿「高考物理」当「未登记学科」的用例失效。
+// 改成更强的不变量：每个已登记学科都必须有大纲闭集；未登记学科必须被拒。
+assert('每个已登记学科都有大纲闭集', Object.entries(SUBJECTS_BY_EXAM).every(
+  ([sys, subs]) => subs.every((sub) => !!SYLLABUS_TOPICS[`${sys}:${sub}`])
+));
+assert('未登记学科 → subject.unknown', hasField(validateQuestion(q({ subject: '量子力学' })), 'subject', 'subject.unknown'));
 assert('非法 examSystem=gre → field=examSystem', hasField(validateQuestion(q({ examSystem: 'gre' })), 'examSystem', 'examSystem.invalid'));
 assert('level 与 examSystem 不自洽 → field=level', hasField(validateQuestion(q({ level: 'hl' })), 'level', 'level.mismatch'));
 assert('IB 只允许 hl/sl → field=level', hasField(validateQuestion(q({ examSystem: 'ib', board: 'ibo', subject: 'mathematics-aa', level: 'na', langCode: 'en', knowledgeTags: ['algebra'] })), 'level', 'level.mismatch'));

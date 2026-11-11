@@ -27,8 +27,13 @@ export const LEVELS_BY_EXAM: Record<ExamSystem, readonly Level[]> = {
 
 /** subject 常量表：每个体系先只登记最小可用学科，避免任意字符串。 */
 export const SUBJECTS_BY_EXAM: Record<ExamSystem, readonly string[]> = {
-  gaokao: ['数学'], zhongkao: ['数学'], igcse: ['mathematics'], alevel: ['mathematics'],
-  ap: ['calculus'], ib: ['mathematics-aa'], other: ['other']
+  gaokao: ['数学', '物理', '化学', '生物', '英语'],
+  zhongkao: ['数学', '物理', '化学'],
+  igcse: ['mathematics', 'physics', 'chemistry', 'biology', 'economics'],
+  alevel: ['mathematics', 'physics', 'chemistry', 'economics'],
+  ap: ['calculus', 'statistics', 'physics-1', 'chemistry', 'biology', 'microeconomics'],
+  ib: ['mathematics-aa', 'physics', 'chemistry', 'economics'],
+  other: ['other']
 };
 
 /**
@@ -41,7 +46,31 @@ export const SYLLABUS_TOPICS: Record<string, readonly string[]> = {
   'igcse:mathematics': ['number', 'algebra', 'algebraic manipulation', 'geometry', 'mensuration', 'trigonometry', 'statistics', 'probability', 'ratio and proportion', 'graphs of functions'],
   'alevel:mathematics': ['algebra and functions', 'coordinate geometry', 'sequences and series', 'differentiation', 'integration', 'trigonometry', 'exponentials and logarithms', 'vectors', 'proof', 'kinematics', 'forces and equilibrium', 'probability and distributions'],
   'ap:calculus': ['limits and continuity', 'differentiation', 'applications of derivatives', 'integration', 'fundamental theorem of calculus', 'differential equations', 'sequences and series', 'parametric and polar curves', 'vector-valued functions', 'numerical approximations'],
-  'ib:mathematics-aa': ['algebra', 'functions', 'sequences and series', 'complex numbers', 'vectors', 'trigonometry', 'statistics', 'probability', 'calculus', 'proof', 'binomial theorem', 'geometry']
+  'ib:mathematics-aa': ['algebra', 'functions', 'sequences and series', 'complex numbers', 'vectors', 'trigonometry', 'statistics', 'probability', 'calculus', 'proof', 'binomial theorem', 'geometry'],
+  // 2026-11-11 扩展：为内置示例题覆盖的学科补齐闭集（缺一个闭集，validateQuestion 直接报错）
+  'gaokao:物理': ['运动学', '牛顿运动定律', '功和能', '动量', '电场与电势', '恒定电流', '磁场与电磁感应', '机械振动与波', '光学', '热学'],
+  'gaokao:化学': ['物质结构与元素周期律', '化学平衡', '水溶液中的离子平衡', '氧化还原与电化学', '有机化学基础', '化学实验', '化学反应速率', '化学计量'],
+  'gaokao:生物': ['细胞结构与功能', '细胞代谢', '遗传与变异', '稳态与调节', '生态与环境', '生物技术实践'],
+  'gaokao:英语': ['时态与语态', '非谓语动词', '定语从句', '名词性从句', '状语从句', '虚拟语气', '词义辨析', '阅读理解'],
+  'zhongkao:物理': ['力学基础', '压强与浮力', '简单机械', '电路与欧姆定律', '电功率', '光的反射与折射'],
+  'zhongkao:化学': ['物质构成', '常见的酸和碱', '金属与盐', '化学方程式', '溶液与溶解度'],
+  'igcse:physics': ['forces and motion', 'energy', 'waves', 'electricity', 'magnetism', 'thermal physics', 'light', 'radioactivity'],
+  'igcse:chemistry': ['atomic structure', 'bonding', 'stoichiometry', 'acids and bases', 'rates of reaction', 'electrolysis', 'organic chemistry', 'periodic table'],
+  'igcse:biology': ['cell structure', 'enzymes', 'photosynthesis', 'transport in plants', 'human nutrition', 'respiration', 'homeostasis', 'inheritance'],
+  'igcse:economics': ['basic economic problem', 'demand and supply', 'market equilibrium', 'elasticity', 'money and banking', 'international trade'],
+  'alevel:physics': ['mechanics', 'materials', 'waves', 'electricity', 'fields', 'nuclear physics', 'thermal physics', 'circular motion'],
+  'alevel:chemistry': ['atomic structure', 'bonding', 'equilibrium', 'kinetics', 'redox', 'organic chemistry', 'periodicity', 'thermodynamics'],
+  'alevel:economics': ['demand and supply', 'elasticity', 'market failure', 'macroeconomic objectives', 'fiscal and monetary policy', 'exchange rates'],
+  'ap:statistics': ['describing data', 'probability', 'random variables', 'sampling distributions', 'confidence intervals', 'significance tests', 'regression', 'experimental design'],
+  'ap:physics-1': ['kinematics', 'dynamics', 'circular motion', 'energy', 'momentum', 'simple harmonic motion', 'rotational motion', 'waves and sound'],
+  'ap:chemistry': ['atomic structure', 'chemical bonding', 'stoichiometry', 'thermochemistry', 'equilibrium', 'acids and bases', 'kinetics', 'electrochemistry'],
+  'ap:biology': ['cell structure', 'cellular energetics', 'heredity', 'gene expression', 'evolution', 'ecology', 'homeostasis'],
+  'ap:microeconomics': ['scarcity and choice', 'demand and supply', 'elasticity', 'production and costs', 'market structures', 'factor markets'],
+  'ib:physics': ['mechanics', 'thermal physics', 'waves', 'electricity and magnetism', 'circular motion', 'atomic and nuclear physics', 'energy production'],
+  'ib:chemistry': ['atomic structure', 'bonding', 'stoichiometry', 'energetics', 'kinetics', 'equilibrium', 'acids and bases', 'organic chemistry'],
+  'ib:economics': ['demand and supply', 'elasticity', 'market failure', 'macroeconomic policy', 'international trade'],
+  // 原先 other:other 没有闭集，导致「其他」体系下的任何题都必被 validateQuestion 拒绝
+  'other:other': ['general']
 };
 
 export interface QuestionOption { key: string; text: string }

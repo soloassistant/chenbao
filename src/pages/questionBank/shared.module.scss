@@ -164,3 +164,28 @@
   color: $color-text-secondary;
   line-height: 1.5;
 }
+
+.practice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4rpx;
+  margin: $spacing-sm 0;
+  padding: $spacing-md;
+  border: 1rpx solid $color-accent-border;
+  border-radius: $radius-md;
+  background: $color-accent-wash;
+  cursor: pointer;
+}
+
+.practiceTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-primary-strong;
+}
+
+.practiceDesc {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  line-height: 1.5;
+}
