@@ -9,6 +9,7 @@
 import { useCallback, useState } from 'react';
 import { View, Text, Textarea, Button } from '@tarojs/components';
 import Taro from '@tarojs/taro';
+import { appStorage } from '@/utils/appStorage';
 import { useT, type LangKey } from '@/store/language';
 import { brandVars, useThemeStore } from '@/store/theme';
 import { disabledAttr } from '@/utils/buttonDisabled';
@@ -66,7 +67,7 @@ export default function QuestionBankImportPage() {
 
   const preview = () => {
     try {
-      const result = importQuestionBank(createQuestionBankRepo(Taro), text, { dryRun: true });
+      const result = importQuestionBank(createQuestionBankRepo(appStorage()), text, { dryRun: true });
       setExpanded(false);
       setPhase({ kind: 'confirm', text, preview: result });
     } catch (err) {
@@ -80,7 +81,7 @@ export default function QuestionBankImportPage() {
     // 导入本身是同步的：先让「正在写入」渲染出来，再执行分批写入
     setTimeout(() => {
       try {
-        const result = importQuestionBank(createQuestionBankRepo(Taro), source, {
+        const result = importQuestionBank(createQuestionBankRepo(appStorage()), source, {
           batchSize: BATCH_SIZE,
           onProgress: (progress) => setPhase({ kind: 'importing', progress })
         });
@@ -99,8 +100,13 @@ export default function QuestionBankImportPage() {
         <Button className={styles.importPrimary} onClick={pickFile}>{t('qbImport.chooseFile')}</Button>
         {fileName ? <Text className={styles.fileName}>{fileName}</Text> : null}
       </View>
-      <Textarea className={styles.importTextarea} value={text} maxlength={-1}
-        placeholder={t('qbImport.placeholder')} onInput={(e) => setText(e.detail.value)} />
+      <Textarea
+        className={styles.importTextarea}
+        value={text}
+        maxlength={-1}
+        placeholder={t('qbImport.placeholder')}
+        onInput={(e) => setText(e.detail.value)}
+      />
       <View className={styles.actions}>
         <Button className={styles.importPrimary} disabled={disabledAttr(!text.trim())} onClick={preview}>{t('qbImport.preview')}</Button>
       </View>

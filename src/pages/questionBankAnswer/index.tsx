@@ -6,12 +6,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, Input } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
+import { appStorage } from '@/utils/appStorage';
 import { useT } from '@/store/language';
 import { brandVars, useThemeStore } from '@/store/theme';
 import type { Question } from '@/types/questionBank';
 import { loadQuestionBank } from '@/data/questionBankQuery';
 import { createQuestionBankProgress } from '@/data/questionBankProgress';
 import { formatAnswerKey, gradeAnswer, isResponseComplete, type UserResponse } from '@/utils/questionBankGrading';
+import { LINGXI_ENTRY_URL } from '@/config/partners';
+import { openExternalPage } from '@/utils/externalLink';
+import { pressableProps } from '@/utils/a11y';
 import styles from '../questionBank/shared.module.scss';
 
 type LoadState =
@@ -39,7 +43,7 @@ export default function QuestionBankAnswerPage() {
   const load = useCallback(() => {
     setView({ status: 'loading' });
     void Promise.resolve().then(() => {
-      const loaded = loadQuestionBank(Taro);
+      const loaded = loadQuestionBank(appStorage());
       if (loaded.status === 'error') {
         console.error('[QuestionBankAnswer] load failed:', loaded.code, loaded.message);
         setView({ status: 'error', message: loaded.message });
@@ -76,11 +80,18 @@ export default function QuestionBankAnswerPage() {
     const correct = gradeAnswer(question, response);
     setResult(correct);
     try {
-      createQuestionBankProgress(Taro).record(question.id, correct);
+      createQuestionBankProgress(appStorage()).record(question.id, correct);
     } catch (err) {
       // 记录失败不阻断判分结果；错题本页会以失败态提示读取问题
       console.error('[QuestionBankAnswer] progress write failed:', err);
     }
+  };
+
+  /** 解析看不懂时的下一步：把「这道题」和「课程」接上，而不是让用户自己去找 */
+  const goLingxi = async () => {
+    const res = await openExternalPage(LINGXI_ENTRY_URL);
+    if (res === 'copied') Taro.showToast({ title: t('qb.lingxiCopied'), icon: 'none', duration: 2500 });
+    if (res === 'failed') Taro.showToast({ title: t('qb.lingxiFailed'), icon: 'none' });
   };
 
   const chooseOption = (key: string) => {
@@ -153,6 +164,12 @@ export default function QuestionBankAnswerPage() {
             <Text className={styles.explanation}>{question.explanation}</Text>
           </View>
         ) : null}
+        <View className={styles.lingxi} onClick={() => void goLingxi()} {...pressableProps(t('qb.lingxiCta'))}>
+          <Text className={styles.lingxiTitle}>
+            {t(result ? 'qb.lingxiMore' : 'qb.explainHelp')} →
+          </Text>
+          <Text className={styles.lingxiDesc}>{t('qb.lingxiHint')}</Text>
+        </View>
         <View className={styles.actions}>
           <View className={styles.secondaryBtn} onClick={() => { setResponse(initialResponse(question)); setResult(null); }}>
             <Text>{t('qb.tryAgain')}</Text>

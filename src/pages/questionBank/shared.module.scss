@@ -8,6 +8,7 @@
   box-sizing: border-box;
   color: $color-text-primary;
 }
+
 .header { display: flex; align-items: center; gap: $spacing-sm; margin-bottom: $spacing-lg; }
 .back { @include hit-expand(16rpx, 28rpx); display: inline-flex; align-items: center; gap: 4rpx; flex: 0 0 auto; cursor: pointer; }
 .backIcon { font-size: 34rpx; line-height: 1; color: $color-text-tertiary; }
@@ -103,10 +104,63 @@
 .primaryBtnDisabled { @extend .primaryBtn; opacity: 0.4; cursor: default; }
 .primaryText { color: #fff; font-size: $font-size-md; }
 .secondaryBtn { flex: 1; padding: $spacing-md 0; border: 1rpx solid $color-card-border; border-radius: $radius-button; text-align: center; cursor: pointer; }
-.actions { display: flex; gap: $spacing-sm; margin-top: $spacing-lg; }
+.actions {
+  display: flex;
+  align-items: stretch;
+  gap: $spacing-sm;
+  margin-top: $spacing-lg;
+
+  /* 同排两个按钮必须等宽：primaryBtn 默认是整行按钮（带 margin-top），
+     直接塞进 flex 行会把 secondary 挤扁、自己缩成一颗红圆（390 实测）。 */
+  .primaryBtn {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-top: 0;
+  }
+
+  .secondaryBtn {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
 .result { margin-top: $spacing-md; padding: $spacing-md; background: $color-bg-card; border: 1rpx solid $color-card-border; border-radius: $radius-lg; }
 .resultGood { display: block; font-size: $font-size-lg; font-weight: $font-weight-semibold; color: $color-success; }
 .resultBad { display: block; font-size: $font-size-lg; font-weight: $font-weight-semibold; color: $color-error; }
 .answerLine { display: flex; align-items: center; gap: $spacing-xs; margin-top: $spacing-sm; }
 .answerText { font-size: $font-size-md; }
 .explanation { display: block; margin-top: $spacing-xs; font-size: $font-size-sm; color: $color-text-secondary; line-height: $line-height-normal; }
+
+/* ---- 学习闭环：空态动作 + 灵犀课堂入口（2026-11-11） ---- */
+.stateNote {
+  margin-top: $spacing-sm;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  line-height: 1.6;
+}
+
+.lingxi {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4rpx;
+  width: 100%;
+  max-width: 560rpx;
+  margin-top: $spacing-lg;
+  padding: $spacing-md;
+  border: 1rpx solid $color-card-border;
+  border-radius: $radius-md;
+  background: $color-bg-card;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lingxiTitle {
+  font-size: $font-size-sm;
+  color: $color-primary-strong;
+}
+
+.lingxiDesc {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  line-height: 1.5;
+}

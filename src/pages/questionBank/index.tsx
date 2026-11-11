@@ -10,10 +10,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Input } from '@tarojs/components';
 import Taro from '@tarojs/taro';
+import { appStorage } from '@/utils/appStorage';
 import { useT } from '@/store/language';
 import { brandVars, useThemeStore } from '@/store/theme';
 import type { ExamSystem, Question } from '@/types/questionBank';
 import { filterQuestions, examSystemsOf, loadQuestionBank, subjectsOf } from '@/data/questionBankQuery';
+import { createQuestionBankRepo } from '@/data/questionBankRepo';
+import { SEED_QUESTIONS } from '@/data/questionBankSeed';
+import { LINGXI_ENTRY_URL } from '@/config/partners';
+import { openExternalPage } from '@/utils/externalLink';
+import { pressableProps } from '@/utils/a11y';
 import styles from './shared.module.scss';
 
 type ViewState =
@@ -35,7 +41,7 @@ export default function QuestionBankPage() {
     setView({ status: 'loading' });
     // 读取是本地同步操作，但仍走一次事件循环：加载态是真实渲染出来的，不是装饰
     void Promise.resolve().then(() => {
-      const result = loadQuestionBank(Taro);
+      const result = loadQuestionBank(appStorage());
       if (result.status === 'error') {
         console.error('[QuestionBank] load failed:', result.code, result.message);
         setView({ status: 'error', message: result.message });
@@ -69,6 +75,33 @@ export default function QuestionBankPage() {
     );
   };
 
+  /** 载入内置示例题：逐题 add，已存在（同 id）跳过；失败只说失败，不假装成功 */
+  const seed = () => {
+    try {
+      const repo = createQuestionBankRepo(appStorage());
+      let added = 0;
+      for (const q of SEED_QUESTIONS) {
+        try {
+          repo.add(q);
+          added += 1;
+        } catch {
+          // 重复 id / 校验不过：跳过，不打断其余题目
+        }
+      }
+      Taro.showToast({ title: t('qb.seedDone', { n: added }), icon: 'none' });
+      load();
+    } catch (err) {
+      console.error('[QuestionBank] seed failed:', err);
+      Taro.showToast({ title: t('qb.seedFailed'), icon: 'none' });
+    }
+  };
+
+  const goLingxi = async () => {
+    const res = await openExternalPage(LINGXI_ENTRY_URL);
+    if (res === 'copied') Taro.showToast({ title: t('qb.lingxiCopied'), icon: 'none', duration: 2500 });
+    if (res === 'failed') Taro.showToast({ title: t('qb.lingxiFailed'), icon: 'none' });
+  };
+
   const changeSystem = (next: ExamSystem | null) => {
     setSystem(next);
     setSubject(null);
@@ -100,6 +133,14 @@ export default function QuestionBankPage() {
           <Text className={styles.stateIcon}>📚</Text>
           <Text className={styles.stateTitle}>{t('qb.empty')}</Text>
           <Text className={styles.stateDesc}>{t('qb.emptyHint')}</Text>
+          <View className={styles.primaryBtn} onClick={seed} {...pressableProps(t('qb.seedCta'))}>
+            <Text className={styles.primaryText}>{t('qb.seedCta')}</Text>
+          </View>
+          <Text className={styles.stateNote}>{t('qb.seedNote')}</Text>
+          <View className={styles.lingxi} onClick={() => void goLingxi()} {...pressableProps(t('qb.lingxiCta'))}>
+            <Text className={styles.lingxiTitle}>{t('qb.lingxiCta')} →</Text>
+            <Text className={styles.lingxiDesc}>{t('qb.lingxiHint')}</Text>
+          </View>
         </View>
       );
     }
@@ -125,8 +166,10 @@ export default function QuestionBankPage() {
   };
 
   const headerLink = (url: string, label: string) => (
-    <Text className={styles.headerAction}
-      onClick={() => Taro.navigateTo({ url }).catch((err) => console.warn('[QuestionBank] navigate failed:', err))}>
+    <Text
+      className={styles.headerAction}
+      onClick={() => Taro.navigateTo({ url }).catch((err) => console.warn('[QuestionBank] navigate failed:', err))}
+    >
       {label}
     </Text>
   );

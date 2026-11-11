@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text } from '@tarojs/components';
 import Taro from '@tarojs/taro';
+import { appStorage } from '@/utils/appStorage';
 import { useT } from '@/store/language';
 import { brandVars, useThemeStore } from '@/store/theme';
 import type { Question } from '@/types/questionBank';
@@ -28,13 +29,13 @@ export default function QuestionBankMistakesPage() {
   const load = useCallback(() => {
     setView({ status: 'loading' });
     void Promise.resolve().then(() => {
-      const bank = loadQuestionBank(Taro);
+      const bank = loadQuestionBank(appStorage());
       if (bank.status === 'error') {
         setView({ status: 'error', source: 'bank', message: bank.message });
         return;
       }
       try {
-        const entries = createQuestionBankProgress(Taro).mistakes();
+        const entries = createQuestionBankProgress(appStorage()).mistakes();
         const items = entries
           .map((entry) => ({ entry, question: bank.questions.find((q) => q.id === entry.questionId) }))
           .filter((x): x is MistakeItem => !!x.question);
