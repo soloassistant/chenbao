@@ -331,6 +331,20 @@ jobs:
         # 语音按钮只出现在真实 ASR 场景。配套 7 条变异用例证明它能抓到回潮。
         run: npm run verify:ai-surface
 
+      - name: 题库 / 模拟考 行为回归
+        # 题库的 6 组断言（174 条）此前**从未接进 CI** —— 只在本地手动跑，
+        # CI 里一条都看不到，等于「写了没接线」。2026-11-11 补上，
+        # 连同模拟考组卷门禁（映射表不能腐化 / 组卷行为 / 判分口径复用题库）。
+        run: |
+          set -e
+          npm run test:question-bank
+          npm run test:question-bank-repo
+          npm run test:question-bank-query
+          npm run test:question-bank-grading
+          npm run test:question-bank-progress
+          npm run test:question-bank-import
+          npm run test:mock-exam
+
       - name: 键盘快捷键门禁（真值表 + 表自洽 + 接线）
         # 快捷键的缺陷不报错、不崩溃，只是「按了没反应」或「按了干别的事」：
         # 输入法组字时按 g 被当成跳转、Mac 上 Ctrl+Enter 也触发、绑到浏览器的 ⌘W。

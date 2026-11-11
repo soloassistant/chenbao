@@ -21,7 +21,7 @@
 |---|---|---|---|
 | 形态 | 微信小程序（海外版 3-6 个月后评估） | **H5 为主**（Taro 4 + React 18 + TS），小程序为次 | 形态已漂移，需产品确认是否正式改口径 |
 | 端上能力 | 小程序为唯一形态 | H5 走 **WorkBuddy 云库**（Postgres，RLS 按 owner 隔离）+ `cloud.llm` 直连；小程序走微信云开发 | 双通道并存，各有各的云 |
-| 页面 | 5 Tab + 若干独立页 | **页面：25 个**（`src/pages/`），5 Tab = 晨报 / 收件箱 / 热点 / 日历 / 我的 | 长尾页面增多，需收敛（见 §4 边界） |
+| 页面 | 5 Tab + 若干独立页 | **页面：27 个**（`src/pages/`），5 Tab = 晨报 / 收件箱 / 热点 / 日历 / 我的 | 长尾页面增多，需收敛（见 §4 边界） |
 | 后端 | 微信云开发，11 个云函数 | **云函数（27 个）**（`cloudfunctions/`）+ WorkBuddy 云库（3 张表 + RPC 白名单） | 云函数一个都部署不了（见 §11 阻塞） |
 | LLM | DeepSeek / 通义 | 三家：对话 **DeepSeek**、联网 **通义 DashScope**（enable_search）、看图 **智谱** | 已接真数据 |
 | 同步 | 云开发集合 | **SYNC_KEYS 118 项** → 云库 `user_kv`（RLS 按 owner 隔离） | 已上线 |
@@ -75,10 +75,12 @@
 ### B. 学习闭环（已成体系，但属邻接场景）
 
 `learn` / `learnDetail` / `learnCommunity` / `questionBank` / `questionBankAnswer` /
-`questionBankMistakes` / `questionBankImport` / `papers`
+`questionBankMistakes` / `questionBankImport` / `papers` / `mockExam` / `mockExamResult`
 
 > 题库 + 历年真题库 + 解析 + 去灵犀课堂，这条链已经跑通（含每日一题、错题本、81 道内置示例题、
-> 7 个考试体系）。它服务「学习」而不是「安排好一天」，按红线属实验模块。
+> 7 个考试体系）；2026-11-11 又把**真题库并进了题库页**（同一个入口下两个 tab），
+> 并按真题的考卷结构自动组模拟卷（卷面结构来自真题、题目来自本地题库，卷面写明「不是原卷真题」）。
+> 它服务「学习」而不是「安排好一天」，按红线属实验模块。
 > 但它**不是玩具**：要走通「做题 → 判分 → 解析 → 去上课」的闭环，需要同一条链路上
 > （记忆回灌、AI 入口、灵犀课堂）都不退化 —— 所以它与核心共享大量底层能力。
 
@@ -165,7 +167,7 @@ F25 截图提取强化 / F26 浏览历史与记忆 / F29 热点页资讯流增�
 Taro 4 + React 18 + TypeScript
   ├── 5 Tab：晨报 / 收件箱 / 热点 / 日历 / 我的
   ├── 桌面端：自绘 DesktopNav（≥600px 接管，10 项分组；TabBar 上限 5 故不能靠 TabBar 分组）
-  └── 页面：25 个（src/pages/）
+  └── 页面：27 个（src/pages/）
 
 H5 主链路
   ├── 数据：WorkBuddy 云库（Postgres）—— RPC 白名单 + RLS 按 owner 隔离

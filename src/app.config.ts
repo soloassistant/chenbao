@@ -43,6 +43,9 @@ export default defineAppConfig({
     'pages/questionBankImport/index',
     // 2026-11-10：历年真题库（第三方链接索引，试卷本体不落本地）
     'pages/papers/index',
+    // 模拟考试：卷面结构来自历年真题库，题目来自本地题库（见 data/mockExam.ts）
+    'pages/mockExam/index',
+    'pages/mockExamResult/index',
     // 2026-10-28：专业交易终端（黄金/外汇，模拟行情）。仅 H5 渲染终端 UI，
     // weapp 渲染「仅网页版可用」占位；非 tabBar 页（navigateTo 进入）。
     'pages/trade/index',

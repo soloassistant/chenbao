@@ -21,6 +21,8 @@ import { SEED_QUESTIONS } from '@/data/questionBankSeed';
 import { LINGXI_ENTRY_URL } from '@/config/partners';
 import { openExternalPage } from '@/utils/externalLink';
 import { pressableProps } from '@/utils/a11y';
+import PaperLibrary from '@/components/PaperLibrary';
+import { startMockExam } from '@/utils/mockExamNav';
 import styles from './shared.module.scss';
 
 type ViewState =
@@ -37,6 +39,8 @@ export default function QuestionBankPage() {
   const [system, setSystem] = useState<ExamSystem | null>(null);
   const [subject, setSubject] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  // 题库 / 真题库 两个 tab：历年真题库已并入本页（原先是独立页 pages/papers）
+  const [tab, setTab] = useState<'mine' | 'papers'>('mine');
 
   const load = useCallback(() => {
     setView({ status: 'loading' });
@@ -212,6 +216,26 @@ export default function QuestionBankPage() {
         </View>
       </View>
 
+      {/* 题库 / 真题库：真题库并入本页，原独立页保留为薄壳（同一组件，不会分叉） */}
+      <View className={styles.chips}>
+        <Text
+          className={tab === 'mine' ? `${styles.chip} ${styles.chipActive}` : styles.chip}
+          onClick={() => setTab('mine')}
+          {...pressableProps(t('qb.tabMine'))}
+        >
+          {t('qb.tabMine')}
+        </Text>
+        <Text
+          className={tab === 'papers' ? `${styles.chip} ${styles.chipActive}` : styles.chip}
+          onClick={() => setTab('papers')}
+          {...pressableProps(t('qb.tabPapers'))}
+        >
+          {t('qb.tabPapers')}
+        </Text>
+      </View>
+
+      {tab === 'mine' ? (
+      <>
       <Input
         className={styles.search}
         value={keyword}
@@ -257,6 +281,18 @@ export default function QuestionBankPage() {
       ) : null}
 
       {renderBody()}
+      </>
+      ) : (
+        <PaperLibrary
+          showHeader={false}
+          onStartMock={({ binding, title, tags }) =>
+            startMockExam(
+              { title, examSystem: binding.examSystem, subject: binding.subject, tags },
+              t('mock.startFailed')
+            )
+          }
+        />
+      )}
     </View>
   );
 }
