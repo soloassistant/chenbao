@@ -73,11 +73,14 @@ export default [
     label: '定位链路把出境同意挪到 getLocation 之后（先采集后同意）',
     file: 'src/services/location.ts',
     // 2026-11-06：锚点随 #84 同步 —— 同意块内多了 markLocateFailure('denied')。
+    // 2026-11-11：锚点再同步 —— 该行日志级别由 console.warn 改成 console.error，
+    //   锚点没跟着改 ⇒ 变异用例被判「锚点出现 0 次」⇒ 整轮 verify:mutation 报 error=1
+    //   （这正是 CI 的变异步骤从未绿过的原因：它一直被前面的失败步骤 skip 掉）。
     // 变异意图不变：把同一次「同意闸门」整体挪到 getLocation 之后（先采集后同意）。
     from:
-      "    if (!(await ensureCrossBorderConsent())) {\n      markLocateFailure('denied')\n      console.warn('[Location] 未取得坐标出境单独同意，已跳过定位（不发起 getLocation）')\n      return null\n    }\n    const pos = await Taro.getLocation({ type: 'wgs84' })",
+      "    if (!(await ensureCrossBorderConsent())) {\n      markLocateFailure('denied')\n      console.error('[Location] 未取得坐标出境单独同意，已跳过定位（不发起 getLocation）')\n      return null\n    }\n    const pos = await Taro.getLocation({ type: 'wgs84' })",
     to:
-      "    const pos = await Taro.getLocation({ type: 'wgs84' })\n    if (!(await ensureCrossBorderConsent())) {\n      markLocateFailure('denied')\n      console.warn('[Location] 未取得坐标出境单独同意，已跳过定位（不发起 getLocation）')\n      return null\n    }",
+      "    const pos = await Taro.getLocation({ type: 'wgs84' })\n    if (!(await ensureCrossBorderConsent())) {\n      markLocateFailure('denied')\n      console.error('[Location] 未取得坐标出境单独同意，已跳过定位（不发起 getLocation）')\n      return null\n    }",
     cmd: 'node .tools/verify-legal.mjs'
   },
   {
