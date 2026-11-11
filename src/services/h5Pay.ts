@@ -58,7 +58,7 @@ export function isH5PayConfigured(): boolean {
 
 /** 从当前 URL 取回跳带回的订单号（没有则 null） */
 export function readReturnedOrderId(href?: string): string | null {
-  const url = href || (typeof location !== 'undefined' ? location.href : '');
+  const url = href || (typeof window !== 'undefined' ? window.location.href : '');
   if (!url) return null;
   const m = new RegExp(`[?&]${H5_PAY_RETURN_PARAM}=([^&#]+)`).exec(url);
   return m ? decodeURIComponent(m[1]) : null;
@@ -152,9 +152,9 @@ export async function queryH5Order(orderId: string): Promise<H5PayQuery> {
 
 /** 跳转到网关收银台（微信 H5 支付：h5_url 必须在外部浏览器打开） */
 export function redirectToPayUrl(payUrl: string): boolean {
-  if (typeof location === 'undefined' || !payUrl) return false;
+  if (typeof window === 'undefined' || !payUrl) return false;
   // 只允许 https，避免被塞 javascript: / data: 之类的伪协议（网关被劫持时的最后一道闸）
   if (!/^https:\/\//i.test(payUrl)) return false;
-  location.href = payUrl;
+  window.location.href = payUrl;
   return true;
 }

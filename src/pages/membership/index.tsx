@@ -32,8 +32,8 @@ import { FEATURES } from '@/utils/featureUsage';
 import type { FeatureKey, UsageSummary } from '@/utils/featureUsage';
 import { readUsageSummary } from '@/utils/usageLog';
 import { clearReadStreak, getReadFreezeCards, getReadStreak } from '@/utils/readStreak';
-import styles from '../mine/index.module.scss';
 import { createH5Order, queryH5Order, readReturnedOrderId, redirectToPayUrl } from '@/services/h5Pay';
+import styles from '../mine/index.module.scss';
 
 /**
  * 会员中心（2026-10-26 从「我的」页拆出）。
@@ -421,9 +421,9 @@ function MembershipPage() {
         Taro.showToast({ title: t('mine.h5payPending'), icon: 'none', duration: 3000 });
       }
       try {
-        const url = new URL(location.href);
+        const url = new URL(window.location.href);
         url.searchParams.delete('h5pay_order');
-        history.replaceState(null, '', url.toString());
+        window.history.replaceState(null, '', url.toString());
       } catch {
         /* 非浏览器环境（测试/小程序）不需要清理 */
       }
