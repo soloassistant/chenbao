@@ -84,6 +84,11 @@ CREATE POLICY promo_codes_admin_select ON public.promo_codes
 CREATE POLICY promo_redemptions_admin_select ON public.promo_redemptions
   FOR SELECT TO authenticated USING (public.is_app_admin());
 
+-- 金额不许为负（admin_grant_membership 与 redeem_paid_order 都先写本表，
+-- 所以这一条约束同时兜住两条入账路径，不必分别改函数）
+ALTER TABLE public.paid_order_claims
+  ADD CONSTRAINT paid_order_claims_amount_nonneg CHECK (amount_cents >= 0);
+
 -- ---------------------------------------------------------------
 -- 5) 人工开通权益
 -- ---------------------------------------------------------------
