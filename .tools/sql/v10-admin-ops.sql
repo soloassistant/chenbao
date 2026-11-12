@@ -1,6 +1,7 @@
 -- v10-admin-ops.sql —— 运营后台所需的管理员能力（2026-11-12）
 --
 -- ⚠️ 已于 2026-11-12 在应用库执行（通过 WorkBuddy 云数据库工具，mode=migrate）。
+--    同日追加：6 个遗留策略的硬编码 uid 已统一改为 public.is_app_admin()（见文末）。
 --    本文件是**版本控制副本**：幂等，可重复执行。
 --
 -- 【为什么要这个文件】
@@ -27,8 +28,15 @@ CREATE TABLE IF NOT EXISTS public.app_admins (
 );
 REVOKE ALL ON TABLE public.app_admins FROM PUBLIC, anon, authenticated;
 
+-- ⚠️【权限边界 —— 加人之前必须读】
+--   加入本表 = 可读 **全部用户** 的手机号 / 邮箱 / 注册 IP、全部订单、
+--   全部同步数据（user_kv）与 AI 事件。这不是"后台登录权限"，是全量个人信息权限。
+--   只想看订单与用量的运营同学，请单建只读角色或视图，**不要直接加入本表**。
+--   移除即刻生效（is_app_admin() 每次调用都查表）：
+--     DELETE FROM public.app_admins WHERE uid = '<uid>';
 INSERT INTO public.app_admins (uid, note)
-VALUES ('2108536518187421696', '主管理员（来自现有 RLS 策略里的硬编码 uid）')
+VALUES ('2108536518187421696',
+        '主管理员（2026-11-12 由硬编码 uid 迁入）。加入本表 = 可读全部用户手机号/IP 与全部数据。')
 ON CONFLICT (uid) DO NOTHING;
 
 -- 判定函数：客户端可调（返回布尔，不泄露名单），非管理员一律 false
@@ -195,10 +203,36 @@ GRANT EXECUTE ON FUNCTION public.admin_set_promo_active(text, boolean) TO authen
 --   期望：rowsecurity = t
 --
 -- ---------------------------------------------------------------
--- 待统一（本次刻意不动，避免权限语义与策略同时变）
+-- 6 个遗留策略已统一（2026-11-12 同日执行）
 -- ---------------------------------------------------------------
--- 下面 6 个策略仍是硬编码 `auth.uid() = '2108536518187421696'::text`，
--- 与 app_admins 重复。建议单独一笔 PR 改成 `public.is_app_admin()`：
---   client_errors_admin_select / feedback_admin_select / feedback_admin_update
---   llm_events_admin_select / orders_admin_select / user_kv_admin_select
--- 改完必须回归：后台各页仍能读，普通用户仍读不到别人的行。
+-- 原先是硬编码 `auth.uid() = '2108536518187421696'::text`，与 app_admins 重复：
+-- 加第二个管理员要改 6 处，漏一个新人就看不到数据。现已全部改为 is_app_admin()：
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT * FROM (VALUES
+      ('client_errors','client_errors_admin_select'),
+      ('feedback','feedback_admin_select'),
+      ('llm_events','llm_events_admin_select'),
+      ('orders','orders_admin_select'),
+      ('user_kv','user_kv_admin_select')
+    ) t(tbl, pol)
+  LOOP
+    EXECUTE format('ALTER POLICY %I ON public.%I USING (public.is_app_admin())', r.pol, r.tbl);
+  END LOOP;
+  EXECUTE 'ALTER POLICY feedback_admin_update ON public.feedback
+           USING (public.is_app_admin()) WITH CHECK (public.is_app_admin())';
+END $$;
+
+-- 执行后核对（应 7 行、qual 全为 is_app_admin()）：
+--   SELECT tablename, policyname, qual FROM pg_policies
+--    WHERE policyname LIKE '%admin%' ORDER BY 1,2;
+
+-- ---------------------------------------------------------------
+-- 同日新增（用户档案）
+-- ---------------------------------------------------------------
+-- admin_user_list()：全部用户的聚合（含 phone_number / 已付单数 / 同步键数 / 城市）
+-- admin_user_detail(p_uid)：单人档案（user / kv / orders / ai_events）
+-- 两者 SECURITY DEFINER，仅 authenticated 可执行。
+-- ⚠️ 手机号与注册 IP 属敏感个人信息：它们只经这两个函数回给管理员，
+--    app_users 表本身对客户端零权限。
