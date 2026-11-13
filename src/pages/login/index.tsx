@@ -828,7 +828,7 @@ export default function LoginPage() {
         </View>
 
         <View className={styles.field}>
-          <Text className={styles.label}>{channel === 'phone' ? t('auth.phone') : t('auth.email')}</Text>
+          <Text className={styles.label}>{t('auth.phone')}</Text>
           {channel === 'phone' ? (
             // 区号按钮 + 本地号码输入。两者分在两个字段里存，提交时才拼 E.164。
             <View className={styles.phoneRow}>
@@ -852,18 +852,7 @@ export default function LoginPage() {
                 }}
               />
             </View>
-          ) : (
-            <Input
-              className={styles.input}
-              type='text'
-              value={account}
-              placeholder={t('auth.emailPlaceholder')}
-              onInput={(e) => {
-                setAccount(String(e.detail.value || ''));
-                onAccountInput();
-              }}
-            />
-          )}
+          ) : null}
         </View>
 
         {tab === 'password' ? (

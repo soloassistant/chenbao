@@ -462,7 +462,15 @@ check('进入门禁在位（未登录不得进入 + 无假身份兜底）', '登
   //     且必须在**剥掉全部注释**的代码上判（否则注释里提到 +86 就被误杀）。
   //   · 顺带把「区号表不得含 +1」也提到这一层守一遍（北美号码会被 SDK 改写成 +86 号码）。
   const pageCode = stripComments(page);
-  const phoneLoginWired = /auth\.idPhone/.test(pageCode)
+  // 手机号登录必须接上，且**必须是唯一入口**（2026-11-13 升级）。
+  //   · 原判据用 auth.idPhone（通道切换按钮的文案）证明"手机号通道存在"，
+  //     但 2026-11-13 起通道固定为手机号、切换 UI 已删除，那个文案不再存在 ——
+  //     判据按新形态改写：证明手机号输入在，且**邮箱入口确实消失**（比原来更严）。
+  //   · 仍然守住：不得在代码里硬编码 +86（区号必须来自 dialCodes）、区号表不得含 +1。
+  const phoneLoginWired = /auth\.phone/.test(pageCode)
+    && !/auth\.idEmail/.test(pageCode)
+    && !/switchChannel/.test(pageCode)
+    && !/auth\.emailPlaceholder/.test(pageCode)
     && /\{\s*phone:/.test(pageCode)
     && /buildPhoneE164\(\s*dialCode\s*,\s*account\s*\)/.test(pageCode)
     && /validateNational\(\s*dialCode\s*,\s*account\s*\)/.test(pageCode)
