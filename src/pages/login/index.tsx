@@ -18,6 +18,7 @@ import {
   type AuthIdentifier
 } from '@/services/cloudAuth';
 import { ensureCaptchaPassed } from '@/utils/captcha';
+import { kvGetAll, kvSetMany } from '@/services/cloudDb';
 import { decidePostLogin } from '@/services/bindPhoneGate';
 import DialCodePicker from '@/components/DialCodePicker';
 import { DEFAULT_DIAL_CODE, isSupportedDialCode } from '@/data/dialCodes';
@@ -713,6 +714,15 @@ export default function LoginPage() {
     }
     setBindError('');
     setBindBusy(true);
+    /* 迁移快照（2026-11-13）：这一步的验证实际是「用手机号登录」。
+     * SDK 没有绑定手机号的接口（AuthModule 无 updateUser / linkIdentity，
+     * verifyOtp 也没有 phone_change），所以验证成功后会话会切到**手机号账号**，
+     * 旧邮箱账号的 user_kv（日程 / 收藏 / AI 对话）不会跟过来。
+     * 这里在切账号**之前**把数据读出来，切完再写进新账号 —— 否则用户看到的是
+     * 「绑了个手机号，数据全没了」。会员订单无法用同样方式搬（不能伪造订单），
+     * 那部分由运营在后台「人工开通」补。 */
+    const kvSnapshot = await kvGetAll().catch(() => null);
+    const beforeUid = (await getSession().catch(() => null))?.user?.id?.trim() || '';
     const res = await verifyLoginCode({
       id: bindPending.id,
       verificationId: bindPending.verificationId,
@@ -724,6 +734,24 @@ export default function LoginPage() {
       setBindError(sdkDownText(res.error, t) || t('auth.errGeneric'));
       setBindFailCount((n) => n + 1); // 收不到短信的人会反复试；试满 3 次给逃生口
       return;
+    }
+    // 会话已切到手机号账号：把刚才的快照写进去。失败不阻塞登录（人已经进来了），
+    // 但必须让人看见 —— 静默丢掉同步数据是最坏的结果。
+    if (kvSnapshot && kvSnapshot.length) {
+      const items = kvSnapshot.map((r) => ({ key: r.key, value: r.value, ts: r.clientTs }));
+      /* 留一个可追溯标记：运营在后台「用户档案」里能看到这个手机号账号是从哪个
+       * 旧账号迁过来的，据此用「人工开通」把会员权益补上（订单不能复制，那是伪造）。 */
+      if (beforeUid) {
+        items.push({
+          key: 'migrated-from',
+          value: { uid: beforeUid, at: Date.now() },
+          ts: Date.now()
+        });
+      }
+      const migrated = await kvSetMany(items);
+      if (migrated === null) {
+        Taro.showToast({ title: t('auth.bindMigrateFailed'), icon: 'none', duration: 5000 });
+      }
     }
     setBindPhone(false);
     setBindPending(null);
