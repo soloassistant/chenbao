@@ -241,7 +241,7 @@ function sameId(a: AuthIdentifier | null, b: AuthIdentifier): boolean {
 export default function LoginPage() {
   const t = useT();
   const [phase, setPhase] = useState<Phase>('checking');
-  const [channel, setChannel] = useState<IdChannel>('phone');
+  const [channel] = useState<IdChannel>('phone');
   const [tab, setTab] = useState<Tab>('otp');
   const [account, setAccount] = useState('');
   // 手机号通道的区号（不带 `+`）。默认中国大陆；主表单与绑定弹窗共用同一个值，
@@ -424,16 +424,9 @@ export default function LoginPage() {
     clearMsg();
   };
 
-  /** 切通道：清空验证码凭据与已填内容，页签复位到该通道可用的首个。换通道必须重新取码。 */
-  const switchChannel = (next: IdChannel) => {
-    setChannel(next);
-    setTab(next === 'phone' ? 'otp' : 'password');
-    setPending(null);
-    setResetTicket(null);
-    setCode('');
-    setPassword('');
-    clearMsg();
-  };
+  /* 2026-11-13：通道固定在手机号，邮箱入口已下线（产品要求「所有账号必须用手机号」）。
+   * 原来这里有个 switchChannel(next) 用来在 phone/email 之间切换，现在删掉 ——
+   * 留着它只会是一条能绕过手机号要求的隐路径。 */
 
   /** 切页签时清空验证码凭据：换了方式/账号就必须重新取码，不能拿旧 challenge 去提交 */
   const switchTab = (next: Tab) => {
@@ -798,7 +791,10 @@ export default function LoginPage() {
   // ⚠️ baseTabs 单独一行：数组字面量直接进 .filter() 会被拓宽成 string[]（TS2322），
   //    先用 Tab[] 收住类型；同时这段表达式保持**纯 JS 可求值**——
   //    门禁要把它真跑一遍（IS_H5=false/true 两种），所以里面不能掺 TS 专有语法。
-  const baseTabs: Tab[] = channel === 'phone' ? ['otp', 'password', 'signup', 'forgot'] : ['password', 'otp', 'signup', 'forgot'];
+  /* 2026-11-13：通道固定手机号后，页签只按「H5 有没有短信通道」筛选。
+   * 手机号通道四种都在（密码登录 signInWithPassword 支持 phone 标识）。
+   * 邮箱通道随切换 UI 一起下线 —— 老邮箱账号必须先绑手机号才能继续使用。 */
+  const baseTabs: Tab[] = ['otp', 'password', 'signup', 'forgot'];
   const tabs: Tab[] = baseTabs.filter((k) => IS_H5 || k !== 'forgot');
 
   return (
@@ -812,20 +808,9 @@ export default function LoginPage() {
         <Text className={styles.title}>{t('auth.title')}</Text>
         <Text className={styles.subtitle}>{t('auth.subtitle')}</Text>
 
-        {/* 通道切换：邮箱 / 手机号（短信验证码）。默认手机号。 */}
-        <View className={styles.tabs}>
-          {(['phone', 'email'] as IdChannel[]).map((k) => (
-            <View
-              key={k}
-              className={`${styles.tab} ${channel === k ? styles.tabActive : ''}`}
-              onClick={() => switchChannel(k)}
-            >
-              <Text className={channel === k ? styles.tabTextActive : styles.tabText}>
-                {t(k === 'phone' ? 'auth.idPhone' : 'auth.idEmail')}
-              </Text>
-            </View>
-          ))}
-        </View>
+        {/* 2026-11-13：通道切换（邮箱 / 手机号）已下线。
+            产品要求「所有账号必须用手机号」，入口只留手机号 —— 留一个邮箱入口
+            等于留一条绕过强制绑定的路。老邮箱账号请先绑手机号再使用。 */}
 
         <View className={styles.tabs}>
           {tabs.map((k) => (
