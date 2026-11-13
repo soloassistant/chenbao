@@ -1,0 +1,14 @@
+{
+  "name": "chenbao-pay-gateway",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "晨报 H5 支付网关：聚合支付签名下单 / 查单 / 回调验签 / 已付款凭证签发。零依赖，只需 Node 20+",
+  "main": "index.mjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node index.mjs"
+  }
+}
