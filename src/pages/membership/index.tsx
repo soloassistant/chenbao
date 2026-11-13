@@ -10,6 +10,7 @@ import type { LangKey } from '@/store/language';
 import { apiCreateOrder, type CreateOrderPayload } from '@/services/api';
 import { ordersListOwn, type CloudOrder } from '@/services/cloudOrders';
 import { recordPaidOrder, recordPromoOrder } from '@/services/subscription';
+import { getSession } from '@/services/cloudAuth';
 import { refreshEntitlement } from '@/services/entitlement';
 import { getPayChannel, getChannelAuth, invokePayment } from '@/services/pay';
 import type { PayChannel, PayOrder } from '@/types';
@@ -500,7 +501,16 @@ function MembershipPage() {
       }
       setPaying(true);
       try {
-        const ownerId = useUserStore.getState().profile?.openid || '';
+        /* ownerId 必须来自**会话**，不能只读 store 里的 profile：
+         * profile 由 init() 异步填充，init 失败/未完成时它是 null —— 此时点「立即订阅」
+         * 会拿着空 ownerId 去下单，网关返回 no-session，页面提示「请先登录」。
+         * 用户明明登录着却被说没登录，这是最容易被当成「你们产品坏了」的那类文案。
+         * 所以这里以 profile 为主、会话兜底；两者都取不到才算真的未登录。 */
+        let ownerId = useUserStore.getState().profile?.openid || '';
+        if (!ownerId) {
+          const session = await getSession();
+          ownerId = session?.user?.id?.trim() || '';
+        }
         const created = await createH5Order(planId, ownerId);
         if (created.state === 'ok' && created.payUrl) {
           if (!redirectToPayUrl(created.payUrl)) {
