@@ -37,7 +37,7 @@ const TAB_LABEL_KEY: Record<Tab, 'auth.tabPassword' | 'auth.tabOtp' | 'auth.tabS
   forgot: 'auth.tabForgot'
 };
 /** 登录标识通道：邮箱 或 手机号（短信验证码）。默认手机号（产品决策）。 */
-type IdChannel = 'email' | 'phone';
+type IdChannel = 'phone';  // 2026-11-13：邮箱通道已下线，类型里不再保留 email
 
 /**
  * 是否 H5（发布版）通道。
