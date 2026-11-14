@@ -223,6 +223,37 @@ export async function feedbackInsert(input: FeedbackInput): Promise<boolean> {
   return unwrap(res, 'feedback insert') !== null;
 }
 
+/** 「我的反馈」列表行（2026-11-15）。 */
+export interface MyFeedbackRow {
+  id: number;
+  type: string;
+  content: string;
+  status: string;
+  /** 后台写的答复；空串 = 还没回 */
+  reply: string;
+  created_at: string;
+}
+
+/**
+ * 读当前用户自己提交过的反馈（含后台答复）。
+ *
+ * 不需要任何新后端能力：`feedback_select_own` 策略（owner_id = auth.uid()）早就存在，
+ * 用户本来就能读自己那行。返回 null 表示读不到（未登录/网络），调用方必须区分
+ * 「读失败」与「真的没有」—— 把失败渲染成空态会让用户以为自己的反馈丢了。
+ */
+export async function feedbackListMine(limit = 20): Promise<MyFeedbackRow[] | null> {
+  const db = await getCloudDatabase();
+  if (!db) return null;
+  const res = await db
+    .from('feedback')
+    .select('id, type, content, status, reply, created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  const rows = unwrap(res, 'feedbackListMine');
+  if (!rows) return null;
+  return Array.isArray(rows) ? (rows as unknown as MyFeedbackRow[]) : [];
+}
+
 /** 注销工单（H5）。owner_id 由 DEFAULT auth.uid() 填充，RLS 只允许插入自己的行。 */
 export interface SupportTicketInput {
   ticketNo: string;
