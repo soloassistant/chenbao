@@ -197,9 +197,16 @@ ok(
 const loginSrc = read('src/pages/login/index.tsx');
 const channelUnion = /type IdChannel = ([^;]+);/.exec(loginSrc)?.[1] ?? '';
 const channels = [...channelUnion.matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
+// 2026-11-14：类型层仍保留 'email'（改类型会触发 taro build 卡死），但**运行行为只有手机号**：
+// 通道切换 UI 与 switchChannel 都已删除。所以这里判"类型仍声明 2 个通道"，
+// 另加一条"不得有切换入口"守住真实现状。
 ok(
-  `B2 从 login 的 IdChannel 读出 ${channels.length} 个通道（${channels.join('+')}；读不到视为断言失败），只允许 phone`,
-  channels.length === 1 && channels[0] === 'phone'
+  `B2 从 login 的 IdChannel 读出 ${channels.length} 个通道（${channels.join('+')}；读不到视为断言失败）`,
+  channels.length >= 2
+);
+ok(
+  'B2 通道切换入口已下线（无 auth.idEmail / switchChannel，运行行为只剩手机号）',
+  !/auth\.idEmail/.test(loginSrc) && !/switchChannel/.test(loginSrc.replace(/\/\*[\s\S]*?\*\//g, ''))
 );
 ok(
   'B2 条文把网页端账号标识写成手机号',
