@@ -117,10 +117,25 @@ assert(
   /\.rpc(?:<[^>]*>)?\('kv_set_many'/.test(cloudDb) && /\.rpc(?:<[^>]*>)?\('kv_clear'/.test(cloudDb),
   'kv_set_many / kv_clear 都必须是 db.rpc —— 若被改成走 invoke()，会被空白名单直接拒掉'
 );
+/**
+ * S6 客户端读 feedback 的边界（2026-11-15 放宽，但收紧了列）。
+ *
+ * 原判据是「客户端从不 SELECT feedback」—— 那是为了让 v2 收紧迁移（REVOKE anon 的
+ * SELECT）不会弄坏任何功能。2026-11-15 起用户要能在「我的」里看到自己提交过的反馈
+ * 和后台答复，必须读这张表，绝对禁令无法维持。
+ *
+ * 换成三条更细的约束（比原来更贴近真实风险）：
+ *   1. 不得 select('*') —— 必须显式列字段；
+ *   2. 显式字段里不得含 contact —— 那是用户联系方式，PII，前端一行都不该拿到；
+ *   3. 读取依赖 feedback_select_own（owner_id = auth.uid()），线上已确认该策略存在。
+ * 行级隔离由 RLS 保证，不靠客户端传 owner_id。
+ */
+const fbSelectFields = /from\('feedback'\)\s*\.select\(\s*'([^']*)'/.exec(cloudDb);
+const fbSelectStar = /from\('feedback'\)\s*\.select\(\s*['"\`]\*/.test(cloudDb);
 assert(
-  'S6 客户端从不 SELECT feedback（⇒ 收掉 anon/表的 SELECT 权限不会弄坏功能）',
-  !/from\('feedback'\)\s*\.select\(/.test(cloudDb) && !/from\('feedback'\)\s*\.select\(/.test(stripComments(read('src/services/cloudDb.ts'))),
-  'client_errors 历史上就是「匿名能读全表」的真实隐私事故，反馈表不能再走同一条路'
+  'S6 客户端读 feedback 必须显式列字段、且不得包含 contact（PII）',
+  !fbSelectStar && (!fbSelectFields || !/\bcontact\b/.test(fbSelectFields[1])),
+  'feedback.contact 是用户联系方式；只允许读自己的非 PII 列，行级隔离靠 feedback_select_own'
 );
 
 /* ═══════════════════════ 三、收紧迁移（静态） ═══════════════════════ */
