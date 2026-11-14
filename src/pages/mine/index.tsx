@@ -13,7 +13,7 @@ import { useT, useLanguageStore, LANG_OPTIONS } from '@/store/language';
 import type { LangKey } from '@/store/language';
 import { apiDeleteAccount, apiApplyPlan, apiSubmitFeedback } from '@/services/api';
 import { signOut, resetPasswordForOld, getSession } from '@/services/cloudAuth';
-import { kvClear, purgeMyH5Data, supportTicketInsert } from '@/services/cloudDb';
+import { feedbackListMine, kvClear, purgeMyH5Data, supportTicketInsert, type MyFeedbackRow } from '@/services/cloudDb';
 import { TERMS_TEXT, PRIVACY_TEXT, AI_SERVICES_TEXT } from '@/data/legal';
 import { AI_LABEL_VERSION } from '@/utils/aiLabel';
 import { disabledAttr } from '@/utils/buttonDisabled';
@@ -1215,6 +1215,27 @@ function MinePage() {
    * 关闭反馈弹层：**不清草稿**。
    * 误触遮罩就丢掉刚打完的一段字，是最容易让人放弃反馈的那种细节。
    */
+  /* 「我提交过的反馈」（2026-11-15）。
+   * 为什么必须有：后台 2026-11-15 起能给 feedback.reply 写答复，但用户侧没有入口
+   * 就等于没回 —— 提交完再也找不到自己那条，也不知道有人处理过。
+   * 读取靠 feedback_select_own（RLS 早就有），不需要新后端能力。
+   * null = 还没加载/读失败，必须与「真的没有」分开渲染。 */
+  const [fbHistory, setFbHistory] = useState<MyFeedbackRow[] | null>(null);
+  const [fbHistoryErr, setFbHistoryErr] = useState(false);
+  const loadFbHistory = async () => {
+    const rows = await feedbackListMine(10);
+    if (rows === null) {
+      setFbHistoryErr(true);
+      setFbHistory([]);
+      return;
+    }
+    setFbHistoryErr(false);
+    setFbHistory(rows);
+  };
+  // 打开反馈弹层时拉一次（弹层关闭期间提交的记录，下次打开会看到）
+  useEffect(() => {
+    if (fbOpen) void loadFbHistory();
+  }, [fbOpen]);
   const closeFeedback = () => setFbOpen(false);
 
   /**
@@ -1247,6 +1268,7 @@ function MinePage() {
       setFbContact('');
       setFbOpen(false);
       Taro.showToast({ title: fbCopy.success, icon: 'none', duration: 2600 });
+      void loadFbHistory();   // 下次打开弹层就能看到刚提交的这条
       return;
     }
     // 未落库：复制成可直接粘贴的邮件正文，明确告诉用户下一步
@@ -2104,6 +2126,45 @@ function MinePage() {
             <Text className={styles.fbService} onClick={handleContactService}>
               {fbCopy.service}
             </Text>
+
+            {/* 我提交过的反馈 + 后台答复。没有这个区块，后台写了 reply 用户也看不见。 */}
+            <View style={{ marginTop: '20PX' }}>
+              <Text className={styles.fbLabel}>
+                {lang === 'zh' ? '我提交过的反馈' : 'My reports'}
+              </Text>
+              {fbHistory === null ? (
+                <Text className={styles.fbIntro}>{lang === 'zh' ? '加载中…' : 'Loading…'}</Text>
+              ) : fbHistoryErr ? (
+                <Text className={styles.fbIntro}>
+                  {lang === 'zh' ? '读取失败，稍后再试' : 'Could not load, try again later'}
+                </Text>
+              ) : fbHistory.length === 0 ? (
+                <Text className={styles.fbIntro}>
+                  {lang === 'zh' ? '还没有提交过反馈' : 'No reports yet'}
+                </Text>
+              ) : (
+                fbHistory.map((f) => (
+                  <View
+                    key={f.id}
+                    style={{ padding: '10PX 0', borderTop: '1PX solid rgba(0,0,0,0.06)' }}
+                  >
+                    <Text className={styles.fbIntro} style={{ fontSize: '13PX' }}>
+                      {`${f.status || (lang === 'zh' ? '待处理' : 'Pending')} · ${String(
+                        f.created_at || ''
+                      ).slice(0, 10)} · ${String(f.content || '').slice(0, 40)}`}
+                    </Text>
+                    {f.reply ? (
+                      <Text
+                        className={styles.fbIntro}
+                        style={{ marginTop: '6PX', fontSize: '13PX' }}
+                      >
+                        {`${lang === 'zh' ? '答复：' : 'Reply: '}${f.reply}`}
+                      </Text>
+                    ) : null}
+                  </View>
+                ))
+              )}
+            </View>
           </View>
         </View>
       ) : null}
