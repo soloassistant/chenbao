@@ -64,7 +64,9 @@ export const FEEDBACK_TEXT: Record<'zh' | 'en', FeedbackCopy> = {
     submit: '提交',
     submitting: '提交中…',
     service: '需要人工客服？去复制邮箱或公众号 ›',
-    h5Note: '网页版暂不能直接提交，点提交后会帮你复制好内容，粘贴发送到客服邮箱即可。',
+    // 2026-11-15：H5 早在 2026-10-24 就接通了 feedback 表直写，但这条常驻文案还写着
+    // 「暂不能直接提交」—— 用户（包括我们自己）因此以为网页版提交不了。改成如实说明。
+    h5Note: '提交后进入我们的工单，通常 15 个工作日内答复；如需补充截图或更多信息，也可发邮件到 support@morningbrief.cn。',
     emptyHint: '请先写一下具体内容',
     success: '已收到，15 个工作日内答复',
     copiedTitle: '反馈内容已复制',
@@ -83,7 +85,7 @@ export const FEEDBACK_TEXT: Record<'zh' | 'en', FeedbackCopy> = {
     submit: 'Submit',
     submitting: 'Sending…',
     service: 'Need a human? Copy our email or WeChat account ›',
-    h5Note: 'The web version cannot submit directly. Tapping Submit copies your text so you can paste it into an email to support.',
+    h5Note: 'Your report goes straight into our support queue; we usually reply within 15 business days. For screenshots or extra details, email support@morningbrief.cn.',
     emptyHint: 'Please describe the issue first',
     success: 'Received — we reply within 15 business days',
     copiedTitle: 'Feedback copied',
