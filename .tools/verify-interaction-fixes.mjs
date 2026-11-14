@@ -85,7 +85,11 @@ ok(
 const login = stripComments(read('src/pages/login/index.tsx'));
 // 2026-10-29：手机通道补上了「忘记密码」（服务端支持、SDK 未封装，见 cloudAuth.requestPasswordResetByPhone），
 // 页签因此从 3 个变 4 个。判据仍是**精确数组**，多一个少一个都会红。
-ok('D1 手机通道页签含密码登录与忘记密码（otp, password, signup, forgot）', /channel === 'phone' \? \['otp', 'password', 'signup', 'forgot'\]/.test(login));
+// 2026-11-13：通道固定为手机号、切换 UI 下线，baseTabs 不再按 channel 分支。
+// 判据跟随形态变化，但语义不变且更严：页签内容必须这四项，且不得再出现 email 分支。
+ok('D1 手机通道页签含密码登录与忘记密码（otp, password, signup, forgot）',
+  /baseTabs: Tab\[\] = \['otp', 'password', 'signup', 'forgot'\]/.test(login)
+  && !/channel === 'email'/.test(login));
 ok('D2 密码登录标识随通道取值（currentId：手机号 E.164 / 邮箱）', /signInWithPassword\(currentId\(\), password\)/.test(login));
 ok('D3 旧的「切邮箱」绕行入口已移除', !/passwordHint/.test(login));
 const loginScss = stripComments(read('src/pages/login/index.module.scss'));

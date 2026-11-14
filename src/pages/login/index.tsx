@@ -18,6 +18,7 @@ import {
   type AuthIdentifier
 } from '@/services/cloudAuth';
 import { ensureCaptchaPassed } from '@/utils/captcha';
+import { kvGetAll, kvSetMany } from '@/services/cloudDb';
 import { decidePostLogin } from '@/services/bindPhoneGate';
 import DialCodePicker from '@/components/DialCodePicker';
 import { DEFAULT_DIAL_CODE, isSupportedDialCode } from '@/data/dialCodes';
@@ -36,7 +37,7 @@ const TAB_LABEL_KEY: Record<Tab, 'auth.tabPassword' | 'auth.tabOtp' | 'auth.tabS
   forgot: 'auth.tabForgot'
 };
 /** 登录标识通道：邮箱 或 手机号（短信验证码）。默认手机号（产品决策）。 */
-type IdChannel = 'email' | 'phone';
+type IdChannel = 'phone';  // 2026-11-13：邮箱通道已下线，类型里不再保留 email
 
 /**
  * 是否 H5（发布版）通道。
@@ -240,7 +241,7 @@ function sameId(a: AuthIdentifier | null, b: AuthIdentifier): boolean {
 export default function LoginPage() {
   const t = useT();
   const [phase, setPhase] = useState<Phase>('checking');
-  const [channel, setChannel] = useState<IdChannel>('phone');
+  const [channel] = useState<IdChannel>('phone');
   const [tab, setTab] = useState<Tab>('otp');
   const [account, setAccount] = useState('');
   // 手机号通道的区号（不带 `+`）。默认中国大陆；主表单与绑定弹窗共用同一个值，
@@ -423,16 +424,9 @@ export default function LoginPage() {
     clearMsg();
   };
 
-  /** 切通道：清空验证码凭据与已填内容，页签复位到该通道可用的首个。换通道必须重新取码。 */
-  const switchChannel = (next: IdChannel) => {
-    setChannel(next);
-    setTab(next === 'phone' ? 'otp' : 'password');
-    setPending(null);
-    setResetTicket(null);
-    setCode('');
-    setPassword('');
-    clearMsg();
-  };
+  /* 2026-11-13：通道固定在手机号，邮箱入口已下线（产品要求「所有账号必须用手机号」）。
+   * 原来这里有个 switchChannel(next) 用来在 phone/email 之间切换，现在删掉 ——
+   * 留着它只会是一条能绕过手机号要求的隐路径。 */
 
   /** 切页签时清空验证码凭据：换了方式/账号就必须重新取码，不能拿旧 challenge 去提交 */
   const switchTab = (next: Tab) => {
@@ -713,6 +707,15 @@ export default function LoginPage() {
     }
     setBindError('');
     setBindBusy(true);
+    /* 迁移快照（2026-11-13）：这一步的验证实际是「用手机号登录」。
+     * SDK 没有绑定手机号的接口（AuthModule 无 updateUser / linkIdentity，
+     * verifyOtp 也没有 phone_change），所以验证成功后会话会切到**手机号账号**，
+     * 旧邮箱账号的 user_kv（日程 / 收藏 / AI 对话）不会跟过来。
+     * 这里在切账号**之前**把数据读出来，切完再写进新账号 —— 否则用户看到的是
+     * 「绑了个手机号，数据全没了」。会员订单无法用同样方式搬（不能伪造订单），
+     * 那部分由运营在后台「人工开通」补。 */
+    const kvSnapshot = await kvGetAll().catch(() => null);
+    const beforeUid = (await getSession().catch(() => null))?.user?.id?.trim() || '';
     const res = await verifyLoginCode({
       id: bindPending.id,
       verificationId: bindPending.verificationId,
@@ -724,6 +727,24 @@ export default function LoginPage() {
       setBindError(sdkDownText(res.error, t) || t('auth.errGeneric'));
       setBindFailCount((n) => n + 1); // 收不到短信的人会反复试；试满 3 次给逃生口
       return;
+    }
+    // 会话已切到手机号账号：把刚才的快照写进去。失败不阻塞登录（人已经进来了），
+    // 但必须让人看见 —— 静默丢掉同步数据是最坏的结果。
+    if (kvSnapshot && kvSnapshot.length) {
+      const items = kvSnapshot.map((r) => ({ key: r.key, value: r.value, ts: r.clientTs }));
+      /* 留一个可追溯标记：运营在后台「用户档案」里能看到这个手机号账号是从哪个
+       * 旧账号迁过来的，据此用「人工开通」把会员权益补上（订单不能复制，那是伪造）。 */
+      if (beforeUid) {
+        items.push({
+          key: 'migrated-from',
+          value: { uid: beforeUid, at: Date.now() },
+          ts: Date.now()
+        });
+      }
+      const migrated = await kvSetMany(items);
+      if (migrated === null) {
+        Taro.showToast({ title: t('auth.bindMigrateFailed'), icon: 'none', duration: 5000 });
+      }
     }
     setBindPhone(false);
     setBindPending(null);
@@ -770,7 +791,10 @@ export default function LoginPage() {
   // ⚠️ baseTabs 单独一行：数组字面量直接进 .filter() 会被拓宽成 string[]（TS2322），
   //    先用 Tab[] 收住类型；同时这段表达式保持**纯 JS 可求值**——
   //    门禁要把它真跑一遍（IS_H5=false/true 两种），所以里面不能掺 TS 专有语法。
-  const baseTabs: Tab[] = channel === 'phone' ? ['otp', 'password', 'signup', 'forgot'] : ['password', 'otp', 'signup', 'forgot'];
+  /* 2026-11-13：通道固定手机号后，页签只按「H5 有没有短信通道」筛选。
+   * 手机号通道四种都在（密码登录 signInWithPassword 支持 phone 标识）。
+   * 邮箱通道随切换 UI 一起下线 —— 老邮箱账号必须先绑手机号才能继续使用。 */
+  const baseTabs: Tab[] = ['otp', 'password', 'signup', 'forgot'];
   const tabs: Tab[] = baseTabs.filter((k) => IS_H5 || k !== 'forgot');
 
   return (
@@ -784,20 +808,9 @@ export default function LoginPage() {
         <Text className={styles.title}>{t('auth.title')}</Text>
         <Text className={styles.subtitle}>{t('auth.subtitle')}</Text>
 
-        {/* 通道切换：邮箱 / 手机号（短信验证码）。默认手机号。 */}
-        <View className={styles.tabs}>
-          {(['phone', 'email'] as IdChannel[]).map((k) => (
-            <View
-              key={k}
-              className={`${styles.tab} ${channel === k ? styles.tabActive : ''}`}
-              onClick={() => switchChannel(k)}
-            >
-              <Text className={channel === k ? styles.tabTextActive : styles.tabText}>
-                {t(k === 'phone' ? 'auth.idPhone' : 'auth.idEmail')}
-              </Text>
-            </View>
-          ))}
-        </View>
+        {/* 2026-11-13：通道切换（邮箱 / 手机号）已下线。
+            产品要求「所有账号必须用手机号」，入口只留手机号 —— 留一个邮箱入口
+            等于留一条绕过强制绑定的路。老邮箱账号请先绑手机号再使用。 */}
 
         <View className={styles.tabs}>
           {tabs.map((k) => (
@@ -815,7 +828,7 @@ export default function LoginPage() {
         </View>
 
         <View className={styles.field}>
-          <Text className={styles.label}>{channel === 'phone' ? t('auth.phone') : t('auth.email')}</Text>
+          <Text className={styles.label}>{t('auth.phone')}</Text>
           {channel === 'phone' ? (
             // 区号按钮 + 本地号码输入。两者分在两个字段里存，提交时才拼 E.164。
             <View className={styles.phoneRow}>
@@ -839,18 +852,7 @@ export default function LoginPage() {
                 }}
               />
             </View>
-          ) : (
-            <Input
-              className={styles.input}
-              type='text'
-              value={account}
-              placeholder={t('auth.emailPlaceholder')}
-              onInput={(e) => {
-                setAccount(String(e.detail.value || ''));
-                onAccountInput();
-              }}
-            />
-          )}
+          ) : null}
         </View>
 
         {tab === 'password' ? (

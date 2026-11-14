@@ -1407,6 +1407,7 @@ const zh = {
   'auth.rememberLoginHint': '在本机保持登录；取消勾选会立即退出登录',
   'auth.rememberLoggedOut': '已退出登录，下次需重新验证',
   'auth.bindPhoneSkip': '稍后再说',
+  'auth.bindMigrateFailed': '已用手机号登录，但旧账号的同步数据没搬过来。请在「我的 - 数据同步」里重新拉取一次，或联系客服恢复。',
   'auth.bindPhoneSent': '验证码已发送，请查收短信',
   'auth.smsSentHint': '没收到？确认手机号无误，并检查是否被短信拦截',
 
@@ -2993,6 +2994,7 @@ const en: Record<keyof typeof zh, string> = {
   'auth.rememberLoginHint': 'Stay signed in on this device; unticking signs you out now',
   'auth.rememberLoggedOut': 'Signed out — you will verify again next time',
   'auth.bindPhoneSkip': 'Maybe later',
+  'auth.bindMigrateFailed': 'Signed in with your phone, but the previous account\'s synced data could not be copied. Re-sync from Me - Data sync, or contact support.',
   'auth.bindPhoneSent': 'Code sent — check your messages',
   'auth.privacyAgree': 'I have read and agree to the privacy notice above',
   'auth.errPrivacy': 'Please agree to the privacy notice first',

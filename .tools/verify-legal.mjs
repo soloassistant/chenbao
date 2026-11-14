@@ -190,15 +190,21 @@ ok(
   uniqSents.every((s) => UNIQ_ALLOW.some((r) => r.test(s)))
 );
 
-// B2 登录通道：从 login 的联合类型读真实通道数，再要求文本同时提到两种
+// B2 登录通道：从 login 的联合类型读真实通道数。
+// ⚠️ 2026-11-13 语义反转：产品要求「所有账号必须用手机号」（用户明确指示），
+//    邮箱登录入口已下线，IdChannel 收窄为 'phone'。所以断言从「至少 2 个通道」
+//    改为「只有 phone」—— 这是变严，不是放宽：谁把 email 加回来都会立刻红。
 const loginSrc = read('src/pages/login/index.tsx');
 const channelUnion = /type IdChannel = ([^;]+);/.exec(loginSrc)?.[1] ?? '';
 const channels = [...channelUnion.matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
 ok(
-  `B2 从 login 的 IdChannel 读出 ${channels.length} 个通道（${channels.join('+')}；读不到视为断言失败）`,
-  channels.length >= 2
+  `B2 从 login 的 IdChannel 读出 ${channels.length} 个通道（${channels.join('+')}；读不到视为断言失败），只允许 phone`,
+  channels.length === 1 && channels[0] === 'phone'
 );
-ok('B2 条文同时提到「邮箱」与「手机号」两种登录标识', LEGAL_ALL.includes('邮箱') && LEGAL_ALL.includes('手机号'));
+ok(
+  'B2 条文把网页端账号标识写成手机号',
+  /网页端[^。]{0,40}手机号/.test(LEGAL_ALL)
+);
 ok(
   'B2 条文不含「仅支持邮箱 / 只支持邮箱 / 邮箱为唯一」这类与代码相反的断言',
   !/仅支持邮箱|只支持邮箱|邮箱为唯一|唯一登录方式/.test(LEGAL_ALL)
