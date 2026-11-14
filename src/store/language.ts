@@ -1397,7 +1397,7 @@ const zh = {
   'auth.errResetEmailOnly': '改密暂只支持邮箱，请切到「邮箱登录」',
   'auth.otpSentHint': '没收到？先看垃圾邮件箱，再确认邮箱地址没写错',
   // 个保法要求的「明示同意」：登录前必须让用户看到收集范围并主动勾选，不能默认勾、也不能藏在协议里
-  'auth.privacyNotice': '邮箱或手机号仅用于账号登录与账号找回，订阅消息仅用于晨报提醒；位置信息只在你为天气功能主动授权后采集，不用于广告，坐标会发送至第三方境外地图服务解析城市名（不存储）。数据存放在你的账号下：可在「我的 - 注销账号」清除本地与云端同步数据，账号本身可联系客服删除。',
+  'auth.privacyNotice': '手机号仅用于账号登录与账号找回，订阅消息仅用于晨报提醒；位置信息只在你为天气功能主动授权后采集，不用于广告，坐标会发送至第三方境外地图服务解析城市名（不存储）。数据存放在你的账号下：可在「我的 - 注销账号」清除本地与云端同步数据，账号本身可联系客服删除。',
   'auth.privacyAgree': '我已阅读并同意上述隐私说明',
   'auth.errPrivacy': '请先勾选同意隐私说明',
   'auth.bindPhoneTitle': '绑定手机号',
@@ -2986,7 +2986,7 @@ const en: Record<keyof typeof zh, string> = {
   'auth.errResetEmailOnly': 'Password reset is email-only for now — switch to Email',
   'auth.otpSentHint': 'Not seeing it? Check your spam folder first, then confirm the address is correct',
   // 个保法要求的「明示同意」：登录前必须让用户看到收集范围并主动勾选
-  'auth.privacyNotice': 'Your email or phone number is used only to sign in and recover your account; subscription messages are used only for briefing reminders. Location is collected only after you grant permission for the weather feature and is never used for advertising; the coordinates are sent to a third-party overseas map service to resolve the city name (not stored). Your data lives under your account: My - Delete account clears local and synced data, and support can delete the account itself.',
+  'auth.privacyNotice': 'Your phone number is used only to sign in and recover your account; subscription messages are used only for briefing reminders. Location is collected only after you grant permission for the weather feature and is never used for advertising; the coordinates are sent to a third-party overseas map service to resolve the city name (not stored). Your data lives under your account: My - Delete account clears local and synced data, and support can delete the account itself.',
   'auth.bindPhoneTitle': 'Link a phone number',
   'auth.bindPhoneSubtitle': 'For account security and SMS alerts, we recommend linking a phone number',
   'auth.bindPhoneConfirm': 'Verify & link',
