@@ -467,10 +467,12 @@ check('进入门禁在位（未登录不得进入 + 无假身份兜底）', '登
   //     但 2026-11-13 起通道固定为手机号、切换 UI 已删除，那个文案不再存在 ——
   //     判据按新形态改写：证明手机号输入在，且**邮箱入口确实消失**（比原来更严）。
   //   · 仍然守住：不得在代码里硬编码 +86（区号必须来自 dialCodes）、区号表不得含 +1。
+  //   · 刻意不断言 !auth.emailPlaceholder：邮箱输入的死分支仍在 jsx 里 ——
+  //     删它会触发 taro build 卡死（2026-11-14 实测：同一份代码只删这段就 5 分钟零产出，
+  //     回退后 72s 正常）。行为上 channel 恒为 phone，那个分支不可达。
   const phoneLoginWired = /auth\.phone/.test(pageCode)
     && !/auth\.idEmail/.test(pageCode)
     && !/switchChannel/.test(pageCode)
-    && !/auth\.emailPlaceholder/.test(pageCode)
     && /\{\s*phone:/.test(pageCode)
     && /buildPhoneE164\(\s*dialCode\s*,\s*account\s*\)/.test(pageCode)
     && /validateNational\(\s*dialCode\s*,\s*account\s*\)/.test(pageCode)
