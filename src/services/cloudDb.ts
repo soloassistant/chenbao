@@ -182,11 +182,35 @@ export async function purgeMyH5Data(): Promise<
   return 'ok';
 }
 
-/** 记一条 LLM 用量事件（chat / voice）。只增不改，配额无法被抹掉。 */
-export async function llmEventInsert(kind: LlmEventKind): Promise<boolean> {
+/**
+ * 记一条 LLM 用量事件（chat / voice）。只增不改，配额无法被抹掉。
+ *
+ * 2026-11-15 起带用量明细（model / 输入输出字符数），供后台做 token 用量管理。
+ *
+ * ⚠️ 为什么存**字符数**而不是 token 数：SDK（src/assets/wb-sdk.js）的
+ * `llm.chat.completions.create` 是白名单式构造请求参数，`stream_options` 在整个 SDK 里
+ * 出现 0 次 —— 它不会请求 include_usage，所以流式响应里的 usage 拿不到。
+ * 服务端本身是支持的（实测 `stream_options:{include_usage:true}` 时最后一块带
+ * prompt_tokens/completion_tokens），但客户端 SDK 不给透传口子。
+ * 所以这里如实存字符数，后台按经验系数折算并**标注是估算**，不假装精确。
+ */
+export interface LlmUsageMeta {
+  model?: string;
+  /** 输入侧字符数（系统提示 + 用户消息） */
+  promptChars?: number;
+  /** 输出侧字符数（可见回复，不含 reasoning） */
+  completionChars?: number;
+}
+
+export async function llmEventInsert(kind: LlmEventKind, meta?: LlmUsageMeta): Promise<boolean> {
   const db = await getCloudDatabase();
   if (!db) return false;
-  const res = await db.from('llm_events').insert({ kind });
+  const res = await db.from('llm_events').insert({
+    kind,
+    model: (meta && meta.model) || '',
+    prompt_chars: Math.max(0, Math.round((meta && meta.promptChars) || 0)),
+    completion_chars: Math.max(0, Math.round((meta && meta.completionChars) || 0))
+  });
   return unwrap(res, 'llm_events insert') !== null;
 }
 
