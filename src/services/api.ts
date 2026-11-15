@@ -341,7 +341,8 @@ export function apiNewsFeedback(id: string, feedback: 'up' | 'down'): Promise<{ 
  *   · weapp：调 feedback 云函数落 feedback 集合（含 openid 归属、类型白名单、长度上限）；
  *   · H5（2026-10-24 接通）：直接 insert 应用库 `feedback` 表（RLS insert-own，
  *     owner_id 由 DEFAULT auth.uid() 服务端填充；类型白名单/长度上限是表级 CHECK）。
- *     失败仍返回 false，走原来的「复制内容 + 邮件 support@morningbrief.cn」诚实降级。
+ *     失败仍返回 false，由调用方如实告知「没提交成功」（2026-11-15 起不再引导发邮件 ——
+ *     原来的 support@morningbrief.cn 域名从未注册，邮件必退信）。
  *
  * 返回值语义：true = 已落库；false = 未落库（调用方必须让用户看见，不能显示"提交成功"）。
  */

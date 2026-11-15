@@ -63,16 +63,19 @@ export const FEEDBACK_TEXT: Record<'zh' | 'en', FeedbackCopy> = {
     contactPlaceholder: '邮箱或手机号，方便我们回复你',
     submit: '提交',
     submitting: '提交中…',
-    service: '需要人工客服？去复制邮箱或公众号 ›',
+    service: '需要人工客服？直接提交反馈，我们会在后台看到 ›',
     // 2026-11-15：H5 早在 2026-10-24 就接通了 feedback 表直写，但这条常驻文案还写着
     // 「暂不能直接提交」—— 用户（包括我们自己）因此以为网页版提交不了。改成如实说明。
-    h5Note: '提交后进入我们的工单，通常 15 个工作日内答复；如需补充截图或更多信息，也可发邮件到 support@morningbrief.cn。',
+    h5Note: '提交后直接进入我们的后台工单，通常 15 个工作日内答复。',
     emptyHint: '请先写一下具体内容',
     success: '已收到，15 个工作日内答复',
-    copiedTitle: '反馈内容已复制',
-    copiedBody: '当前环境无法直接提交。请把复制的内容粘贴发送到客服邮箱，我们同样会在 15 个工作日内答复。',
-    copyFailedTitle: '请手动发送',
-    copyFailedBody: '复制失败了。请把刚才填写的内容手动发送到客服邮箱，并在主题里写上「意见反馈」。'
+    copiedTitle: '内容已复制',
+    // 2026-11-15：原文案让用户「粘贴发到客服邮箱」，但 support@morningbrief.cn 这个域名
+    // 根本没注册（nslookup 返回 Non-existent domain），邮件必退信 —— 等于把用户的投诉
+    // 引到一条死路上。站内反馈已直通后台，降级路径只需如实说「没提交成功」。
+    copiedBody: '没有提交成功，请稍后重试。若持续失败，请把内容复制下来保留，稍后重新提交。',
+    copyFailedTitle: '提交未成功',
+    copyFailedBody: '没有提交成功，复制也失败了。请稍后重试，你的内容还留在输入框里。'
   },
   en: {
     title: 'Feedback',
@@ -84,14 +87,14 @@ export const FEEDBACK_TEXT: Record<'zh' | 'en', FeedbackCopy> = {
     contactPlaceholder: 'Email or phone so we can reply',
     submit: 'Submit',
     submitting: 'Sending…',
-    service: 'Need a human? Copy our email or WeChat account ›',
-    h5Note: 'Your report goes straight into our support queue; we usually reply within 15 business days. For screenshots or extra details, email support@morningbrief.cn.',
+    service: 'Need a human? Submit a report and we will see it in our console ›',
+    h5Note: 'Your report goes straight into our support queue; we usually reply within 15 business days.',
     emptyHint: 'Please describe the issue first',
     success: 'Received — we reply within 15 business days',
-    copiedTitle: 'Feedback copied',
-    copiedBody: 'This environment cannot submit directly. Please paste the copied text into an email to our support address; we reply within 15 business days.',
-    copyFailedTitle: 'Please send it manually',
-    copyFailedBody: 'Copy failed. Please send what you wrote to our support email with the subject "Feedback".'
+    copiedTitle: 'Text copied',
+    copiedBody: 'Submission did not go through. Please try again later; your text is kept so you can resubmit.',
+    copyFailedTitle: 'Submission failed',
+    copyFailedBody: 'Submission failed and copy failed too. Please try again later; your text is still in the box.'
   }
 };
 

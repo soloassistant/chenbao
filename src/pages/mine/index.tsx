@@ -115,10 +115,13 @@ const PUSH_MODULE_LABEL: Record<(typeof PUSH_MODULES)[number], LangKey> = {
  */
 const DELETE_CONFIRM_WORD = '注销';
 
-/** TODO：上线前在小程序后台绑定企业微信客服后替换 */
-const SERVICE_CORP_ID: string = 'TODO_CORP_ID';
-/** 客服联系方式（与 legal.ts 协议承诺的「15 个工作日内答复」配套；改这里要同步协议文本） */
-const SERVICE_EMAIL = 'support@morningbrief.cn';
+/* 2026-11-15 删除 SERVICE_CORP_ID：它只是 'TODO_CORP_ID' 占位，唯一的调用点
+ * （openCustomerServiceChat 分支）已随客服入口改造一起删除。将来真要接企业微信客服，
+ * 再按那时候的 API 重新加，不留一个看起来配过、实际是 TODO 的常量。 */
+/* 2026-11-15 删除 SERVICE_EMAIL：'support@morningbrief.cn' 这个域名从未注册
+ * （nslookup 返回 Non-existent domain），邮件必退信。客服统一走站内反馈 → 后台工单，
+ * 不再对外暴露任何邮箱地址。 */
+
 const SERVICE_WECHAT = '私人晨报助理';
 const LAST_DELETE_KEY = 'mb-last-delete-at';
 const TICKET_HISTORY_KEY = 'mb-support-tickets';
@@ -1110,55 +1113,12 @@ function MinePage() {
     }
   };
 
+  /* 2026-11-15：客服入口改为「直接提交反馈」。
+   * 原来的实现让用户复制 support@morningbrief.cn 或公众号名再离开应用去发 —— 但那个
+   * 邮箱域名根本没注册（nslookup 返回 Non-existent domain），邮件必退信，等于把投诉
+   * 引到死路上。站内反馈已直通后台（feedback 表 + 后台可回复），所以入口直接打开反馈。 */
   const handleContactService = () => {
-    /** 复制 + 明确告知下一步；复制失败如实提示，不静默 */
-    const copy = (data: string, okText: string) => {
-      Taro.setClipboardData({ data })
-        .then(() => Taro.showToast({ title: okText, icon: 'none', duration: 2400 }))
-        .catch(() => Taro.showToast({ title: '没能复制，麻烦手动记一下', icon: 'none' }));
-    };
-
-    const showServiceInfo = () => {
-      Taro.showModal({
-        title: '客服服务时间',
-        content: `每天 9:00–21:00\n邮箱：${SERVICE_EMAIL}\n微信公众号：${SERVICE_WECHAT}\n注销后删除云端记录请走「提交注销工单」\n客服将在 15 个工作日内处理`,
-        confirmText: '知道了',
-        showCancel: false
-      });
-    };
-
-    /**
-     * 2026-10-24 升级：原实现只弹一段纯文本（邮箱不可点、不可复制），用户必须自己抄下来
-     * 再离开 App —— 与协议承诺的「我的-联系客服」落差太大。现在给可执行动作。
-     */
-    const showContactActions = () => {
-      Taro.showActionSheet({
-        itemList: [`复制客服邮箱（${SERVICE_EMAIL}）`, `复制公众号名（${SERVICE_WECHAT}）`, '客服服务时间']
-      })
-        .then((res) => {
-          if (res.tapIndex === 0) copy(SERVICE_EMAIL, '邮箱已复制，去邮件 App 发给我们');
-          else if (res.tapIndex === 1) copy(SERVICE_WECHAT, '公众号名已复制，去微信搜索');
-          else showServiceInfo();
-        })
-        // 用户取消：不打扰、不报错
-        .catch(() => undefined);
-    };
-
-    // 仅在客服 ID 已真实配置时才调 openCustomerServiceChat；
-    // TODO 占位时调用必然 fail 再回退（无意义的失败请求），直接给可执行的联系方式
-    if (isWeapp && SERVICE_CORP_ID !== 'TODO_CORP_ID') {
-      const openChat = (Taro as unknown as { openCustomerServiceChat?: (opt: Record<string, unknown>) => void })
-        .openCustomerServiceChat;
-      if (typeof openChat === 'function') {
-        try {
-          openChat({ corpId: SERVICE_CORP_ID, extInfo: { url: '' }, fail: showContactActions });
-          return;
-        } catch (err) {
-          console.warn('[MinePage] openCustomerServiceChat failed:', err);
-        }
-      }
-    }
-    showContactActions();
+    setFbOpen(true);
   };
 
   const patchTk = (p: Partial<TicketForm>) => setTk((prev) => (prev ? { ...prev, ...p } : prev));
@@ -1283,7 +1243,7 @@ function MinePage() {
     }
     Taro.showModal({
       title: copied ? fbCopy.copiedTitle : fbCopy.copyFailedTitle,
-      content: `${copied ? fbCopy.copiedBody : fbCopy.copyFailedBody}\n\n${SERVICE_EMAIL}`,
+      content: copied ? fbCopy.copiedBody : fbCopy.copyFailedBody,
       confirmText: lang === 'zh' ? '知道了' : 'Got it',
       showCancel: false
     });
