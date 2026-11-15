@@ -338,7 +338,17 @@ export async function cloudLlmChat(opts: CloudLlmChatOpts): Promise<string | nul
     // ⚠️ catch 里必须 console.error 留痕：原先 `.catch(() => {})` 完全吞掉，而
     // llmEventInsert 内部的痕迹只有 console.warn（生产构建会被剔除）——记账失败
     // 在线上零痕迹，免费额度少记、账目不平且无从排查（2026-10-24 审计）。
-    void llmEventInsert('chat').catch((err) => {
+    /* 2026-11-15：带上用量明细。token 数拿不到（SDK 不透传 stream_options，见
+     * cloudDb.llmEventInsert 的注释），所以存字符数，后台按系数折算并标注估算。
+     * promptChars 用 messages 的 content 总长 —— system 提示也含在内，与计费口径近似。 */
+    void llmEventInsert('chat', {
+      model: String(model || ''),
+      promptChars: messages.reduce(
+        (n, m) => n + String((m && m.content) || '').length,
+        0
+      ),
+      completionChars: text.length
+    }).catch((err) => {
       console.error('[cloudLlm] llm_event insert failed:', err);
     });
     return sanitizeShoppingReply(text, opts.userContent);
