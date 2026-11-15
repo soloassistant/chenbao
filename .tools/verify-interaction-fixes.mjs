@@ -74,11 +74,24 @@ const mine = stripComments(read('src/pages/mine/index.tsx'));
 const svcFn = /const handleContactService = \(\) => \{([\s\S]*?)\n  \};/.exec(mine);
 const svcBody = svcFn ? svcFn[1] : '';
 ok('C1 handleContactService 函数体可定位', svcBody.length > 0);
-ok('C2 提供可执行动作（showActionSheet）', /showActionSheet\(/.test(svcBody));
-ok('C3 一键复制联系方式（setClipboardData）', /setClipboardData\(/.test(svcBody));
+/* 2026-11-15 契约反转：客服入口不再引导用户复制邮箱/公众号离开应用。
+ *
+ * 原因：原来那条路指向 support@morningbrief.cn —— 域名从未注册（nslookup 返回
+ * Non-existent domain），用户复制->发邮件->退信，等于把投诉引到死路。现在客服入口
+ * 直接打开站内反馈（直写 feedback 表、后台能看能回）。
+ *
+ * 判据随之改成**更严**的三条：
+ *   C2 必须一步到达反馈（setFbOpen(true)），且不得再有 showActionSheet 那种「复制完
+ *      还要你自己去别处发」的中转；
+ *   C3 反向：函数体里不得再出现 setClipboardData（复制邮箱正是要消灭的行为）；
+ *   C4 反向：不得存在 TODO 占位的客服常量或必失败 API 调用 —— 以前要求「有守卫」，
+ *      现在要求「根本不存在」，比守卫更强。
+ */
+ok('C2 客服入口一步到达站内反馈（setFbOpen(true)）', /setFbOpen\(true\)/.test(svcBody));
+ok('C3 客服入口不再引导复制联系方式（无 setClipboardData）', !/setClipboardData\(/.test(svcBody));
 ok(
-  'C4 TODO 占位时不调用必失败的客服 API（有守卫）',
-  /SERVICE_CORP_ID !== 'TODO_CORP_ID'/.test(svcBody)
+  'C4 不存在 TODO 占位的客服常量/必失败 API（不是加守卫，是删掉）',
+  !/SERVICE_CORP_ID/.test(svcBody) && !/TODO_CORP_ID/.test(svcBody)
 );
 
 /* ---------------- D. 手机号密码登录（2026-10-25：从「切邮箱」绕行入口升为手机通道真实页签） ---------------- */
@@ -298,12 +311,12 @@ ok('F4 landed 分支才出现成功文案（fbCopy.success）', /fbCopy\.success
 ok('F5 全文仅一处「已收到」成功文案', (mine.match(/fbCopy\.success/g) || []).length === 1);
 const fbTail = fbBody.split('if (landed)')[1] || '';
 ok(
-  'F6 未落库路径复制全文并说明去向（复制 + 邮件弹窗，且弹的是失败口径）',
+  'F6 未落库路径：复制保留内容 + 弹失败口径 + 不得出现假客服邮箱',
   /setClipboardData\(/.test(fbTail) &&
     /Taro\.showModal\(/.test(fbTail) &&
-    /SERVICE_EMAIL/.test(fbTail) &&
-    // 收紧点（变异实测）：只判「有 showModal」会被「弹窗标题改成成功文案」骗过，
-    // 必须判弹的**是哪一句** —— 未落库路径只能弹 copied/copyFailed 两种标题。
+    // 2026-11-15：原文案让用户把内容发到 support@morningbrief.cn，而该域名不存在。
+    // 现在要求**不得**再出现这个地址，且弹窗只能弹失败标题（copied/copyFailed）。
+    !/SERVICE_EMAIL|morningbrief\.cn/.test(fbTail) &&
     /copied \? fbCopy\.copiedTitle : fbCopy\.copyFailedTitle/.test(fbTail)
 );
 ok('F7 关闭弹层不清草稿（误触不丢已写内容）', (() => {
