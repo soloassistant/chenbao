@@ -35,4 +35,7 @@ export const LINGXI_URL = 'https://bb6ae4d03fbd4b109cbbe6dbbc84502d.app.workbudd
  * `process.env.TARO_ENV` 是编译期常量，所以两端各自只会留下一个分支。
  */
 export const SXM_ENTRY_URL = process.env.TARO_ENV === 'h5' ? SXM_H5_PATH : SXM_DURABLE_URL;
-export const LINGXI_ENTRY_URL = LINGXI_URL;
+/* 2026-11-16：H5 走站内（灵犀静态站已随晨报一起发，见 .tools/copy-assets.js）；
+ * 小程序没有站内网页的概念，仍用绝对地址。 */
+export const LINGXI_ENTRY_URL =
+  process.env.TARO_ENV === 'h5' ? '/lingxi/index.html' : LINGXI_URL;
