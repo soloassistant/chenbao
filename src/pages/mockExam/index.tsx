@@ -28,26 +28,55 @@ function readParams(): Record<string, string> {
 export default function MockExamPage() {
   const t = useT();
   const { theme } = useThemeStore();
-  const params = readParams();
+  /* 只在挂载时读一次：路由参数进来就不会变，每次渲染新建对象会让 useEffect 依赖不稳定
+   * （2026-11-16 加真题模式时 lint 报 exhaustive-deps）。 */
+  const params = useMemo(() => readParams(), []);
   const examSystem = (params.examSystem || 'alevel') as ExamSystem;
   const subject = decodeURIComponent(params.subject || '');
   const tagsKey = decodeURIComponent(params.tags || '');
   const tags = useMemo(() => tagsKey.split('|').filter(Boolean), [tagsKey]);
   const title = decodeURIComponent(params.title || '');
 
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'paper'>('loading');
   const [errText, setErrText] = useState('');
   const [plan, setPlan] = useState<MockExamPlan | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [responses, setResponses] = useState<Record<string, UserResponse>>({});
   const [idx, setIdx] = useState(0);
   const [left, setLeft] = useState(0);
+  /* 真题模式（2026-11-16）：从「历年真题」点进来时带 qp（试卷 PDF）/ ms（评分标准 PDF）。
+   * 为什么不做「提取题目文本」：真题是数学解答题，PDF 里第 2 题是算法流程图，文本化后
+   * 变成「START STOP INPUT A 10 A Let B 1 () 2」——残缺题比没有题更糟。
+   * 所以保留原卷：站内只负责计时与交卷，卷面在浏览器原生 PDF 里看。 */
+  const [paper, setPaper] = useState<{ qp: string; ms: string; title: string } | null>(null);
 
   const startedAt = useRef(Date.now());
   const finishing = useRef(false);
   const responsesRef = useRef<Record<string, UserResponse>>({});
 
   useEffect(() => {
+    /* 真题模式优先：有 qp 就不碰本地题库（用户没导入题也能开考）。
+     * 1.5 小时是按 Edexcel 单卷标准时长给的，PDF 首页写着 Time: 1 hour 30 minutes。 */
+    const qpParam = readParams().qp;
+    const msParam = readParams().ms;
+    const titleParam = readParams().title;
+    if (qpParam) {
+      /* title 必须在 URL 解码后才能显示 —— 上一版直接用了 params.title，
+       * 页面上标题变成 %E7%88%B1%E5%BE%B7%E6%80%9D…（2026-11-16 实测截到）。
+       * 解码失败（畸形编码）就回落到默认标题，不要让整页崩掉。 */
+      let decoded = t('mock.title');
+      if (titleParam) {
+        try {
+          decoded = decodeURIComponent(titleParam);
+        } catch {
+          decoded = titleParam;
+        }
+      }
+      setPaper({ qp: qpParam, ms: msParam || '', title: decoded });
+      setLeft(90 * 60);
+      setStatus('paper');
+      return;
+    }
     const res = loadQuestionBank(appStorage());
     if (res.status !== 'ok') {
       setErrText(res.status === 'error' ? res.message : t('mock.loadFailed'));
@@ -88,12 +117,13 @@ export default function MockExamPage() {
 
   // 计时：到点自动交卷（考试不能因为用户走神而永远挂着）
   useEffect(() => {
-    if (status !== 'ready') return;
+    if (status !== 'ready' && status !== 'paper') return;
     const timer = setInterval(() => {
       setLeft((v) => {
         if (v <= 1) {
           clearInterval(timer);
-          setTimeout(finish, 0);
+          // 真题模式没有判分逻辑，到点只是停表（finish 依赖 plan，会崩）
+          if (status === 'ready') setTimeout(finish, 0);
           return 0;
         }
         return v - 1;
@@ -116,6 +146,51 @@ export default function MockExamPage() {
       <View className={styles.page} style={brandVars(theme)}>
         <View className={styles.state}>
           <Text className={styles.stateTitle}>{t('mock.loading')}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (status === 'paper' && paper) {
+    const pm = String(Math.floor(left / 60)).padStart(2, '0');
+    const ps = String(left % 60).padStart(2, '0');
+    const open = (url: string) => {
+      if (!url) {
+        Taro.showToast({ title: t('mock.paperNoLink'), icon: 'none' });
+        return;
+      }
+      // H5 用新窗口；小程序没有 open 外链的能力，退回复制链接（不能让按钮点了没反应）
+      if (process.env.TARO_ENV === 'h5') {
+        window.open(url, '_blank');
+      } else {
+        Taro.setClipboardData({ data: url })
+          .then(() => Taro.showToast({ title: t('mock.paperCopied'), icon: 'none' }))
+          .catch(() => Taro.showToast({ title: t('mock.paperCopyFailed'), icon: 'none' }));
+      }
+    };
+    return (
+      <View className={styles.page} style={brandVars(theme)}>
+        <View className={styles.header}>
+          <View className={styles.back} onClick={back} {...pressableProps(t('common.back'))}>
+            <Text className={styles.backIcon}>‹</Text>
+            <Text className={styles.backText}>{t('common.back')}</Text>
+          </View>
+          <Text className={styles.title}>{t('mock.title')}</Text>
+        </View>
+        <View className={styles.state}>
+          <Text className={styles.stateIcon}>📄</Text>
+          <Text className={styles.stateTitle}>{paper.title}</Text>
+          <Text className={styles.stateDesc}>{t('mock.paperHint')}</Text>
+          <Text className={styles.stateDesc}>{`⏱ ${pm}:${ps}`}</Text>
+          <View className={styles.retry} onClick={() => open(paper.qp)}>
+            <Text className={styles.retryText}>{t('mock.paperOpen')}</Text>
+          </View>
+          {paper.ms ? (
+            <View className={styles.retry} onClick={() => open(paper.ms)}>
+              <Text className={styles.retryText}>{t('mock.paperAnswer')}</Text>
+            </View>
+          ) : null}
+          <Text className={styles.stateDesc}>{t('mock.paperTip')}</Text>
         </View>
       </View>
     );

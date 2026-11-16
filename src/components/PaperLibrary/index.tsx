@@ -41,9 +41,13 @@ export interface PaperLibraryProps {
     /** 该单元覆盖的考点（组卷用） */
     tags: string[];
   }) => void;
+  /** 点某套真题的「开考」：带原卷 PDF 进模拟考（2026-11-16）。
+   *  与 onStartMock 的区别：那个是按考点从本地题库组卷，用户没导入题就开不了；
+   *  这个直接拿真题原卷开考，站内只负责计时。 */
+  onStartPaper?: (payload: { title: string; qp: string; ms: string }) => void;
 }
 
-export default function PaperLibrary({ showHeader = true, onStartMock }: PaperLibraryProps) {
+export default function PaperLibrary({ showHeader = true, onStartMock, onStartPaper }: PaperLibraryProps) {
   const t = useT();
   const { theme } = useThemeStore();
 
@@ -223,6 +227,21 @@ export default function PaperLibrary({ showHeader = true, onStartMock }: PaperLi
                   ) : null}
                 </View>
                 <View className={styles.rowActions}>
+                  {onStartPaper && row.qp ? (
+                    <View
+                      className={styles.action}
+                      onClick={() =>
+                        onStartPaper({
+                          title: `${board.nameCn} ${subject.name} · ${row.code} · ${row.y}-${row.m}`,
+                          qp: row.qp,
+                          ms: row.ms || ''
+                        })
+                      }
+                      {...pressableProps(`${t('papers.mockStart')}：${row.code} ${row.y}-${row.m}`)}
+                    >
+                      <Text className={styles.actionText}>{t('papers.mockStart')}</Text>
+                    </View>
+                  ) : null}
                   <View
                     className={classnames(styles.action, !row.qp && styles.actionDisabled)}
                     onClick={() => void open(row.qp)}

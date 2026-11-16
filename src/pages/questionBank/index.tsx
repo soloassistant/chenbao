@@ -291,6 +291,12 @@ export default function QuestionBankPage() {
               t('mock.startFailed')
             )
           }
+          onStartPaper={({ title, qp, ms }) =>
+            startMockExam(
+              { title, examSystem: 'alevel', subject: 'maths', tags: [], paperQp: qp, paperMs: ms },
+              t('mock.startFailed')
+            )
+          }
         />
       )}
     </View>
