@@ -11,6 +11,7 @@ import { useT } from '@/store/language';
 import { brandVars, useThemeStore } from '@/store/theme';
 import { appStorage } from '@/utils/appStorage';
 import { loadMockExamSession, gradeMockExam, type MockExamSession, type MockExamResult } from '@/data/mockExam';
+import { reviewWrongAnswers } from '@/services/mockReview';
 import { createQuestionBankProgress } from '@/data/questionBankProgress';
 import { formatAnswerKey } from '@/utils/questionBankGrading';
 import { LINGXI_ENTRY_URL } from '@/config/partners';
@@ -24,6 +25,11 @@ export default function MockExamResultPage() {
   const [session, setSession] = useState<MockExamSession | null>(null);
   const [result, setResult] = useState<MockExamResult | null>(null);
   const [missing, setMissing] = useState(false);
+  /* AI 错题讲解（2026-11-16）：交卷后自动跑，只讲答错的题。
+   * 状态三态显式区分，失败必须让用户看见 —— 不能让「讲解区空着」被理解成「我没有错题」。 */
+  const [reviews, setReviews] = useState<Record<string, string>>({});
+  const [rvState, setRvState] = useState<'idle' | 'busy' | 'fail' | 'done'>('idle');
+  const [rvMsg, setRvMsg] = useState('');
 
   useEffect(() => {
     const s = loadMockExamSession(appStorage());
@@ -34,6 +40,31 @@ export default function MockExamResultPage() {
     setSession(s);
     const r = gradeMockExam(s.questions, s.responses, s.plan.scorePerQuestion);
     setResult(r);
+    // 只讲错题；全对时没有可讲的，不花这次调用
+    const wrong = r.details.filter((d) => !d.correct);
+    if (wrong.length) {
+      setRvState('busy');
+      void reviewWrongAnswers(wrong)
+        .then((out) => {
+          if (out.ok) {
+            setReviews(out.result.byId);
+            setRvState('done');
+            if (out.result.count < wrong.length) {
+              // 部分题没讲出来也要说，否则用户以为是全讲了
+              setRvMsg(t('mock.aiReviewPartial', { n: String(out.result.count), total: String(wrong.length) }));
+            }
+          } else {
+            setRvState('fail');
+            setRvMsg(out.reason === 'ai-unavailable' ? t('mock.aiReviewNoAi') : t('mock.aiReviewFail'));
+          }
+        })
+        .catch(() => {
+          setRvState('fail');
+          setRvMsg(t('mock.aiReviewFail'));
+        });
+    } else {
+      setRvState('done');
+    }
     try {
       const progress = createQuestionBankProgress(appStorage());
       for (const d of r.details) progress.record(d.question.id, d.correct);
@@ -41,6 +72,10 @@ export default function MockExamResultPage() {
       // 写不进错题本不该让整张成绩页失败 —— 如实留痕，其余照常展示
       console.error('[MockExam] progress write failed:', err);
     }
+    /* 依赖数组刻意留空：这个 effect 是「进页面判分一次」。
+     * 把 t 加进来会在语言切换/重渲染时重跑 —— 那会重新调一次 AI 讲解（花钱且重复）。
+     * 代价是切换语言后本页文案不即时刷新，可接受（用户重进页面就好）。 */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const myAnswer = (response: unknown): string => {
@@ -120,6 +155,18 @@ export default function MockExamResultPage() {
       <Text className={styles.stateDesc}>{session.plan.title}</Text>
       <Text className={styles.stateDesc}>{session.plan.sourceNote}</Text>
 
+      {/* AI 讲解状态：busy / fail / 部分成功 都要可见 */}
+      {rvState === 'busy' ? (
+        <Text className={styles.stateDesc}>{t('mock.aiReviewBusy')}</Text>
+      ) : rvState === 'fail' ? (
+        <Text className={styles.stateDesc}>{rvMsg || t('mock.aiReviewFail')}</Text>
+      ) : rvState === 'done' && Object.keys(reviews).length ? (
+        <>
+          <Text className={styles.stateDesc}>{t('mock.aiReviewNote')}</Text>
+          {rvMsg ? <Text className={styles.stateDesc}>{rvMsg}</Text> : null}
+        </>
+      ) : null}
+
       {/* 逐题明细 */}
       {result.details.map((d, i) => (
         <View key={d.question.id} className={styles.card}>
@@ -138,6 +185,13 @@ export default function MockExamResultPage() {
             <>
               <Text className={styles.badge}>{t('qb.explanationTitle')}</Text>
               <Text className={styles.detailRow}>{d.question.explanation}</Text>
+            </>
+          ) : null}
+          {/* AI 只讲错题；答对的题不重复讲，避免刷屏 */}
+          {!d.correct && reviews[d.question.id] ? (
+            <>
+              <Text className={styles.badge}>{t('mock.aiReview')}</Text>
+              <Text className={styles.detailRow}>{reviews[d.question.id]}</Text>
             </>
           ) : null}
         </View>
