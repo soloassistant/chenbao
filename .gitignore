@@ -146,3 +146,5 @@ deliverables/
 # 但会一直以 ?? 出现在 git status，且会被一次 `git add -A` 带进 public 仓库。
 .trae-html-share-packages/
 star-empire-qa-*/
+
+dist.bak*/
