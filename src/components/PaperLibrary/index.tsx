@@ -44,7 +44,13 @@ export interface PaperLibraryProps {
   /** 点某套真题的「开考」：带原卷 PDF 进模拟考（2026-11-16）。
    *  与 onStartMock 的区别：那个是按考点从本地题库组卷，用户没导入题就开不了；
    *  这个直接拿真题原卷开考，站内只负责计时。 */
-  onStartPaper?: (payload: { title: string; qp: string; ms: string }) => void;
+  onStartPaper?: (payload: {
+    title: string;
+    qp: string;
+    ms: string;
+    examSystem: string;
+    subject: string;
+  }) => void;
 }
 
 export default function PaperLibrary({ showHeader = true, onStartMock, onStartPaper }: PaperLibraryProps) {
@@ -234,7 +240,10 @@ export default function PaperLibrary({ showHeader = true, onStartMock, onStartPa
                         onStartPaper({
                           title: `${board.nameCn} ${subject.name} · ${row.code} · ${row.y}-${row.m}`,
                           qp: row.qp,
-                          ms: row.ms || ''
+                          ms: row.ms || '',
+                          // 真实体系/学科：AI 出题要用它去匹配题库闭集（alevel 的数学是 'mathematics' 不是 'maths'）
+                          examSystem: (bindingForUnit(board.id, subject.id, active.base) || mockBinding)?.examSystem || 'alevel',
+                          subject: (bindingForUnit(board.id, subject.id, active.base) || mockBinding)?.subject || 'mathematics'
                         })
                       }
                       {...pressableProps(`${t('papers.mockStart')}：${row.code} ${row.y}-${row.m}`)}
