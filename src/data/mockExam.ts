@@ -124,7 +124,14 @@ export function buildMockExam(questions: Question[], opts: MockExamOptions): Moc
   // 轮转抽题：每轮每个考点各出 1 题（已被别的桶选走的跳过），保证覆盖面
   const picked: Question[] = [];
   const pickedIds = new Set<string>();
-  for (let round = 0; round < opts.tags.length * 4 && picked.length < target; round++) {
+  /* 轮数上限必须够抽满 target —— 原来是 tags.length * 4，单个考点时最多抽 4 题，
+   * 于是「AI 出一套」生成了 6 道却只考 4 道（2026-11-16 实测）。
+   * 每轮每个考点各抽 1 题，所以轮数 = target / 标签数 就够；取两者较大值兼容标签多的场景。 */
+  const maxRounds = Math.max(
+    opts.tags.length * 4,
+    Math.ceil(target / Math.max(1, opts.tags.length)) + 1
+  );
+  for (let round = 0; round < maxRounds && picked.length < target; round++) {
     let progressed = false;
     for (const tag of opts.tags) {
       if (picked.length >= target) break;

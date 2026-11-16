@@ -291,9 +291,9 @@ export default function QuestionBankPage() {
               t('mock.startFailed')
             )
           }
-          onStartPaper={({ title, qp, ms }) =>
+          onStartPaper={({ title, qp, ms, examSystem, subject: paperSubject }) =>
             startMockExam(
-              { title, examSystem: 'alevel', subject: 'maths', tags: [], paperQp: qp, paperMs: ms },
+              { title, examSystem: examSystem as ExamSystem, subject: paperSubject, tags: [], paperQp: qp, paperMs: ms },
               t('mock.startFailed')
             )
           }

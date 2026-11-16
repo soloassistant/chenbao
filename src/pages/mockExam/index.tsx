@@ -13,6 +13,8 @@ import classnames from 'classnames';
 import { useT } from '@/store/language';
 import { brandVars, useThemeStore } from '@/store/theme';
 import { loadQuestionBank } from '@/data/questionBankQuery';
+import { createQuestionBankRepo } from '@/data/questionBankRepo';
+import { generateQuestions } from '@/services/paperGen';
 import { appStorage } from '@/utils/appStorage';
 import { buildMockExam, saveMockExamSession, type MockExamPlan } from '@/data/mockExam';
 import type { ExamSystem, Question } from '@/types/questionBank';
@@ -44,6 +46,11 @@ export default function MockExamPage() {
   const [responses, setResponses] = useState<Record<string, UserResponse>>({});
   const [idx, setIdx] = useState(0);
   const [left, setLeft] = useState(0);
+  /* AI 出题（2026-11-16）：空题库时的出路。生成的题直接写进本地题库，
+   * 用户之后在「我的题库」里也能看到、能编辑、能复用。 */
+  const [genState, setGenState] = useState<'idle' | 'busy' | 'fail'>('idle');
+  const [genMsg, setGenMsg] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
   /* 真题模式（2026-11-16）：从「历年真题」点进来时带 qp（试卷 PDF）/ ms（评分标准 PDF）。
    * 为什么不做「提取题目文本」：真题是数学解答题，PDF 里第 2 题是算法流程图，文本化后
    * 变成「START STOP INPUT A 10 A Let B 1 () 2」——残缺题比没有题更糟。
@@ -95,7 +102,7 @@ export default function MockExamPage() {
     setQuestions(qs);
     setLeft(p.durationMin * 60);
     setStatus('ready');
-  }, [examSystem, subject, tags, tagsKey, title, t]);
+  }, [examSystem, subject, tags, tagsKey, title, t, reloadKey]);
 
   const finish = useCallback(() => {
     if (finishing.current || !plan) return;
@@ -136,6 +143,56 @@ export default function MockExamPage() {
     responsesRef.current = { ...responsesRef.current, [q.id]: v };
     setResponses(responsesRef.current);
   };
+
+  /* AI 按考点出一套题：生成 → 写入本地题库 → 触发重新组卷。
+   * 失败必须出声（模型不可用 / JSON 不合法 / 全部校验不过），不能让按钮点了没反应。 */
+  const genAi = useCallback(async () => {
+    if (genState === 'busy') return;
+    setGenState('busy');
+    setGenMsg(t('mock.genBusy'));
+    try {
+      const r = await generateQuestions({
+        topic: `${title || t('mock.title')} · ${subject || ''}`.trim(),
+        tags,
+        count: 6,
+        examSystem,
+        subject: subject || undefined
+      });
+      if (!r.ok) {
+        setGenState('fail');
+        setGenMsg(
+          r.reason === 'ai-unavailable'
+            ? t('mock.genNoAi')
+            : r.reason === 'ai-bad-json' || r.reason === 'ai-all-invalid'
+              ? t('mock.genBadOutput')
+              : t('mock.genFailed')
+        );
+        return;
+      }
+      const repo = createQuestionBankRepo(appStorage());
+      /* 统计**实际入库数**，不是生成数 —— repo.add() 会做校验（knowledgeTags 必须在
+       * SYLLABUS_TOPICS 闭集内等），一条都进不去时如果说「已生成 6 道」就是撒谎。
+       * 2026-11-16 实测：用假 tag 验证时 6 道全被拒，界面却显示成功。 */
+      let added = 0;
+      for (const q of r.questions) {
+        try {
+          repo.add(q);
+          added += 1;
+        } catch { /* 单题重复/非法跳过，继续尝试其余 */ }
+      }
+      setGenState('idle');
+      if (added === 0) {
+        setGenState('fail');
+        setGenMsg(t('mock.genNotSaved'));
+        return;
+      }
+      setGenMsg(t('mock.genDone', { n: String(added) }));
+      setReloadKey((v) => v + 1); // 让组卷 effect 重跑
+    } catch {
+      setGenState('fail');
+      setGenMsg(t('mock.genFailed'));
+    }
+  }, [genState, title, subject, tags, t]);
 
   const back = useCallback(() => {
     Taro.navigateBack().catch(() => Taro.reLaunch({ url: '/pages/questionBank/index' }));
@@ -213,6 +270,17 @@ export default function MockExamPage() {
           <View className={styles.retry} onClick={back} {...pressableProps(t('common.back'))}>
             <Text className={styles.retryText}>{t('common.back')}</Text>
           </View>
+          {/* 空题库的出路：按本卷考点让 AI 出一套（生成的题会存进本地题库） */}
+          <View
+            className={styles.retry}
+            onClick={() => void genAi()}
+            {...pressableProps(t('mock.genBtn'))}
+          >
+            <Text className={styles.retryText}>
+              {genState === 'busy' ? t('mock.genBusy') : t('mock.genBtn')}
+            </Text>
+          </View>
+          {genMsg ? <Text className={styles.stateDesc}>{genMsg}</Text> : null}
         </View>
       </View>
     );

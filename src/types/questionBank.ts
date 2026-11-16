@@ -8,14 +8,16 @@ export type Board = 'cie' | 'edexcel' | 'aqa' | 'ocr' | 'collegeboard' | 'ibo' |
 export type Level = 'hl' | 'sl' | 'as' | 'a2' | 'foundation' | 'higher' | 'standard' | 'na';
 export type QuestionType = 'single' | 'multi' | 'fill' | 'judge';
 export type LangCode = 'zh' | 'en';
-export type QuestionSource = 'manual' | 'import' | 'official';
+/* 'ai' = 由 AI 按考点生成（2026-11-16）。单独一档而不是混进 'manual'：
+ * 用户需要能分辨「我自己出的题」和「模型出的题」，后者可能有错。 */
+export type QuestionSource = 'manual' | 'import' | 'official' | 'ai';
 
 export const EXAM_SYSTEMS: readonly ExamSystem[] = ['gaokao', 'zhongkao', 'igcse', 'alevel', 'ap', 'ib', 'other'];
 export const BOARDS: readonly Board[] = ['cie', 'edexcel', 'aqa', 'ocr', 'collegeboard', 'ibo', 'china_moe', 'other'];
 export const LEVELS: readonly Level[] = ['hl', 'sl', 'as', 'a2', 'foundation', 'higher', 'standard', 'na'];
 export const QUESTION_TYPES: readonly QuestionType[] = ['single', 'multi', 'fill', 'judge'];
 export const LANG_CODES: readonly LangCode[] = ['zh', 'en'];
-export const QUESTION_SOURCES: readonly QuestionSource[] = ['manual', 'import', 'official'];
+export const QUESTION_SOURCES: readonly QuestionSource[] = ['manual', 'import', 'official', 'ai'];
 /** 英文卷体系：这些体系用 zh 只给 warning，不拒绝（IB 也有中文 B 等课程）。 */
 export const ENGLISH_EXAMS: readonly ExamSystem[] = ['igcse', 'alevel', 'ap', 'ib'];
 
