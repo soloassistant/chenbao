@@ -10,6 +10,7 @@ import PaperLibrary from '@/components/PaperLibrary';
 import { useT } from '@/store/language';
 import { brandVars, useThemeStore } from '@/store/theme';
 import { startMockExam } from '@/utils/mockExamNav';
+import type { ExamSystem } from '@/types/questionBank';
 
 export default function PapersPage() {
   const t = useT();
@@ -25,9 +26,9 @@ export default function PapersPage() {
             t('mock.startFailed')
           )
         }
-        onStartPaper={({ title, qp, ms }) =>
+        onStartPaper={({ title, qp, ms, examSystem, subject }) =>
           startMockExam(
-            { title, examSystem: 'alevel', subject: 'maths', tags: [], paperQp: qp, paperMs: ms },
+            { title, examSystem: examSystem as ExamSystem, subject, tags: [], paperQp: qp, paperMs: ms },
             t('mock.startFailed')
           )
         }
