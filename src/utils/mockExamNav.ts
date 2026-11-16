@@ -11,6 +11,10 @@ import type { ExamSystem } from '@/types/questionBank';
 export interface MockExamLaunch {
   /** 卷面标题，例如「Edexcel 数学 · 纯数 1」 */
   title: string;
+  /** 真题模式：试卷 PDF 链接。带上它时 mockExam 不加载本地题库，直接按原卷计时开考。 */
+  paperQp?: string;
+  /** 真题模式：评分标准 PDF 链接（交卷后自评用）。 */
+  paperMs?: string;
   /** 题库体系 */
   examSystem: ExamSystem;
   /** 题库里的学科 */
@@ -21,12 +25,15 @@ export interface MockExamLaunch {
 
 export function mockExamUrl(launch: MockExamLaunch): string {
   const q = (s: string) => encodeURIComponent(s);
-  return (
+  const base =
     `/pages/mockExam/index?examSystem=${q(launch.examSystem)}` +
     `&subject=${q(launch.subject)}` +
     `&tags=${q(launch.tags.join('|'))}` +
-    `&title=${q(launch.title)}`
-  );
+    `&title=${q(launch.title)}`;
+  // 真题模式的两个参数：没有就不拼，避免空串被当成"有 qp 但为空"
+  const qp = launch.paperQp ? `&qp=${q(launch.paperQp)}` : '';
+  const ms = launch.paperMs ? `&ms=${q(launch.paperMs)}` : '';
+  return base + qp + ms;
 }
 
 /** 跳去考试页；失败要出声（静默失败＝用户以为点坏了） */
