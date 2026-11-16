@@ -27,7 +27,11 @@ const jobs = [
   { from: path.join(src, 'share-cover.png'), to: path.join(dist, 'assets/share-cover.png') },
   // 2026-10-14 自托管云服务 SDK：不再从 jsdelivr CDN 拉取（中国大陆常被墙 → 登录不可用）。
   // 同源 ./assets/wb-sdk.js，随产物上线，去掉对外部 CDN 的运行时依赖。
-  { from: path.join(src, 'wb-sdk.js'), to: path.join(dist, 'assets/wb-sdk.js') }
+  { from: path.join(src, 'wb-sdk.js'), to: path.join(dist, 'assets/wb-sdk.js') },
+  /* 灵犀课堂（2026-11-16 复制进来）：纯静态站，整目录拷到 dist/lingxi。
+   * 它原来独立部署在 workbuddy.host，用户要跳外链；现在随晨报一起发，
+   * 入口用站内 /lingxi/index.html。 */
+  { from: path.join(src, 'lingxi'), to: path.join(dist, 'lingxi'), dir: true }
 ];
 
 let copied = 0;
@@ -39,10 +43,17 @@ for (const job of jobs) {
   fs.mkdirSync(path.dirname(job.to), { recursive: true });
   if (fs.statSync(job.from).isDirectory()) {
     fs.mkdirSync(job.to, { recursive: true });
-    for (const f of fs.readdirSync(job.from)) {
-      if (f.endsWith('.png')) {
-        fs.copyFileSync(path.join(job.from, f), path.join(job.to, f));
-        copied++;
+    if (job.dir) {
+      /* 整目录递归（灵犀课堂用）：原来只拷 .png 是给 tabbar 目录写的，
+       * 灵犀有 js/css/html，必须整棵拷过去。2026-11-16 加。 */
+      fs.cpSync(job.from, job.to, { recursive: true });
+      copied++;
+    } else {
+      for (const f of fs.readdirSync(job.from)) {
+        if (f.endsWith('.png')) {
+          fs.copyFileSync(path.join(job.from, f), path.join(job.to, f));
+          copied++;
+        }
       }
     }
   } else {
