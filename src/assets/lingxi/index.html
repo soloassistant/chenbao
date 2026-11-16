@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>灵犀课堂 · AI 一对一直播课</title>
+<meta name="description" content="灵犀课堂：面向国内课程与 IB / A-Level / HKDSE / AP 的 AI 一对一直播课。AI 老师实时讲课、随时可打断提问，并跨课程记住每一位学生。">
+<meta name="theme-color" content="#5B5CE6">
+<meta name="color-scheme" content="light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://ai-tutor-live.app.workbuddy.host https://*.workbuddy.host; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%235B5CE6'/%3E%3Cpath d='M10 21.5V11l6 6 6-6v10.5' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="toast-wrap" class="toast-wrap" role="status" aria-live="polite"></div>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" data-nav="home" href="#">
+      <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
+        <rect x="1" y="1" width="30" height="30" rx="9" fill="url(#lg-brand)"/>
+        <defs><linearGradient id="lg-brand" x1="0" y1="0" x2="32" y2="32">
+          <stop stop-color="#6366F1"/><stop offset="1" stop-color="#8B5CF6"/>
+        </linearGradient></defs>
+        <path d="M10 21.5V11l6 6 6-6v10.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="brand-name">灵犀课堂</span>
+      <span class="brand-sub">AI 一对一</span>
+    </a>
+    <nav class="nav-links">
+      <a data-nav="home" class="active" href="#">首页</a>
+      <a data-nav="generate" href="#">生成课程</a>
+      <a data-nav="live" href="#">直播课堂</a>
+      <a data-nav="courses" href="#">我的课程</a>
+      <a data-nav="memory" href="#">学习档案</a>
+    </nav>
+    <div class="nav-right">
+      <button type="button" id="ai-status" class="ai-status" aria-live="polite"><i class="dot dot-wait"></i>AI 连接中…</button>
+      <button class="btn btn-ghost btn-sm" id="btn-auth">登录 / 注册</button>
+      <button class="btn btn-primary btn-sm btn-try" data-nav="generate">免费体验</button>
+      <button class="nav-burger" id="btn-burger" type="button"
+              aria-label="打开导航菜单" aria-expanded="false" aria-controls="mobile-nav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav" hidden aria-label="主导航">
+    <a data-nav="home" href="#">首页</a>
+    <a data-nav="generate" href="#">生成课程</a>
+    <a data-nav="live" href="#">直播课堂</a>
+    <a data-nav="courses" href="#">我的课程</a>
+    <a data-nav="memory" href="#">学习档案</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ============ 首页 ============ -->
+  <section id="view-home" class="view active">
+    <div class="hero">
+      <div class="hero-text">
+        <span class="hero-badge">✦ 心有灵犀 · AI 更懂你</span>
+        <h1>AI 一对一直播课<br><em>为每一个学生</em>量身定制</h1>
+        <p class="hero-desc">国内课程与 <b>IB · A-Level · HKDSE · AP</b> 及标化考试全覆盖。输入科目与考纲，AI 秒级生成专属课程；走进直播间，AI 老师一对一实时互动——随时提问、个性出题、耐心陪伴。</p>
+        <div class="hero-cta">
+          <button class="btn btn-primary btn-lg" data-nav="generate">立即生成我的课程</button>
+          <button class="btn btn-ghost btn-lg" data-nav="live">先看看直播间</button>
+        </div>
+        <div class="hero-stats">
+          <div class="stat"><b>22+</b><span>覆盖科目</span></div>
+          <div class="stat"><b>2</b><span>课程体系</span></div>
+          <div class="stat"><b>1v1</b><span>专属陪伴</span></div>
+          <div class="stat"><b>24h</b><span>随时开课</span></div>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <svg viewBox="0 0 560 440" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="hg1" x1="0" y1="0" x2="1" y2="1">
+              <stop stop-color="#6366F1"/><stop offset="1" stop-color="#8B5CF6"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="280" cy="240" rx="252" ry="180" fill="url(#hg1)" opacity="0.10"/>
+          <ellipse cx="470" cy="70" rx="58" ry="16" fill="#F97316" opacity="0.14"/>
+
+          <g class="float-slow">
+            <!-- 主窗口 -->
+            <rect x="80" y="70" width="400" height="290" rx="18" fill="#FFFFFF" stroke="#E7E9F2" stroke-width="1.5"/>
+            <path d="M80 88 a18 18 0 0 1 18 -18 h364 a18 18 0 0 1 18 18 v24 h-400 z" fill="#F3F4FB"/>
+            <circle cx="104" cy="91" r="5" fill="#E0E2F0"/>
+            <circle cx="122" cy="91" r="5" fill="#FDBA74"/>
+            <circle cx="140" cy="91" r="5" fill="#6EE7B7"/>
+            <!-- LIVE -->
+            <rect x="98" y="124" width="66" height="26" rx="13" fill="#FEE2E2"/>
+            <circle cx="114" cy="137" r="4.5" fill="#EF4444"/>
+            <text x="126" y="141.5" font-size="12" font-weight="700" fill="#EF4444" font-family="Arial">LIVE</text>
+
+            <!-- AI 老师 -->
+            <circle cx="180" cy="218" r="54" fill="#EEF0FF"/>
+            <rect x="150" y="236" width="60" height="36" rx="17" fill="#6366F1"/>
+            <circle cx="180" cy="215" r="27" fill="#FFDCC8"/>
+            <path d="M153 216 a27 27 0 0 1 54 0 z" fill="#3F3D56"/>
+            <circle cx="171" cy="218" r="7" fill="#FFFFFF" fill-opacity="0.85" stroke="#3F3D56" stroke-width="2"/>
+            <circle cx="189" cy="218" r="7" fill="#FFFFFF" fill-opacity="0.85" stroke="#3F3D56" stroke-width="2"/>
+            <line x1="178" y1="218" x2="182" y2="218" stroke="#3F3D56" stroke-width="2"/>
+            <path d="M172 231 q8 7 16 0" stroke="#C97B5A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <circle cx="164" cy="226" r="3" fill="#FFB4A2" opacity="0.7"/>
+            <circle cx="196" cy="226" r="3" fill="#FFB4A2" opacity="0.7"/>
+            <path d="M148 210 a32 32 0 0 1 64 0" stroke="#F97316" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+            <circle cx="148" cy="216" r="5.5" fill="#F97316"/>
+            <circle cx="212" cy="216" r="5.5" fill="#F97316"/>
+
+            <!-- 学生 -->
+            <circle cx="345" cy="226" r="44" fill="#FFF1E6"/>
+            <rect x="319" y="248" width="52" height="30" rx="15" fill="#14B8A6"/>
+            <circle cx="345" cy="224" r="22" fill="#FFE3D0"/>
+            <path d="M323 222 a22 22 0 0 1 44 0 z" fill="#6B4A3A"/>
+            <circle cx="338" cy="226" r="2.2" fill="#3F3D56"/>
+            <circle cx="352" cy="226" r="2.2" fill="#3F3D56"/>
+            <path d="M339 234 q6 5 12 0" stroke="#C97B5A" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+
+            <!-- 气泡 -->
+            <rect x="243" y="148" width="62" height="26" rx="13" fill="#EEF0FF"/>
+            <rect x="252" y="157" width="28" height="4" rx="2" fill="#8B8FE8"/>
+            <rect x="252" y="164" width="40" height="4" rx="2" fill="#C3C5F2"/>
+            <rect x="246" y="252" width="54" height="24" rx="12" fill="#D9F6F1"/>
+            <circle cx="262" cy="264" r="2.6" fill="#14B8A6"/>
+            <circle cx="273" cy="264" r="2.6" fill="#14B8A6"/>
+            <circle cx="284" cy="264" r="2.6" fill="#14B8A6"/>
+
+            <!-- 进度 -->
+            <rect x="108" y="298" width="344" height="10" rx="5" fill="#EEF0FF"/>
+            <rect x="108" y="298" width="212" height="10" rx="5" fill="url(#hg1)"/>
+            <rect x="108" y="322" width="200" height="8" rx="4" fill="#EFF1F8"/>
+            <rect x="108" y="338" width="150" height="8" rx="4" fill="#EFF1F8"/>
+          </g>
+
+          <!-- 浮动卡片 -->
+          <g class="float-chip" transform="translate(8 52) rotate(-6)">
+            <rect width="122" height="42" rx="12" fill="#FFFFFF" stroke="#E7E9F2"/>
+            <text x="61" y="27" text-anchor="middle" font-size="15" font-weight="700" fill="#5B5CE6" font-family="Georgia">a² + b² = c²</text>
+          </g>
+          <g class="float-chip2" transform="translate(436 322) rotate(5)">
+            <rect width="112" height="40" rx="12" fill="#FFFFFF" stroke="#E7E9F2"/>
+            <text x="56" y="26" text-anchor="middle" font-size="14" font-weight="700" fill="#14B8A6" font-family="Arial">Hello! 你好！</text>
+          </g>
+          <g transform="translate(28 336)">
+            <rect x="0" y="4" width="40" height="30" rx="4" fill="#F97316"/>
+            <rect x="34" y="0" width="40" height="34" rx="4" fill="#FDBA74"/>
+            <line x1="44" y1="10" x2="64" y2="10" stroke="#FFF7ED" stroke-width="3"/>
+            <line x1="44" y1="18" x2="64" y2="18" stroke="#FFF7ED" stroke-width="3"/>
+          </g>
+          <path d="M508 128 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4 z" fill="#8B5CF6" opacity="0.8"/>
+          <path d="M64 176 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 z" fill="#F97316" opacity="0.8"/>
+          <circle cx="530" cy="52" r="5" fill="#6366F1" opacity="0.5"/>
+          <circle cx="40" cy="70" r="4" fill="#14B8A6" opacity="0.5"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>选择课程体系与科目</h2>
+      <p class="section-sub">国内同步 / 中高考 与 IB · A-Level · HKDSE · AP · 标化考试，一键开课</p>
+      <div class="system-tabs" id="system-tabs"></div>
+      <div class="subject-head">
+        <span>当前：<b id="subject-sys-name">国内课程</b> · 共 <b id="subject-count">10</b> 个科目</span>
+        <span class="subject-head-tip">点击卡片直接生成课程</span>
+      </div>
+      <div class="subject-grid" id="subject-grid"></div>
+    </div>
+
+    <div class="section">
+      <h2>三步开启专属课堂</h2>
+      <div class="steps-grid">
+        <div class="step-card">
+          <span class="step-num">01</span>
+          <div class="step-ico">🎯</div>
+          <h3>说出你的目标</h3>
+          <p>选择课程体系、科目与学习阶段，越具体，课程越贴合你。</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">02</span>
+          <div class="step-ico">✨</div>
+          <h3>AI 生成专属课程</h3>
+          <p>AI 课程设计师秒级产出：知识点、教学环节、课后练习一应俱全。</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">03</span>
+          <div class="step-ico">🎥</div>
+          <h3>走进一对一直播间</h3>
+          <p>灵犀老师在线开讲：实时问答、个性出题、白板同步、课堂小结。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-banner">
+      <h2>现在，让 AI 老师认识你</h2>
+      <p>国内同步 / 中高考 / IB / A-Level / HKDSE / AP / 雅思托福SAT，第一次上课免费体验</p>
+      <button class="btn btn-light btn-lg" data-nav="generate">免费生成第一节课</button>
+    </div>
+  </section>
+
+  <!-- ============ 生成课程 ============ -->
+  <section id="view-generate" class="view">
+    <div class="page-head">
+      <h2>AI 课程生成</h2>
+      <p>告诉我们你的情况，AI 为你定制一节一对一直播课</p>
+    </div>
+    <div class="gen-layout">
+      <div class="card gen-form">
+        <div class="field">
+          <label>课程体系</label>
+          <div class="chip-row" id="gen-systems"></div>
+          <p class="field-note" id="gen-sys-note"></p>
+        </div>
+        <div class="field" id="gen-boards-field" hidden>
+          <label>考纲 / 考试局 <small>（可多选）</small></label>
+          <div class="board-row" id="gen-boards"></div>
+        </div>
+        <div class="field">
+          <label>科目</label>
+          <div class="chip-row" id="gen-subjects"></div>
+        </div>
+        <div class="field">
+          <label>学段 / 学习阶段</label>
+          <select id="gen-grade"></select>
+        </div>
+        <div class="field">
+          <label>学习目标 <small>（想解决什么？想达到什么水平？）</small></label>
+          <div class="goal-presets" id="gen-goal-presets"></div>
+          <textarea id="gen-goal" rows="3" placeholder="例如：下个月要考一元二次方程单元测，基础一般，想系统复习并多做典型题"></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>课程时长</label>
+            <div class="chip-row" id="gen-duration">
+              <button class="chip" data-v="30 分钟">30 分钟</button>
+              <button class="chip active" data-v="45 分钟">45 分钟</button>
+              <button class="chip" data-v="60 分钟">60 分钟</button>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>难度</label>
+          <div class="chip-row" id="gen-level">
+            <button class="chip active" data-v="基础巩固">基础巩固</button>
+            <button class="chip" data-v="进阶提升">进阶提升</button>
+            <button class="chip" data-v="冲刺拔高">冲刺拔高</button>
+          </div>
+        </div>
+        <div class="field" id="model-field" hidden>
+          <label for="model-select">AI 模型</label>
+          <select id="model-select" aria-describedby="model-hint"></select>
+          <p class="form-hint" id="model-hint">换个模型即可切换速度与效果。默认已选响应最快的通用模型。</p>
+        </div>
+        <div class="diag-cta">
+          <button id="btn-diag-gen" class="btn btn-ghost btn-block">📝 先做课前诊断（可选）</button>
+          <p class="form-hint">6 道小题，1-2 分钟。<b>做了才知道该从哪里讲起</b> —— 避免把已经会的内容再讲一遍。</p>
+        </div>
+        <button id="btn-generate" class="btn btn-primary btn-lg btn-block">✨ AI 生成课程</button>
+        <p class="form-hint">生成过程约需 10~20 秒，请稍候</p>
+      </div>
+
+      <div class="gen-result" id="gen-result">
+        <div class="gen-empty" id="gen-empty">
+          <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+            <rect x="18" y="26" width="84" height="62" rx="10" fill="#EEF0FF"/>
+            <rect x="30" y="40" width="40" height="6" rx="3" fill="#C3C5F2"/>
+            <rect x="30" y="52" width="56" height="6" rx="3" fill="#DDE0F7"/>
+            <rect x="30" y="64" width="30" height="6" rx="3" fill="#DDE0F7"/>
+            <circle cx="84" cy="72" r="14" fill="#8B5CF6"/>
+            <path d="M84 66v12M78 72h12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <p>生成的课程方案会出现在这里<br>包括知识点、教学环节与课后练习</p>
+        </div>
+        <div class="gen-stream" id="gen-stream" hidden>
+          <div class="gen-stream-head"><i class="dot dot-live"></i>AI 正在为你定制课程…</div>
+          <pre id="gen-stream-text"></pre>
+        </div>
+        <div class="diag-panel" id="gen-diag" hidden></div>
+        <div class="course-card" id="gen-course" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 直播课堂 ============ -->
+  <section id="view-live" class="view">
+    <div class="live-empty" id="live-empty">
+      <div class="live-empty-inner">
+        <div class="live-empty-ico">🎥</div>
+        <h2>还没有开始上课</h2>
+        <p>先生成一节专属课程，灵犀老师在这里等你</p>
+        <button class="btn btn-primary btn-lg" data-nav="generate">去生成课程</button>
+      </div>
+    </div>
+
+    <div id="live-room" hidden>
+      <div class="meet">
+        <!-- 会议顶栏 -->
+        <div class="meet-top">
+          <span class="meet-rec"><i></i>REC</span>
+          <span class="meet-title" id="live-title">—</span>
+          <span class="meet-meta">会议号 <b id="meet-no">—</b></span>
+          <span class="meet-timer" id="live-timer">00:00</span>
+          <span class="meet-secure">🔒 加密</span>
+          <button id="btn-end" class="meet-end-top" title="结束会议">结束会议</button>
+        </div>
+
+        <!-- 会议主体：主画面 + 参会者 + 聊天 -->
+        <div class="meet-body">
+          <div class="meet-main">
+            <!-- 视频区 -->
+            <div class="meet-strip" id="meet-strip">
+              <!-- 主动画面：老师视频 或 共享的课件 -->
+              <div class="meet-stage" id="meet-stage">
+                <!-- 老师真人视频画面 -->
+                <div class="tile tile-teacher" id="tile-teacher">
+                  <div class="tile-video" id="teacher-video">
+                    <!-- 数字人真人形象（有则显示，替换手绘头像） -->
+                    <div class="teacher-photo" id="teacher-photo" hidden>
+                      <img id="teacher-img" alt="灵犀老师" />
+                      <div class="tp-mouth"></div>
+                      <div class="tp-blush"></div>
+                    </div>
+                    <div class="teacher-avatar" id="teacher-avatar">
+                      <svg viewBox="0 0 96 96" fill="none">
+                        <circle cx="48" cy="48" r="48" fill="#EEF0FF"/>
+                        <rect x="24" y="66" width="48" height="30" rx="15" fill="#6366F1"/>
+                        <circle cx="48" cy="44" r="22" fill="#FFDCC8"/>
+                        <path d="M26 45 a22 22 0 0 1 44 0 z" fill="#3F3D56"/>
+                        <circle cx="40" cy="46" r="6" fill="#fff" fill-opacity="0.9" stroke="#3F3D56" stroke-width="1.8"/>
+                        <circle cx="56" cy="46" r="6" fill="#fff" fill-opacity="0.9" stroke="#3F3D56" stroke-width="1.8"/>
+                        <line x1="46" y1="46" x2="50" y2="46" stroke="#3F3D56" stroke-width="1.8"/>
+                        <path d="M41 57 q7 6 14 0" stroke="#C97B5A" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                        <path d="M22 42 a26 26 0 0 1 52 0" stroke="#F97316" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <circle cx="22" cy="47" r="4.5" fill="#F97316"/>
+                        <circle cx="74" cy="47" r="4.5" fill="#F97316"/>
+                      </svg>
+                    </div>
+                    <div class="voice-wave" id="voice-wave"><i></i><i></i><i></i><i></i><i></i></div>
+                  </div>
+                  <div class="tile-bar">
+                    <span class="tile-name">灵犀老师 <span class="tile-role">（主讲）</span></span>
+                    <span class="tile-mic" id="teacher-mic">🎙</span>
+                  </div>
+                  <span class="tile-badge" id="teacher-conn">连接良好</span>
+                </div>
+
+                <!-- 实时字幕（会议同传） -->
+                <div class="meet-caption" id="meet-caption">
+                  <span class="cap-ico">💬</span>
+                  <span class="cap-text" id="teacher-status">课程即将开始…</span>
+                </div>
+
+                <!-- 可打断提示 -->
+                <div class="interrupt-hint" id="interrupt-hint" hidden>
+                  <span class="ih-bolt">⚡</span> 老师讲解中 · 随时可插话打断
+                </div>
+
+                <!-- 共享屏幕（课件） -->
+                <div class="tile tile-share" id="tile-share" hidden>
+                  <div class="share-head">
+                    <span class="share-ico">🖥</span>
+                    <b id="share-owner">灵犀老师</b> 正在共享屏幕
+                    <span class="share-live">共享中</span>
+                  </div>
+                  <div class="share-stage" id="live-slide-stage"></div>
+                  <div class="share-foot">
+                    <button class="slh-btn" id="btn-live-slide-prev" title="上一页">‹</button>
+                    <span class="share-page" id="live-slide-now"></span>
+                    <button class="slh-btn" id="btn-live-slide-next" title="下一页">›</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 宫格视图（多学生） -->
+              <div class="meet-gallery" id="meet-gallery" hidden>
+                <div class="gal-grid" id="gal-grid"></div>
+                <div class="gal-head">
+                  <span>🔳 宫格视图</span>
+                  <span class="gal-meta"><b id="gal-count">1</b> 位参会者</span>
+                  <button class="gal-back" id="gal-back">返回主讲画面</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 底部：大纲（共享时可折叠） -->
+            <div class="meet-toolbar">
+              <button class="mt-btn" id="tb-mic" title="麦克风"><span class="mt-ico">🎙</span><span class="mt-label">静音</span></button>
+              <button class="mt-btn" id="tb-voice" title="老师语音朗读"><span class="mt-ico">🔈</span><span class="mt-label">语音</span></button>
+              <button class="mt-btn" id="tb-guide" title="引导强度：均衡"><span class="mt-ico">⚖️</span><span class="mt-label">均衡</span></button>
+              <button class="mt-btn" id="tb-cam" title="摄像头"><span class="mt-ico">📹</span><span class="mt-label">停止视频</span></button>
+              <button class="mt-btn active" id="tb-share" title="共享屏幕"><span class="mt-ico">🖥</span><span class="mt-label">共享课件</span></button>
+              <button class="mt-btn" id="tb-gallery" title="宫格视图"><span class="mt-ico">🔳</span><span class="mt-label">宫格</span></button>
+              <button class="mt-btn" id="tb-hand" title="举手"><span class="mt-ico">✋</span><span class="mt-label">举手</span></button>
+              <button class="mt-btn" id="tb-chat" title="聊天"><span class="mt-ico">💬</span><span class="mt-label">聊天</span></button>
+              <button class="mt-btn" id="tb-people" title="参会者"><span class="mt-ico">👥</span><span class="mt-label">参会者</span></button>
+              <button class="mt-btn" id="tb-rec" title="课堂回放"><span class="mt-ico">⏺</span><span class="mt-label">回放</span></button>
+              <button class="mt-btn" id="tb-avatar" title="数字人老师"><span class="mt-ico">🎬</span><span class="mt-label">数字人</span></button>
+              <button class="mt-btn" id="tb-board" title="课程大纲"><span class="mt-ico">📜</span><span class="mt-label">大纲</span></button>
+              <button class="mt-btn mt-leave" id="tb-leave" title="离开会议"><span class="mt-ico">📕</span><span class="mt-label">结束</span></button>
+            </div>
+
+            <!-- 大纲抽屉 -->
+            <div class="meet-board" id="meet-board" hidden>
+              <div class="mb-head">📜 课程大纲 <span class="board-hint">点击环节切换讲解</span>
+                <button class="mb-close" id="mb-close">✕</button>
+              </div>
+              <ol class="stage-list" id="stage-list"></ol>
+              <div class="board-tip" id="board-tip">大纲同步自你的专属课程方案</div>
+            </div>
+          </div>
+
+          <!-- 右侧面板 -->
+          <aside class="meet-side">
+            <div class="side-tabs">
+              <button class="side-tab active" data-panel="chat">💬 聊天</button>
+              <button class="side-tab" data-panel="people">👥 参会者 <b id="people-count">2</b></button>
+            </div>
+
+            <div class="side-pane active" id="pane-chat">
+              <div class="chat-messages" id="chat-messages"></div>
+              <div class="quick-row" id="quick-row">
+                <button class="quick-chip" data-q="老师，我没太听懂，能换个方式再讲一遍吗？">🤔 没听懂</button>
+                <button class="quick-chip" data-q="能给我举一个生活中的例子吗？">🌰 举个例子</button>
+                <button class="quick-chip" data-q="给我出一道练习题吧，我来试试！">✏️ 出道题</button>
+                <button class="quick-chip" data-q="我先说说我的思路，你帮我看看对不对。">🧠 我先说思路</button>
+                <button class="quick-chip" data-q="别直接告诉我答案，用问题引导我自己想出来。">🪜 引导我</button>
+                <button class="quick-chip" data-q="明白了，我们继续往下讲吧。">➡️ 继续</button>
+              </div>
+              <div class="chat-input-row">
+                <textarea id="chat-input" rows="1" placeholder="发送消息…（Enter 发送）"></textarea>
+                <button id="btn-stop" class="btn btn-ghost btn-sm" hidden>停止</button>
+                <button id="btn-send" class="btn btn-primary btn-sm">发送</button>
+              </div>
+            </div>
+
+            <div class="side-pane" id="pane-people">
+              <div class="people-list" id="people-list">
+                <div class="person">
+                  <span class="p-avatar p-host">灵</span>
+                  <div class="p-info"><b>灵犀老师</b><small id="p-teacher-state">主讲 · AI 教师</small></div>
+                  <span class="p-mic on" id="p-teacher-mic">🎙</span>
+                </div>
+                <div class="person">
+                  <span class="p-avatar p-me">我</span>
+                  <div class="p-info"><b id="p-me-name">你</b><small>学生 · 参会者</small></div>
+                  <span class="p-mic on" id="p-me-mic">🎙</span>
+                </div>
+                <div class="person">
+                  <span class="p-avatar p-ta">助</span>
+                  <div class="p-info"><b>学习助教</b><small>课堂答疑 · 随堂记录</small></div>
+                  <span class="p-mic off">🎙</span>
+                </div>
+              </div>
+              <div class="people-invite">
+                <button class="btn btn-ghost btn-sm" id="btn-invite">＋ 邀请同学加入</button>
+              </div>
+              <div class="people-hint" id="people-hint">课堂小结会在下课后自动生成</div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 我的课程 ============ -->
+  <section id="view-courses" class="view">
+    <div class="page-head">
+      <h2>我的课程</h2>
+      <p>在这里找到你生成过的所有课程，随时回到直播间</p>
+    </div>
+    <div class="chip-row course-filter" id="course-filter" hidden></div>
+    <div id="course-list" class="course-list"></div>
+    <div class="course-empty" id="course-empty" hidden>
+      <div class="live-empty-ico">📚</div>
+      <p>还没有课程，去生成第一节吧</p>
+      <button class="btn btn-primary" data-nav="generate">生成课程</button>
+    </div>
+  </section>
+
+  <!-- ============ 学习档案（AI 记忆） ============ -->
+  <section id="view-memory" class="view">
+    <div class="page-head">
+      <h2>我的学习档案</h2>
+      <p>灵犀老师记住的关于你的一切 —— 每节课都会带上这些记忆，所以越上越懂你</p>
+    </div>
+
+    <div class="mem-gate" id="mem-gate" hidden>
+      <div class="mem-gate-inner">
+        <div class="live-empty-ico">🧠</div>
+        <h3>登录后开启长期记忆</h3>
+        <p>登录后，老师会跨课程记住你的薄弱点、偏好和学习进度，<br>换设备也不会丢。</p>
+        <button class="btn btn-primary" id="btn-mem-login">登录 / 注册</button>
+      </div>
+    </div>
+
+    <div id="mem-body" hidden>
+      <div class="mem-top">
+        <div class="mem-card mem-profile">
+          <div class="mem-card-head">👤 学生画像</div>
+          <div class="mem-profile-body" id="mem-profile-body"></div>
+        </div>
+        <div class="mem-card mem-stats">
+          <div class="mem-card-head">📊 学习统计</div>
+          <div class="mem-stats-body" id="mem-stats-body"></div>
+        </div>
+      </div>
+      <div class="mem-card">
+        <div class="mem-card-head">🧭 起点画像 <span class="mem-card-sub">开课前诊断留下的起点，决定第一节课从哪讲</span></div>
+        <div class="mem-diag" id="mem-diag"></div>
+      </div>
+      <div class="mem-card">
+        <div class="mem-card-head">🎯 知识点掌握度 <span class="mem-card-sub">由每节课沉淀，待巩固的排最前</span></div>
+        <div class="mem-mastery" id="mem-mastery"></div>
+      </div>
+      <div class="mem-card">
+        <div class="mem-card-head">🔍 错因分析 <span class="mem-card-sub">分清「真不会」和「会但没做对」</span></div>
+        <div class="mem-causes" id="mem-causes"></div>
+      </div>
+      <div class="mem-card">
+        <div class="mem-card-head">✨ 老师记住的事 <button class="btn btn-ghost btn-sm" id="btn-mem-add">＋ 添加</button></div>
+        <div class="mem-facts" id="mem-facts"></div>
+      </div>
+      <div class="mem-card">
+        <div class="mem-card-head">📚 上课记录</div>
+        <div class="mem-sessions" id="mem-sessions"></div>
+      </div>
+      <p class="mem-foot">依据《个人信息保护法》，你可以
+        <a href="#" id="btn-mem-account">查看 / 导出 / 删除自己的全部数据</a>。</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div>灵犀课堂 LingXi Classroom · AI 一对一直播课</div>
+  <div class="footer-sub">AI 生成内容仅供学习参考 · 由 WorkBuddy 云服务驱动</div>
+  <div class="footer-legal">
+    <a href="#" data-doc="terms">用户协议</a>
+    <span>·</span>
+    <a href="#" data-doc="privacy">隐私政策</a>
+    <span>·</span>
+    <span>内容由 AI 生成，请注意甄别；未成年人请在监护人指导下使用</span>
+  </div>
+</footer>
+
+<!-- 登录 / 注册弹窗 -->
+<div class="modal-mask" id="auth-modal" hidden>
+  <div class="modal modal-auth">
+    <div class="modal-head">
+      <h3>🧠 登录后，老师会一直记得你</h3>
+      <button class="modal-close" id="btn-auth-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="auth-lead">登录后灵犀老师会跨课程记住你的薄弱点、偏好和进度。
+        同一账号，换设备也能接着上。</p>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-auth-tab="phone">手机号登录</button>
+        <button class="auth-tab" data-auth-tab="password">邮箱登录</button>
+        <button class="auth-tab" data-auth-tab="signup">注册</button>
+      </div>
+
+      <!-- 手机号登录 -->
+      <div class="auth-pane active" id="auth-pane-phone">
+        <label class="auth-field"><span>手机号</span>
+          <input type="tel" id="au-ph-phone" placeholder="请输入 11 位手机号" inputmode="numeric" autocomplete="tel" maxlength="11"></label>
+        <button class="btn btn-primary btn-block" id="au-ph-send">获取短信验证码</button>
+        <div id="au-ph-step2" hidden>
+          <label class="auth-field"><span>短信验证码</span>
+            <input type="text" id="au-ph-code" placeholder="6 位验证码" inputmode="numeric" autocomplete="one-time-code"></label>
+          <button class="btn btn-primary btn-block" id="au-ph-submit">登录 / 注册</button>
+        </div>
+        <p class="auth-tip" id="au-ph-tip">未注册的手机号将自动创建账号。</p>
+      </div>
+
+      <!-- 邮箱登录 -->
+      <div class="auth-pane" id="auth-pane-password">
+        <label class="auth-field"><span>邮箱</span>
+          <input type="email" id="au-pw-email" placeholder="you@example.com" autocomplete="email"></label>
+        <label class="auth-field"><span>密码</span>
+          <input type="password" id="au-pw-pass" placeholder="请输入密码" autocomplete="current-password"></label>
+        <button class="btn btn-primary btn-block" id="au-pw-submit">登录</button>
+        <button class="auth-link" id="au-forgot">忘记密码？</button>
+      </div>
+
+      <!-- 邮箱验证码登录 -->
+      <div class="auth-pane" id="auth-pane-otp">
+        <label class="auth-field"><span>邮箱</span>
+          <input type="email" id="au-otp-email" placeholder="you@example.com" autocomplete="email"></label>
+        <button class="btn btn-primary btn-block" id="au-otp-send">发送验证码</button>
+        <div id="au-otp-step2" hidden>
+          <label class="auth-field"><span>验证码</span>
+            <input type="text" id="au-otp-code" placeholder="6 位验证码" inputmode="numeric" autocomplete="one-time-code"></label>
+          <button class="btn btn-primary btn-block" id="au-otp-verify">验证并登录</button>
+        </div>
+      </div>
+
+      <!-- 注册 -->
+      <div class="auth-pane" id="auth-pane-signup">
+        <label class="auth-field"><span>邮箱</span>
+          <input type="email" id="au-su-email" placeholder="you@example.com" autocomplete="email"></label>
+        <button class="btn btn-primary btn-block" id="au-su-send">发送验证码</button>
+        <div id="au-su-step2" hidden>
+          <label class="auth-field"><span>验证码</span>
+            <input type="text" id="au-su-code" placeholder="6 位验证码" inputmode="numeric" autocomplete="one-time-code"></label>
+          <label class="auth-field"><span>设置密码</span>
+            <input type="password" id="au-su-pass" placeholder="至少 8 位，含字母和数字" autocomplete="new-password"></label>
+          <button class="btn btn-primary btn-block" id="au-su-submit">注册并登录</button>
+        </div>
+      </div>
+
+      <div class="auth-msg" id="auth-msg" hidden></div>
+
+      <label class="auth-consent" id="au-consent-wrap">
+        <input type="checkbox" id="au-consent">
+        <span>我已阅读并同意
+          <a href="#" data-doc="terms">《用户协议》</a>和
+          <a href="#" data-doc="privacy">《隐私政策》</a>，
+          并同意按政策处理我的个人信息</span>
+      </label>
+
+      <p class="auth-note"><a href="#" id="au-skip">先以访客身份继续</a>（老师不会记住你）</p>
+    </div>
+  </div>
+</div>
+
+<!-- 忘记密码弹窗 -->
+<div class="modal-mask" id="reset-modal" hidden>
+  <div class="modal modal-auth">
+    <div class="modal-head">
+      <h3>🔑 重置密码</h3>
+      <button class="modal-close" id="btn-reset-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="auth-field"><span>邮箱</span>
+        <input type="email" id="rs-email" placeholder="you@example.com" autocomplete="email"></label>
+      <button class="btn btn-primary btn-block" id="rs-send">发送验证码</button>
+      <div id="rs-step2" hidden>
+        <label class="auth-field"><span>验证码</span>
+          <input type="text" id="rs-code" placeholder="6 位验证码" inputmode="numeric"></label>
+        <label class="auth-field"><span>新密码</span>
+          <input type="password" id="rs-pass" placeholder="至少 8 位，含字母和数字" autocomplete="new-password"></label>
+        <button class="btn btn-primary btn-block" id="rs-submit">重置密码并登录</button>
+      </div>
+      <div class="auth-msg" id="rs-msg" hidden></div>
+    </div>
+  </div>
+</div>
+
+<!-- 用户协议 / 隐私政策 弹窗 -->
+<div class="modal-mask" id="doc-modal" hidden>
+  <div class="modal modal-doc">
+    <div class="modal-head">
+      <h3 id="doc-title">用户协议</h3>
+      <button class="modal-close" id="btn-doc-close">✕</button>
+    </div>
+    <div class="modal-body doc-body" id="doc-body"></div>
+    <div class="modal-foot" id="doc-foot" hidden>
+      <button class="btn btn-ghost" id="btn-doc-cancel">取消</button>
+      <button class="btn btn-primary" id="btn-doc-agree">同意并继续</button>
+    </div>
+  </div>
+</div>
+
+<!-- 账号与个人信息 弹窗 -->
+<div class="modal-mask" id="account-modal" hidden>
+  <div class="modal modal-auth">
+    <div class="modal-head">
+      <h3>账号与个人信息</h3>
+      <button class="modal-close" id="btn-acct-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="acct-row"><span>登录账号</span><b id="acct-ident">—</b></div>
+      <div class="acct-row"><span>学习档案</span><b id="acct-mem">—</b></div>
+      <p class="auth-tip">依据《个人信息保护法》，你可以随时导出或删除自己的全部个人数据。</p>
+      <button class="btn btn-ghost btn-block" id="btn-acct-export">导出我的数据（JSON）</button>
+      <button class="btn btn-ghost btn-block" id="btn-acct-terms">查看用户协议</button>
+      <button class="btn btn-ghost btn-block" id="btn-acct-privacy">查看隐私政策</button>
+      <button class="btn btn-danger btn-block" id="btn-acct-delete">注销账号并删除全部数据</button>
+      <div class="auth-msg" id="acct-msg" hidden></div>
+    </div>
+  </div>
+</div>
+
+<!-- 课堂小结弹窗 -->
+<div class="modal-mask" id="summary-modal" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h3>📋 课堂小结</h3>
+      <button class="modal-close" id="btn-summary-close">✕</button>
+    </div>
+    <div class="modal-body" id="summary-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="btn-summary-back">返回首页</button>
+      <button class="btn btn-primary" id="btn-summary-close2">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- 引导强度（苏格拉底支持等级）弹窗 -->
+<div class="modal-mask" id="guide-modal" hidden>
+  <div class="modal modal-guide">
+    <div class="modal-head">
+      <h3>🪜 老师该怎么带你？</h3>
+      <button class="modal-close" id="btn-guide-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="guide-intro">灵犀老师默认不会直接报答案，而是用问题引导你自己想出来。
+        你可以随时调整指导强度 —— 老师会立刻按新节奏继续讲课。</p>
+      <div class="guide-options" id="guide-options"></div>
+      <div class="guide-meta-row">
+        <div class="gm-text"><b>元认知提问</b><small>老师会常问"你卡在哪一步""你会怎么讲给别人听"，帮你把思路说清楚</small></div>
+        <button class="switch" id="guide-meta" role="switch" aria-checked="false" aria-label="元认知提问"><span></span></button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" id="btn-guide-ok">好，就这样</button>
+    </div>
+  </div>
+</div>
+
+<!-- 课件预览 / 放映弹窗 -->
+<div class="modal-mask" id="slide-modal" hidden>
+  <div class="modal modal-slide">
+    <div class="modal-head">
+      <h3 id="slide-modal-title">课件预览</h3>
+      <button class="modal-close" id="btn-slide-close">✕</button>
+    </div>
+    <div class="slide-viewer">
+      <div class="slide-stage" id="slide-stage"></div>
+      <div class="slide-note" id="slide-note" hidden></div>
+    </div>
+    <div class="slide-nav" id="slide-nav"></div>
+    <div class="modal-foot slide-foot">
+      <span class="slide-pageinfo" id="slide-pageinfo">1 / 1</span>
+      <button class="btn btn-ghost btn-sm" id="btn-slide-prev">‹ 上一页</button>
+      <button class="btn btn-ghost btn-sm" id="btn-slide-next">下一页 ›</button>
+      <button class="btn btn-primary btn-sm" id="btn-slide-export">⬇ 导出 PPT</button>
+    </div>
+  </div>
+</div>
+
+<!-- 课堂回放弹窗 -->
+<div class="modal-mask" id="replay-modal" hidden>
+  <div class="modal modal-replay">
+    <div class="modal-head">
+      <h3 id="replay-title">⏺ 课堂回放</h3>
+      <button class="modal-close" id="btn-replay-close">✕</button>
+    </div>
+    <div class="replay-body">
+      <div class="replay-screen" id="replay-screen">
+        <div class="replay-slide" id="replay-slide"></div>
+        <div class="replay-cap" id="replay-cap"></div>
+      </div>
+      <aside class="replay-side">
+        <div class="replay-meta" id="replay-meta"></div>
+        <div class="replay-timeline" id="replay-timeline"></div>
+      </aside>
+    </div>
+    <div class="replay-bar">
+      <button class="rp-btn" id="rp-play">▶</button>
+      <input type="range" id="rp-seek" min="0" max="100" value="0" step="1">
+      <span class="rp-time" id="rp-time">00:00 / 00:00</span>
+      <select id="rp-speed" class="rp-speed">
+        <option value="1">1×</option>
+        <option value="1.5">1.5×</option>
+        <option value="2">2×</option>
+        <option value="4">4×</option>
+      </select>
+      <button class="rp-btn" id="rp-restart" title="重播">↺</button>
+    </div>
+    <div class="modal-foot">
+      <span class="slide-pageinfo" id="replay-hint">回放按原始时间轴还原课件翻页与讲解</span>
+      <button class="btn btn-ghost btn-sm" id="btn-replay-clear">删除本节回放</button>
+    </div>
+  </div>
+</div>
+
+<!-- 数字人视频弹窗 -->
+<div class="modal-mask" id="avatar-modal" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h3>🎬 老师数字人视频</h3>
+      <button class="modal-close" id="btn-avatar-close">✕</button>
+    </div>
+    <div class="modal-body" id="avatar-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="btn-avatar-cancel">取消</button>
+      <button class="btn btn-primary" id="btn-avatar-gen">生成数字人视频</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2026-11-16 复制进晨报时改造：
+     SDK 原来从 jsdelivr CDN 加载，大陆基本拉不下来（晨报主站就是因为这个才自托管）。
+     改为同源 ../assets/wb-sdk.js —— Taro 构建会把 wb-sdk.js 复制到 dist/assets/。
+     pptxgenjs 只用于导出 PPT，保留 CDN 但加 onerror 容错：拉不到时页面照常可用，
+     只是「导出 PPT」按钮点了没反应（比整页白屏好）。 -->
+<script src="../assets/wb-sdk.js" onerror="console.error('[lingxi] wb-sdk.js 加载失败')"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" onerror="console.warn('[lingxi] pptxgenjs 不可用，导出 PPT 降级')"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
