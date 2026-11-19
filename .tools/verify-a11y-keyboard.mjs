@@ -139,11 +139,11 @@ const TOUCH = [
   ['src/pages/login/index.module.scss', '.tab', 'hitmin', '登录通道页签'],
   ['src/pages/login/index.module.scss', '.dialBtn', 'hitmin', '登录一键拨号'],
   ['src/pages/login/index.module.scss', '.codeBtn', 'hitmin', '登录获取验证码'],
-  ['src/pages/mine/index.module.scss', '.subButton', 'hitmin', '会员订阅按钮'],
+  ['src/pages/mine/index.module.scss', '.subButton', 'hitminv', '会员订阅按钮'],
   ['src/pages/mine/index.module.scss', '.promoEntry', 'hitmin', '会员促销码入口'],
-  ['src/pages/calendar/index.module.scss', '.syncButton', 'hitmin', '日历导出/同步'],
+  ['src/pages/calendar/index.module.scss', '.syncButton', 'hitminv', '日历导出/同步'],
   ['src/pages/calendar/index.module.scss', '.qaBtn', 'hitmin', '日历快速添加'],
-  ['src/pages/inbox/index.module.scss', '.addButton', 'hitmin', '收件箱添加'],
+  ['src/pages/inbox/index.module.scss', '.addButton', 'hitminv', '收件箱添加'],
   // 2026-11-11：#64 把翻月箭头从「透明外扩」改成「实际盒子 88rpx（44px）」——
   //   两种都是合法做法（视觉不变 + 热区达标），判据认『盒子』这一种。
   ['src/pages/calendar/index.module.scss', '.navButton', 'box', '日历翻月'],
@@ -170,6 +170,8 @@ for (const [file, sel, mode, why] of TOUCH) {
   const ok = blocks.some((body) =>
     mode === 'hitmin'
       ? /@include\s+hit-expand-min\(\s*44PX/.test(body)
+      : mode === 'hitminv'
+        ? /@include\s+hit-expand-min\(\s*44PX/.test(body) && /overflow:\s*visible/.test(body)
       : mode === 'hit'
         ? /@include\s+hit-expand(?:-min)?\(/.test(body)
         : mode === 'min'

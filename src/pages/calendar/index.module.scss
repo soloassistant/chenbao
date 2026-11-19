@@ -232,6 +232,8 @@
   @include button-reset;
   // 2026-11-19：实测 126×28（375）/ 108×24（320）；视觉不变，纵向补到 44px
   @include hit-expand-min(44PX);
+  // Taro 默认 taro-button-core{overflow:hidden} 会把外扩的 ::before 裁掉 —— 必须放开
+  overflow: visible;
   height: 56rpx;
   padding: 0 $spacing-md;
   border-radius: $radius-button;
