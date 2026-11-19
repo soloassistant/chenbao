@@ -166,6 +166,28 @@ $transition-slow: 0.35s ease;
   }
 }
 
+// 命中区**下限**（2026-11-19）：rpx 与 px 在 H5 都会被 pxtransform 转成 rem，
+// 视口越窄缩得越多 —— 16rpx（或 8px）在 375 下是 8px，在 320 下只有 6.8px，
+// 34px 高的按钮外扩后仅 38px，仍不达 44。命中下限是 CSS px（手指/指针的实际尺寸），
+// 不应随设计稿缩放。
+// ⚠️ 必须写大写 `PX`：Taro 的 pxtransform 只转换小写 px，大写会原样输出为 CSS px。
+// 这里用固定 $min 高的透明伪元素垂直居中：视口再窄也正好 $min；元素本身更高时
+// 不做任何收缩。宽度不足 44 的控件用 $x 补。
+@mixin hit-expand-min($min: 44PX, $x: 0) {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -$x;
+    left: -$x;
+    height: $min;
+    transform: translateY(-50%);
+    background: transparent;
+  }
+}
+
 // 卡片表面：白底 + 特大圆角 + 双层柔影 + 发丝描边 + 大内边距。
 // 「晨光 v2」（2026-10-25）：阴影放轻后用 1rpx 描边补回轮廓定义，白卡在暖纸底上更「立」；
 // 描边色走 $color-card-border（theme.scss），与 $color-border（表单边框）语义分开。

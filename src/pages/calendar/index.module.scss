@@ -230,8 +230,10 @@
 
 .syncButton {
   @include button-reset;
-  // 2026-11-19：实测 126×28，低于 44px；视觉不变，上下各外扩 16rpx（≈8px）
-  @include hit-expand(0, 16rpx);
+  // 2026-11-19：实测 126×28（375）/ 108×24（320）；视觉不变，纵向补到 44px
+  @include hit-expand-min(44PX);
+  // Taro 默认 taro-button-core{overflow:hidden} 会把外扩的 ::before 裁掉 —— 必须放开
+  overflow: visible;
   height: 56rpx;
   padding: 0 $spacing-md;
   border-radius: $radius-button;
@@ -276,8 +278,8 @@
 
 .qaBtn {
   @include button-reset;
-  // 2026-11-19：实测 50×26，低于 44px；视觉不变，上下各外扩 18rpx（≈9px）
-  @include hit-expand(0, 18rpx);
+  // 2026-11-19：实测 50×26（375）/ 43×23（320）；视觉不变，纵向补到 44px，横向补 2px
+  @include hit-expand-min(44PX, 2PX);
   background: var(--brand-strong); // 白字 4.95:1（原 --brand 白字 2.59:1）
   color: #fff;
   border-radius: $radius-sm;

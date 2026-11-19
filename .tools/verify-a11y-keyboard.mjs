@@ -134,6 +134,16 @@ function ruleBlocks(src, sel) {
 }
 
 const TOUCH = [
+  // 2026-11-19：这 8 个控件用 hit-expand-min(44px) —— rpx 外扩在 320 视口会缩水
+  //   （4rpx≈1.7px，34px 高的按钮只到 38px），命中下限必须锚在 CSS px。
+  ['src/pages/login/index.module.scss', '.tab', 'hitmin', '登录通道页签'],
+  ['src/pages/login/index.module.scss', '.dialBtn', 'hitmin', '登录一键拨号'],
+  ['src/pages/login/index.module.scss', '.codeBtn', 'hitmin', '登录获取验证码'],
+  ['src/pages/mine/index.module.scss', '.subButton', 'hitminv', '会员订阅按钮'],
+  ['src/pages/mine/index.module.scss', '.promoEntry', 'hitmin', '会员促销码入口'],
+  ['src/pages/calendar/index.module.scss', '.syncButton', 'hitminv', '日历导出/同步'],
+  ['src/pages/calendar/index.module.scss', '.qaBtn', 'hitmin', '日历快速添加'],
+  ['src/pages/inbox/index.module.scss', '.addButton', 'hitminv', '收件箱添加'],
   // 2026-11-11：#64 把翻月箭头从「透明外扩」改成「实际盒子 88rpx（44px）」——
   //   两种都是合法做法（视觉不变 + 热区达标），判据认『盒子』这一种。
   ['src/pages/calendar/index.module.scss', '.navButton', 'box', '日历翻月'],
@@ -158,18 +168,22 @@ const touchBad = [];
 for (const [file, sel, mode, why] of TOUCH) {
   const blocks = ruleBlocks(read(file), sel);
   const ok = blocks.some((body) =>
-    mode === 'hit'
-      ? /@include\s+hit-expand\(/.test(body)
-      : mode === 'min'
-        ? /min-height:\s*88rpx/.test(body)
-        : mode === 'box'
-          ? /width:\s*88rpx/.test(body) && /height:\s*88rpx/.test(body)
-          : /&::before[\s\S]*?background:\s*transparent/.test(body)
+    mode === 'hitmin'
+      ? /@include\s+hit-expand-min\(\s*44PX/.test(body)
+      : mode === 'hitminv'
+        ? /@include\s+hit-expand-min\(\s*44PX/.test(body) && /overflow:\s*visible/.test(body)
+      : mode === 'hit'
+        ? /@include\s+hit-expand(?:-min)?\(/.test(body)
+        : mode === 'min'
+          ? /min-height:\s*88rpx/.test(body)
+          : mode === 'box'
+            ? /width:\s*88rpx/.test(body) && /height:\s*88rpx/.test(body)
+            : /&::before[\s\S]*?background:\s*transparent/.test(body)
   );
   if (!ok) touchBad.push(`${why}(${sel})`);
 }
 assert(
-  `A14 ${TOUCH.length} 个 <44px 控件都按「视觉不变、热区 ≥44」处理（hit-expand / min-height / 透明伪元素）`,
+  `A14 ${TOUCH.length} 个 <44px 控件都按「视觉不变、热区 ≥44」处理（hit-expand-min(44px) / hit-expand / min-height / 透明伪元素）`,
   touchBad.length === 0,
   touchBad.join(' | ')
 );
