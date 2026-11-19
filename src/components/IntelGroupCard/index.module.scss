@@ -82,9 +82,14 @@
 
 /* 条目正文 + 前置序号（与导语内 [n] 一一对应）。
  * 2026-10-24 对标优化：字重 medium —— 「醒目标题」是卡片形态的骨架
- * （网易新闻精选卡片 = 醒目标题 + 配图 + 见解），全Regular 的卡片没有视觉层级。 */
+ * （网易新闻精选卡片 = 醒目标题 + 配图 + 见解），全Regular 的卡片没有视觉层级。
+ * 2026-11-19：注入超长标题实测 **173px / 8 行**，一条情报把整屏吃掉（clamp:none）。
+ * 收口到 3 行（≈66px）+ 省略号；完整内容点开原文看，省得长条把同组其他条目挤走。 */
 .itemText {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
   color: $color-text-secondary;
