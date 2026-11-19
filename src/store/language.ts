@@ -1730,8 +1730,6 @@ export const dict: Record<Lang, Record<LangKey, string>> = {
     return enDict ?? zh;
   }
 };
-  'mine.deleteInputHint': 'Type "注销" to confirm',
-  'mine.deleteInputMismatch': 'Please type "注销" to confirm',
 interface LanguageState {
   lang: Lang;
   setLang: (l: Lang) => void;

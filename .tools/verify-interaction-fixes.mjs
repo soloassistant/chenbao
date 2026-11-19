@@ -807,5 +807,24 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     times.length === 5 && times.join(',') === '0,10,40,100,160');
 }
 
+/* M36（2026-11-19）：英文核心操作与 H5 付费出口 */
+{
+  const inboxSrc = read('src/pages/inbox/index.tsx');
+  const splashSrc = read('src/components/Splash/index.tsx');
+  const memberSrc = read('src/pages/membership/index.tsx');
+  ok('M36a 收件箱核心按钮/提示走 i18n，不再硬编码中文',
+    inboxSrc.includes("t('inbox.parseBtn')") &&
+    inboxSrc.includes("t('inbox.addShot')") &&
+    inboxSrc.includes("t(images.length > 0 ? 'inbox.workTextOnly' : 'inbox.workNeedContent')") &&
+    !inboxSrc.includes("'已添加截图'") && !inboxSrc.includes("'开始解析'") && !inboxSrc.includes("'添加截图'"));
+  ok('M36b 开屏文案走 i18n（英文模式不再出现中文开屏）',
+    splashSrc.includes("t('app.title')") && splashSrc.includes("t('app.slogan')") && splashSrc.includes("t('app.skip')"));
+  ok('M36c H5 无支付通道时给常驻说明并指向促销码，而不是 3 秒 toast',
+    memberSrc.includes('isH5 && !currentPayChannel ? () => setPayGuideOpen(true) : handleSubscribe') &&
+    memberSrc.includes('{payGuideOpen ? (') &&
+    memberSrc.includes('setPromoOpen(true)') &&
+    memberSrc.includes("t('mine.payGuideBody')"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
