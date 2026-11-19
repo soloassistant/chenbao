@@ -172,7 +172,10 @@
   font-size: $font-size-xs;
   font-weight: $font-weight-bold;
   line-height: $line-height-normal;
-  color: $color-error;
+  // 2026-11-19：原 $color-error(#f53f3f) 压实测底色(#f9e7e2) 只有 3.34:1（压页面底 3.44）。
+  // 这条提示是合规要求「全程固定、醒目、不得浅色隐藏」——读不清等于隐藏，
+  // 所以走 error-strong(#c62828)：8% 红底 4.66:1，AA 通过。
+  color: $color-error-strong;
   text-align: center;
 }
 

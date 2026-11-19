@@ -668,6 +668,42 @@ try {
   ok('J25/J26/J27 读取失败: ' + e.message, false);
 }
 
+// ============ J28. AI 合规提示：error 色承载文字必须走 error-strong ============
+// 2026-11-19 真实渲染实测：.panelNoticeText 的 $color-error(#f53f3f) 压 8% 红底
+// （rgba(245,63,63,.08) 叠页面底 = #f9e7e2）只有 3.34:1，压页面底 3.44:1。
+// 这条是「深度合成-AI 问答」类目要求的全程固定提示，读不清 = 浅色隐藏。
+// 断言不只判「写了 error-strong」——还按当前蒙版比例与页面底重算一遍，防止有人
+// 把蒙版加深/页面底调深后文字又掉线，而「字符串还在」的旧断言照样绿。
+try {
+  const ai = stripComments(read('src/components/AiAssistant/index.module.scss'));
+  const notice = blockOf(ai, 'panelNotice');
+  const text = blockOf(ai, 'panelNoticeText');
+  ok(
+    'J28 AiAssistant .panelNoticeText 用 $color-error-strong（原 $color-error 3.34:1）',
+    Boolean(text) && text.includes('$color-error-strong') && !/\$color-error(?!-)/.test(text)
+  );
+  const themeSrc = read('src/styles/theme.scss');
+  const m = /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/.exec(notice || '');
+  const pageHex = (/\$color-bg-page\s*:\s*(#[0-9a-f]{6})/i.exec(themeSrc) || [])[1];
+  const errStrongHex = (/\$color-error-strong\s*:\s*(#[0-9a-f]{6})/i.exec(themeSrc) || [])[1];
+  if (m && pageHex && errStrongHex && text && text.includes('$color-error-strong')) {
+    const a = parseFloat(m[4]);
+    const p = hexRGB(pageHex);
+    const bg = {
+      r: Math.round(+m[1] * a + p.r * (1 - a)),
+      g: Math.round(+m[2] * a + p.g * (1 - a)),
+      b: Math.round(+m[3] * a + p.b * (1 - a))
+    };
+    const bgHex = '#' + [bg.r, bg.g, bg.b].map((v) => v.toString(16).padStart(2, '0')).join('');
+    const r = contrastOf(errStrongHex, bgHex);
+    ok(`J28 提示文字 ${errStrongHex} 压 8% 红底 ${bgHex} = ${r.toFixed(2)}:1 ≥4.5`, r >= 4.5);
+  } else {
+    ok('J28 底色/文字色无法解析（.panelNotice 蒙版、页面底或 error-strong 缺失）', false);
+  }
+} catch (e) {
+  ok('J28 读取失败: ' + e.message, false);
+}
+
 console.log('──────────────────────────────────────────────────────────');
 console.log(`PASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail > 0 ? 1 : 0);
