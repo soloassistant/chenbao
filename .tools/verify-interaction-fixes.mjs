@@ -819,6 +819,9 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     cloud.includes('LIVE_HOTSPOT_URL}?t=${Date.now()}') &&
     cloud.includes('Date.parse(live.updatedAt) > Date.parse(same.updatedAt)') &&
     cloud.includes('hotspotMeta = filtered.updatedAt'));
+  ok('M37f 刷新工作流写状态文件（否则无法判定是否真刷新）',
+    wf.includes('--status gh-pages-out/api/hotspot.status.json') &&
+    wf.includes('git add api/hotspot.json api/hotspot.status.json'));
   ok('M37d 固定 06:00 上海切点（22:00 UTC）存在',
     wf.includes("cron: '0 22 * * *'"));
   ok('M37e 晨报页可见时每 10 分钟重取，突发横幅能随新条目出现',

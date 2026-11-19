@@ -38,14 +38,16 @@ jobs:
           path: gh-pages-out
 
       - name: Fetch real hotspot data
-        run: node .tools/fetch-data.js --out gh-pages-out/api/hotspot.json
+        # --status：把「本次到底写没写、条数、时间」落成文件，否则 gh-pages 上
+        # 只有结果没有过程，外部无法判定数据是刷新了还是沿用了旧快照。
+        run: node .tools/fetch-data.js --out gh-pages-out/api/hotspot.json --status gh-pages-out/api/hotspot.status.json
 
       - name: Commit & push
         working-directory: gh-pages-out
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add api/hotspot.json
+          git add api/hotspot.json api/hotspot.status.json
           if git diff --cached --quiet; then
             echo "no change, skip commit"
           else
