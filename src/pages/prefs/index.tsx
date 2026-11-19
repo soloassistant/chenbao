@@ -82,6 +82,11 @@ function PrefsPage() {
   const { lang } = useLanguageStore();
 
   const [nickname, setNickname] = useState('');
+  // 2026-11-19：昵称 Input 改为「值就绪后再挂载」。
+  // Taro 的 Input 用 @Watch('value') 同步到内部 inputRef；档案是异步取的，
+  // 若 value 在 inputRef 挂上之前变化，watchValue 会读 undefined.value 抛 TypeError
+  // （verify:routes 在 prefs 稳定复现，390/640 两档都红）。
+  const [nicknameReady, setNicknameReady] = useState(false);
   const [custom, setCustom] = useState<CustomSettings>(DEFAULT_CUSTOM);
   const [ttsPrefs, setTtsPrefs] = useState<TtsPrefs>({ rate: 1.0, voiceMode: 'auto' });
   const [city, setCity] = useState(() => {
@@ -96,7 +101,12 @@ function PrefsPage() {
   const [cityChecking, setCityChecking] = useState(false);
 
   useEffect(() => {
-    if (profile) setNickname(profile.nickname);
+    if (!profile) return;
+    // 先把值写进 state，再让 Input 在下一拍挂载 —— 初次渲染就带着最终值，
+    // 不触发 value 变更，也就不会撞上 Taro 的 inputRef 竞态。
+    setNickname(profile.nickname || '');
+    const timer = setTimeout(() => setNicknameReady(true), 0);
+    return () => clearTimeout(timer);
   }, [profile]);
 
   useEffect(() => {
@@ -340,14 +350,18 @@ function PrefsPage() {
         )}
         {renderRow(
           t('mine.nickname'),
-          <Input
-            className={styles.input}
-            value={nickname}
-            maxlength={12}
-            placeholder={t('mine.nicknamePlaceholder')}
-            onInput={(e) => setNickname(e.detail.value)}
-            onBlur={handleBlurNickname}
-          />
+          nicknameReady ? (
+            <Input
+              className={styles.input}
+              value={nickname}
+              maxlength={12}
+              placeholder={t('mine.nicknamePlaceholder')}
+              onInput={(e) => setNickname(e.detail.value)}
+              onBlur={handleBlurNickname}
+            />
+          ) : (
+            <Text className={styles.valueText}>{nickname || '—'}</Text>
+          )
         )}
         <Picker mode='time' value={profile?.briefingTime || '07:30'} onChange={handleChangeTime}>
           {renderRow(
