@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { View, Text, Input, ScrollView, Picker } from '@tarojs/components';
 import Taro from '@tarojs/taro';
+import SubPageHeader from '@/components/SubPageHeader';
 import { brandVars, useThemeStore } from '@/store/theme';
 import { useT } from '@/store/language';
 import { openExternalPage } from '@/utils/externalLink';
@@ -152,6 +153,7 @@ function SxmPage() {
 
   return (
     <View className={styles.page} style={brandVars(theme)}>
+      <SubPageHeader fallbackUrl='/pages/mine/index' />
       <View className={styles.header}>
         <Text className={styles.title}>{t('sxm.title')}</Text>
         <Text className={styles.subtitle}>{t('sxm.subtitle')}</Text>
