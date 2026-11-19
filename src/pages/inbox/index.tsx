@@ -613,11 +613,11 @@ function InboxPage() {
                 className={classnames(styles.extractButton, extracting && styles.disabled)}
                 onClick={handleExtract}
               >
-                {extracting ? '正在解析…' : '开始解析'}
+                {extracting ? t('inbox.parsing') : t('inbox.parseBtn')}
               </Button>
               {images.length === 0 ? (
                 <Button className={styles.addButton} onClick={handleAddImage}>
-                  🖼 添加截图
+                  🖼 {t('inbox.addShot')}
                 </Button>
               ) : null}
             </View>
