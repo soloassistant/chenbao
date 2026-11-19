@@ -284,6 +284,8 @@
 
 .subButton {
   @include button-reset;
+  // 2026-11-19：实测 104×40，差 4px；视觉不变，上下各外扩 4rpx
+  @include hit-expand(0, 4rpx);
   width: auto; // 覆盖 taro-button-core 默认 width:100%
   height: $button-height-md;
   padding: 0 $spacing-xl;
@@ -1585,6 +1587,9 @@
    深底上 5.9:1（该色值已由 D4 计算验证）。 */
 .promoEntry {
   display: block;
+  // 2026-11-19：实测一行 19px 高，远低于 44px；视觉不变，上下各外扩 25rpx（≈12.5px）
+  // 上文是说明文字（非交互），纵向扩展不会抢别的控件
+  @include hit-expand(0, 25rpx);
   margin-top: $spacing-sm;
   font-size: $font-size-sm;
   color: rgba(255, 255, 255, 0.92);
