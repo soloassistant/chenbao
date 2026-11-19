@@ -169,7 +169,7 @@ for (const [file, sel, mode, why] of TOUCH) {
   const blocks = ruleBlocks(read(file), sel);
   const ok = blocks.some((body) =>
     mode === 'hitmin'
-      ? /@include\s+hit-expand-min\(\s*44px/.test(body)
+      ? /@include\s+hit-expand-min\(\s*44PX/.test(body)
       : mode === 'hit'
         ? /@include\s+hit-expand(?:-min)?\(/.test(body)
         : mode === 'min'

@@ -246,7 +246,7 @@
 .addButton {
   @include button-reset;
   // 2026-11-19：实测 106×40（375）/ 91×34（320）；视觉不变，纵向补到 44px
-  @include hit-expand-min(44px);
+  @include hit-expand-min(44PX);
   // ⚠️ 显式定宽：taro-button-core 默认 width:100%。此处若不覆盖，addButton 会取满
   // actionRow 整行宽度，把 flex:1 的 extractButton 挤成 0px —— 实测线上「AI 提取」
   // 按钮因此 isVisible=false / tabIndex=-1，剪贴板→提取→日历整条核心链路无法启动。

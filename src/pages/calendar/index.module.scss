@@ -231,7 +231,7 @@
 .syncButton {
   @include button-reset;
   // 2026-11-19：实测 126×28（375）/ 108×24（320）；视觉不变，纵向补到 44px
-  @include hit-expand-min(44px);
+  @include hit-expand-min(44PX);
   height: 56rpx;
   padding: 0 $spacing-md;
   border-radius: $radius-button;
@@ -277,7 +277,7 @@
 .qaBtn {
   @include button-reset;
   // 2026-11-19：实测 50×26（375）/ 43×23（320）；视觉不变，纵向补到 44px，横向补 2px
-  @include hit-expand-min(44px, 2px);
+  @include hit-expand-min(44PX, 2PX);
   background: var(--brand-strong); // 白字 4.95:1（原 --brand 白字 2.59:1）
   color: #fff;
   border-radius: $radius-sm;

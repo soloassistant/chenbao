@@ -166,12 +166,14 @@ $transition-slow: 0.35s ease;
   }
 }
 
-// 命中区**下限**（2026-11-19）：rpx 是按 750 设计稿缩放的，视口越窄缩得越多 ——
-// 16rpx 在 375 下是 8px，在 320 下只有 6.8px，34px 高的按钮外扩后仅 38px，仍不达 44。
-// 命中下限是 CSS px（手指/指针的实际尺寸），不应随设计稿缩放。
+// 命中区**下限**（2026-11-19）：rpx 与 px 在 H5 都会被 pxtransform 转成 rem，
+// 视口越窄缩得越多 —— 16rpx（或 8px）在 375 下是 8px，在 320 下只有 6.8px，
+// 34px 高的按钮外扩后仅 38px，仍不达 44。命中下限是 CSS px（手指/指针的实际尺寸），
+// 不应随设计稿缩放。
+// ⚠️ 必须写大写 `PX`：Taro 的 pxtransform 只转换小写 px，大写会原样输出为 CSS px。
 // 这里用固定 $min 高的透明伪元素垂直居中：视口再窄也正好 $min；元素本身更高时
 // 不做任何收缩。宽度不足 44 的控件用 $x 补。
-@mixin hit-expand-min($min: 44px, $x: 0) {
+@mixin hit-expand-min($min: 44PX, $x: 0) {
   position: relative;
 
   &::before {

@@ -285,7 +285,7 @@
 .subButton {
   @include button-reset;
   // 2026-11-19：实测 104×40（375）/ 89×34（320）；视觉不变，纵向补到 44px
-  @include hit-expand-min(44px);
+  @include hit-expand-min(44PX);
   width: auto; // 覆盖 taro-button-core 默认 width:100%
   height: $button-height-md;
   padding: 0 $spacing-xl;
@@ -1589,7 +1589,7 @@
   display: block;
   // 2026-11-19：实测一行 19px（375）/ 16px（320）；视觉不变，纵向补到 44px
   // 上文是说明文字（非交互），纵向扩展不会抢别的控件
-  @include hit-expand-min(44px);
+  @include hit-expand-min(44PX);
   margin-top: $spacing-sm;
   font-size: $font-size-sm;
   color: rgba(255, 255, 255, 0.92);
