@@ -20,6 +20,11 @@ $color-secondary-strong: #3560b8; // 白底 5.97:1（原 #5b8def 仅 3.23:1）
 $color-success: #00b42a;
 $color-warning: #ff7d00;
 $color-error: #f53f3f;
+// error 的 strong 变体：功能色承载「文字」时用。
+// 2026-11-19：AI 对话页顶部合规提示实测 $color-error 压 8% 红底(#f9e7e2) 只有 3.34:1，
+// 压页面底 3.44:1 —— 官方要求该提示「醒目、不得浅色隐藏」，读不清等于没提示。
+// #c62828 压 8% 红底 4.66:1 / 压白 5.72:1。
+$color-error-strong: #c62828;
 $color-info: #165dff;
 
 // 业务色
