@@ -3,8 +3,13 @@
 name: refresh-hotspot-data
 
 on:
+  # 2026-11-19：实测 GH Actions 的 */30 cron 常被排队到 8 小时才跑一次
+  # （查 workflow_runs：01:01Z / 18:58Z / 10:28Z / 02:01Z / 19:36Z）。
+  # 改为三组错峰入口，同一节奏下分散触发点；前端另有「刷新」与 10 分钟轮询兜底。
   schedule:
-    - cron: '*/30 * * * *' # 每 30 分钟；GitHub 挂起期间可能延迟，前端有 stale 标注兜底
+    - cron: '3,33 * * * *'
+    - cron: '13,43 * * * *'
+    - cron: '23,53 * * * *'
   workflow_dispatch: {} # 支持手动触发
 
 permissions:

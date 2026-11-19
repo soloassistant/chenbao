@@ -138,6 +138,41 @@ export function resetHotspotCache(): void {
   hotspotCache = null
 }
 
+/**
+ * 强制取新（2026-11-19）：GH Actions 的 30 分钟 cron 实测常被排队到 8 小时一次，
+ * 只靠「同源副本 35 分钟内不查远端」的惰性逻辑，用户一整天看到的都是同一份。
+ * 手动刷新/定时轮询走这里：清内存缓存 + 给跨域源加时间戳绕开 HTTP 缓存，
+ * 两份里取 updatedAt 更新的那份；都失败返回 null，保留现有列表（不清空、不误导）。
+ */
+export async function refreshHotspotPayload(): Promise<HotspotPayload | null> {
+  hotspotCache = null
+  hotspotInFlight = null
+  // 只给跨域实时源加时间戳：同源静态文件带 query 在部分托管上会 404 / 回落 index.html，
+  // 而它本来只在重新发布时才会变，绕缓存对它没有意义。
+  const [same, live] = await Promise.all([
+    fetchHotspotJson(SAME_ORIGIN_HOTSPOT_URL),
+    fetchHotspotJson(`${LIVE_HOTSPOT_URL}?t=${Date.now()}`)
+  ])
+  const picked = !same
+    ? live
+    : !live
+      ? same
+      : !same.updatedAt || !live.updatedAt
+        ? live
+        : Date.parse(live.updatedAt) > Date.parse(same.updatedAt)
+          ? live
+          : same
+  if (!picked) return null
+  const filtered = applySourcePrefs(picked)
+  if (!filtered) return null
+  hotspotCache = { at: Date.now(), payload: filtered }
+  // 元信息也必须在这一条路径里更新，否则用户点了刷新、列表换了、顶部「更新于」还是旧时间
+  hotspotMeta = filtered.updatedAt
+    ? { updatedAt: filtered.updatedAt, stale: !!filtered.stale, sources: filtered.sources }
+    : null
+  return filtered
+}
+
 /** 来源开关的**唯一收口点**（2026-11-02）。放在缓存写入之前，这样：
  *  · 缓存里存的就是「已按用户偏好过滤」的结果，调用方不必各自记得过滤；
  *  · `sources` 元信息保持完整（UI 要列出全部源给用户开关，不能只列已开的）。

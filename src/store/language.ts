@@ -732,6 +732,11 @@ const zh = {
 
   'library.hotTitle': '今日热点',
   'library.hotHint': '按你的偏好聚合 · 标注来源',
+  'library.refresh': '刷新',
+  'library.refreshing': '刷新中…',
+  'library.refreshDone': '已更新',
+  'library.refreshSame': '暂无更新',
+  'library.refreshFail': '刷新失败，稍后再试',
   'library.dataUpdated': '数据更新于',
   'library.dataUpdatedUnknown': '更新时间未知',
   'library.dataStale': '离线缓存 · 实时源暂时不可用',

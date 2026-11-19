@@ -807,5 +807,22 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     times.length === 5 && times.join(',') === '0,10,40,100,160');
 }
 
+/* M37（2026-11-19）：热点每日新鲜度 */
+{
+  const wf = read('.github/workflows/refresh-data.yml');
+  const cloud = read('src/services/cloud.ts');
+  const lib = read('src/pages/library/index.tsx');
+  ok('M37a 热点刷新工作流有多组错峰 cron（GH 排队实测 8h 一次）',
+    wf.split('cron:').length - 1 >= 3 && wf.includes('workflow_dispatch'));
+  ok('M37b 强制取新：只给跨域源加时间戳 + 两份取较新 + 同步元信息',
+    cloud.includes('export async function refreshHotspotPayload') &&
+    cloud.includes('LIVE_HOTSPOT_URL}?t=${Date.now()}') &&
+    cloud.includes('Date.parse(live.updatedAt) > Date.parse(same.updatedAt)') &&
+    cloud.includes('hotspotMeta = filtered.updatedAt'));
+  ok('M37c 热点页可手动刷新，且可见时每 10 分钟静默取新',
+    lib.includes('refreshHotspotPayload()') && lib.includes("t('library.refresh')") &&
+    lib.includes('10 * 60 * 1000') && lib.includes("document.visibilityState === 'visible'"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
