@@ -733,20 +733,26 @@
   margin-bottom: $spacing-xs;
 }
 
+/* 2026-11-19：法务告知压在 .subCard 的 --brand-strong(#C7371A) 上，
+   原来用 $color-text-tertiary(#657080) 只有 **1.05:1** —— 等于不可见；
+   链接用 var(--brand,#FF7A45) 也只有 **2.04:1**。这四段是「订阅前请阅读 /
+   用户协议 / 隐私政策 / 到期不自动扣费」，读不清就意味着「已阅读并同意」不成立。
+   改纯白：压 #C7371A 实测 5.26:1（四套主题 strong 档均 ≥5.1），AA 通过。
+   链接靠下划线区分，不再靠色相。 */
 .payLegalText {
   font-size: $font-size-xs;
-  color: $color-text-tertiary;
+  color: $color-text-white;
 }
 
 .payLegalLink {
   font-size: $font-size-xs;
-  color: var(--brand, $color-primary);
+  color: $color-text-white;
   text-decoration: underline;
 }
 
 .renewNoAuto {
   font-size: $font-size-xs;
-  color: $color-text-tertiary;
+  color: $color-text-white;
   text-align: center;
   margin-bottom: $spacing-md;
   line-height: $line-height-normal;

@@ -626,6 +626,48 @@ try {
   ok('J22/J23/J24 读取失败: ' + e.message, false);
 }
 
+// ============ J25 – J27. 会员页法务告知（2026-11-19 深红卡实测 1.05:1，等于不可见） ============
+// .subCard 底色是 --brand-strong，卡内 .payLegalText / .payLegalLink / .renewNoAuto
+// 原来分别是 $color-text-tertiary(#657080 → 1.05:1) 和 var(--brand,#FF7A45 → 2.04:1)。
+// 「订阅前请阅读 / 用户协议 / 隐私政策 / 到期不自动扣费」读不清 =「已阅读并同意」不成立，
+// 所以改纯白（白压 #C7371A = 5.26:1）。这里锁两件事：
+//   ① 三个类必须用法务白字，不许退回 tertiary / 裸 --brand；
+//   ② 四套主题的 strong 档压白字都必须 ≥4.5 —— 只锁「文件里写了白」是假绿：
+//      有人把 strong 往浅里调，白字照样掉下去，而旧断言仍然绿。
+try {
+  const mineScss = stripComments(read('src/pages/mine/index.module.scss'));
+  for (const cls of ['payLegalText', 'payLegalLink', 'renewNoAuto']) {
+    const blocks = blocksOf(mineScss, cls);
+    ok(
+      `J25 ${cls} 用法务白字（原 tertiary/brand 压深红卡仅 1.05 / 2.04:1）`,
+      blocks.length > 0 &&
+        blocks.some((b) => b.includes('$color-text-white')) &&
+        blocks.every((b) => !b.includes('$color-text-tertiary') && !/\$color-primary(?!-)/.test(b))
+    );
+  }
+
+  const themeSrc = read('src/store/theme.ts');
+  const strongs = [...themeSrc.matchAll(/strong:\s*'(#[0-9a-f]{6})'/gi)].map((m) => m[1]);
+  ok(`J26 四套主题 strong 档齐（${strongs.length}/4）`, strongs.length === 4);
+  for (const s of strongs) {
+    const r = contrastOf('#ffffff', s);
+    ok(`J26 白字压 strong ${s} = ${r.toFixed(2)}:1 ≥4.5`, r >= 4.5);
+  }
+
+  // 位置守卫（按文档顺序，不是严格 JSX 嵌套）：条款夹在 .subCard 与支付按钮之间。
+  // 一旦有人把 .payLegal 挪到卡外白底上，白字就再次消失。
+  const tsx = read('src/pages/membership/index.tsx');
+  const iCard = tsx.indexOf('styles.subCard');
+  const iLegal = tsx.indexOf('styles.payLegal');
+  const iButton = tsx.indexOf('styles.subButtonRow');
+  ok(
+    'J27 membership .payLegal 仍夹在 .subCard 与支付按钮之间（挪到白底上白字会消失）',
+    iCard >= 0 && iLegal > iCard && iButton > iLegal
+  );
+} catch (e) {
+  ok('J25/J26/J27 读取失败: ' + e.message, false);
+}
+
 console.log('──────────────────────────────────────────────────────────');
 console.log(`PASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail > 0 ? 1 : 0);
