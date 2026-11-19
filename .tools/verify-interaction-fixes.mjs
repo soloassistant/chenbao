@@ -819,6 +819,12 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     cloud.includes('LIVE_HOTSPOT_URL}?t=${Date.now()}') &&
     cloud.includes('Date.parse(live.updatedAt) > Date.parse(same.updatedAt)') &&
     cloud.includes('hotspotMeta = filtered.updatedAt'));
+  ok('M37d 固定 06:00 上海切点（22:00 UTC）存在',
+    wf.includes("cron: '0 22 * * *'"));
+  ok('M37e 晨报页可见时每 10 分钟重取，突发横幅能随新条目出现',
+    read('src/pages/briefing/index.tsx').includes('10 * 60 * 1000') &&
+    read('src/pages/briefing/index.tsx').includes('void loadBriefing(true)') &&
+    read('src/pages/briefing/index.tsx').includes("document.visibilityState === 'visible'"));
   ok('M37c 热点页可手动刷新，且可见时每 10 分钟静默取新',
     lib.includes('refreshHotspotPayload()') && lib.includes("t('library.refresh')") &&
     lib.includes('10 * 60 * 1000') && lib.includes("document.visibilityState === 'visible'"));
