@@ -55,9 +55,13 @@ export function isBad(code, fails) {
 
 // ── 例外表：这几张表之外，所有 verify:* 都在默认列表里跑 ────────────────────
 // 需要真 Chrome（起浏览器、慢、且 CI 里另开阶段跑）。
+// 例外：verify:routes 自 2026-11-19 起进入默认组 —— 那次 H5 支付 defineConstants
+// 前缀写错导致会员页整页白屏，而默认组 73/73 全绿照不出来；路由渲染是唯一能
+// 在构建产物上判「页面能不能打开」的门禁。代价：verify:all 需要 Chrome。
+// 残留缺口（如实记）：dist 缺失或过期时该门禁仍按 `未跑` 以 0 退出，
+// 只有「先构建再跑 verify:all」才真正闭环；是否把缺产物改成 SKIP/红，另行决策。
 const BROWSER = new Map([
   ['verify:layout', 'cdp-probe 驱动真 Chrome 量布局'],
-  ['verify:routes', 'cdp-probe 驱动真 Chrome 把 19 个路由 × 3 档视口全渲染一遍'],
   ['verify:visual', 'cdp-probe 驱动真 Chrome 跑视觉巡检'],
   ['verify:compress', 'cdp-probe 驱动真 Chrome 验头像压缩（canvas 位图，jsdom 测不了）'],
   ['verify:hotkeys-live', 'cdp-probe 驱动真 Chrome 在 dist 上按一遍快捷键（合成 keydown + 真实事件路径）'],
@@ -444,7 +448,9 @@ for (const name of list) {
     // 变异组单独放宽（2026-10-24 实测定标）：133 条变异 × 每条「变异→跑门禁→还原→复跑」
     // 实测约 4.3s/条（mutations-verifyall 3 条 12.9s 基线）≈ 5.7 分钟，硬 300s 会把
     // 最后一口气掐死在还原前 → 退出码 -1 看起来像变异逃逸。900s ≈ 实测 × 1.6。
-    timeout: MUTATING.has(name) ? 900000 : 300000,
+    // verify:routes 同理放宽：27 路由 × 3 视口 × ~3.5s ≈ 300s+，默认 300s 必然把
+    // 正常跑完的那一次判成超时（2026-11-19 实测 300.0s 被杀）。
+    timeout: MUTATING.has(name) || name === 'verify:routes' ? 900000 : 300000,
     maxBuffer: 64 * 1024 * 1024,
     env: { ...process.env, FORCE_COLOR: '0' }
   });
