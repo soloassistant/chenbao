@@ -826,5 +826,30 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     memberSrc.includes("t('mine.payGuideBody')"));
 }
 
+/* M39（2026-11-19）：英文模式不再弹中文提示 */
+{
+  const files = ['src/pages/inbox/index.tsx', 'src/pages/mine/index.tsx', 'src/pages/membership/index.tsx', 'src/pages/shopping/index.tsx', 'src/pages/learnCommunity/index.tsx', 'src/components/IntelGroupCard/index.tsx'];
+  const bad = [];
+  for (const f of files) {
+    const src = read(f);
+    for (const line of src.split('\n')) {
+      // 不用正则字面量：\\s / \\u 在不同写盘路径下容易被转义破坏，用显式判断更稳
+      const hasZh = [...line].some((ch) => {
+        const c = ch.codePointAt(0) || 0;
+        return c >= 0x4e00 && c <= 0x9fa5;
+      });
+      if (line.includes('showToast(') && line.includes("title: '") && hasZh && !line.includes("t('")) {
+        bad.push(`${f}: ${line.trim().slice(0, 60)}`);
+      }
+    }
+  }
+  ok('M39a 核心页面无硬编码中文 toast（英文模式不再露中文）', bad.length === 0);
+  const langZh = read('src/store/language.ts');
+  const langEn = read('src/store/language.en.ts');
+  const needed = ['inbox.parseFailed','inbox.analyzeFailed','inbox.selectFirst','inbox.collectionFull','inbox.writeFailed','inbox.ledgerFailed','inbox.shopFailed','inbox.glossCopied','inbox.copyFailed','community.empty','mine.need4Digit','mine.pinWrong','mine.minorExited','mine.pinReset','mine.privacyWechatManage','mine.privacyWechatOnly','mine.deleteFailed','shopping.added','shopping.priceFormat','shopping.priceSaved','mine.payCancel','mine.payRetry','mine.payOrderFail'];
+  const missing = needed.filter((k) => !langZh.includes(`'${k}':`) || !langEn.includes(`'${k}':`));
+  ok('M39b 新增提示文案中英齐全', missing.length === 0);
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

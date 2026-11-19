@@ -564,7 +564,7 @@ function MembershipPage() {
           // 用户取消支付 / 支付失败同样会写入 active 锁价，getEffectivePrice 此后
           // 一直返回这个未成交价，UI 常驻「锁价 ¥6.9」——把没成交的单子当成成交价展示。
           setLocked(lockPrice(result.planId, result.price));
-          Taro.showToast({ title: '支付成功', icon: 'success' });
+          Taro.showToast({ title: t('mine.h5paySuccess'), icon: 'success' });
           const paidOrderId = result.orderId;
           payReconcileTimerRef.current = setTimeout(() => {
             // 主动查单 + 失败可见化（X7）；不再把 { result } 误当业务对象
@@ -576,15 +576,15 @@ function MembershipPage() {
         // 用户主动取消（微信：cancel；支付宝/douyin：canceled、用户取消）不算失败
         if (/cancel|取消/i.test(msg)) {
           console.info('[MembershipPage] user cancelled payment');
-          Taro.showToast({ title: '已取消', icon: 'none' });
+          Taro.showToast({ title: t('mine.payCancel'), icon: 'none' });
         } else {
           console.error('[MembershipPage] invokePayment failed:', payErr);
-          Taro.showToast({ title: '这次没付成，可以再试一次', icon: 'none' });
+          Taro.showToast({ title: t('mine.payRetry'), icon: 'none' });
         }
       }
     } catch (err) {
       console.error('[MembershipPage] createOrder failed:', err);
-      Taro.showToast({ title: '没能下单，网络或服务暂时不通，稍后再试', icon: 'none' });
+      Taro.showToast({ title: t('mine.payOrderFail'), icon: 'none' });
     } finally {
       setPaying(false);
     }

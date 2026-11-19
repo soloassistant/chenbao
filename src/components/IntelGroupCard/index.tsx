@@ -5,6 +5,7 @@ import type { IntelGroup, IntelLeadSegment, IntelSourceRef } from '@/utils/intel
 import { openExternalPage } from '@/utils/externalLink';
 import SafeImage from '@/components/SafeImage';
 import styles from './index.module.scss';
+import { useT } from '@/store/language';
 
 const isWeapp = process.env.TARO_ENV === 'weapp';
 
@@ -86,6 +87,7 @@ export default function IntelGroupCard({ group, citeHint, onCiteClick }: IntelGr
  *    `openExternalPage` 打开原文（H5 新标签 / 小程序复制链接，双端降级内置）。
  */
 export function IntelItemRow({ item, index }: { item: IntelSourceRef; index?: number }) {
+  const t = useT();
   /** 点正文打开原文：无 url 或打开失败都不打扰用户（图预览才是主交互） */
   const handleTextTap = () => {
     if (!item.url) return;
@@ -112,7 +114,7 @@ export function IntelItemRow({ item, index }: { item: IntelSourceRef; index?: nu
     const text = `${item.text}（来自${item.source}）\n${item.url}`;
     Taro.setClipboardData({
       data: text,
-      success: () => Taro.showToast({ title: '链接已复制，去粘贴分享吧', icon: 'none' })
+      success: () => Taro.showToast({ title: t('library.linkCopied'), icon: 'none' })
     }).catch((err) => console.warn('[IntelItemRow] share copy failed:', err));
   };
 

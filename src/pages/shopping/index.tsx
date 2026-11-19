@@ -127,7 +127,7 @@ function ShoppingPage() {
       setList((prev) => [added, ...prev]);
       setName('');
       setTargetPrice('');
-      Taro.showToast({ title: '已加入购物清单', icon: 'success' });
+      Taro.showToast({ title: t('shopping.added'), icon: 'success' });
     } else {
       // 不静默失败：apiShoppingAdd 返回 null（云端不可用/写入失败）时用户必须看见
       Taro.showToast({ title: t('common.saveFailed'), icon: 'none' });
@@ -184,12 +184,12 @@ function ShoppingPage() {
       // 空输入与格式不合都必须给用户看见提示：旧实现 `if (!input) return` 在 H5 上
       // 因为拿不到 content 而静默失败，用户点了确认却什么都没发生
       if (!input || !m) {
-        Taro.showToast({ title: '格式：平台 价格', icon: 'none' });
+        Taro.showToast({ title: t('shopping.priceFormat'), icon: 'none' });
         return;
       }
       const price = Number(m[2].replace(/,/g, ''));
       if (!Number.isFinite(price) || price <= 0) {
-        Taro.showToast({ title: '格式：平台 价格', icon: 'none' });
+        Taro.showToast({ title: t('shopping.priceFormat'), icon: 'none' });
         return;
       }
       const done = await apiShoppingAddPrice(item.id, m[1], price);
@@ -200,7 +200,7 @@ function ShoppingPage() {
       const next: ShoppingItem = { ...item, prices: done.prices };
       setList((prev) => prev.map((it) => (it.id === item.id ? { ...it, prices: done.prices } : it)));
       if (!runPriceCheck(next)) {
-        Taro.showToast({ title: '已记录比价', icon: 'success' });
+        Taro.showToast({ title: t('shopping.priceSaved'), icon: 'success' });
       }
       setPriceDialog(null);
       return;

@@ -286,7 +286,7 @@ function InboxPage() {
       }
     } catch (err) {
       console.error('[InboxPage] extract failed:', err);
-      Taro.showToast({ title: '没能解析，检查网络后再点一次', icon: 'none' });
+      Taro.showToast({ title: t('inbox.parseFailed'), icon: 'none' });
     } finally {
       setExtracting(false);
     }
@@ -312,7 +312,7 @@ function InboxPage() {
       setWorkResult(isH5 && reply && !screenContent(reply).ok ? safetyRefusal(useLanguageStore.getState().lang) : (reply || '这次没生成结果，再点一次试试。'));
     } catch (err) {
       console.error('[InboxPage] work assistant failed:', err);
-      Taro.showToast({ title: '没能分析，网络或服务暂时不可用', icon: 'none' });
+      Taro.showToast({ title: t('inbox.analyzeFailed'), icon: 'none' });
     } finally {
       setWorkBusy(false);
     }
@@ -388,7 +388,7 @@ function InboxPage() {
   const handleConfirm = async () => {
     const checked = drafts.filter((d) => d.checked);
     if (checked.length === 0) {
-      Taro.showToast({ title: '先勾一条要写进去的', icon: 'none' });
+      Taro.showToast({ title: t('inbox.selectFirst'), icon: 'none' });
       return;
     }
     if (saving) return;
@@ -440,9 +440,9 @@ function InboxPage() {
       // 两者都含 quota。此前一律 toast「入库失败，请重试」，用户不知道是 50 条收藏满了。
       const msg = String((err as Error)?.message || err || '');
       if (/quota/i.test(msg)) {
-        Taro.showToast({ title: '收藏空间已满（50 条），订阅后可继续写进去', icon: 'none', duration: 3000 });
+        Taro.showToast({ title: t('inbox.collectionFull'), icon: 'none', duration: 3000 });
       } else {
-        Taro.showToast({ title: '没能写进去，多是网络断了，再点一次', icon: 'none' });
+        Taro.showToast({ title: t('inbox.writeFailed'), icon: 'none' });
       }
     } finally {
       setSaving(false);
@@ -477,7 +477,7 @@ function InboxPage() {
       );
       const saved = results.filter(Boolean).length;
       if (saved === 0) {
-        Taro.showToast({ title: '这几笔没能记进账本，再点一次', icon: 'none' });
+        Taro.showToast({ title: t('inbox.ledgerFailed'), icon: 'none' });
         return;
       }
       setBills([]);
@@ -500,7 +500,7 @@ function InboxPage() {
       );
       const saved = results.filter(Boolean).length;
       if (saved === 0) {
-        Taro.showToast({ title: '没能加进购物清单，再点一次', icon: 'none' });
+        Taro.showToast({ title: t('inbox.shopFailed'), icon: 'none' });
         return;
       }
       setShoppingHits([]);
@@ -517,8 +517,8 @@ function InboxPage() {
   const handleCopyVocab = () => {
     const text = vocabHits.map((v) => `${v.word} ${v.meaning || ''}`.trim()).join('\n');
     Taro.setClipboardData({ data: text }).then(
-      () => Taro.showToast({ title: '生词已复制', icon: 'success' }),
-      () => Taro.showToast({ title: '复制失败', icon: 'none' })
+      () => Taro.showToast({ title: t('inbox.glossCopied'), icon: 'success' }),
+      () => Taro.showToast({ title: t('inbox.copyFailed'), icon: 'none' })
     );
   };
 
