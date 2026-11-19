@@ -15,6 +15,21 @@ export const en: Record<LangKey, string> = {
   'tab.mine': 'Me',
 
   'app.title': 'Personal Morning Assistant',
+  'app.slogan': 'Your day, briefed before it starts',
+  'app.skip': 'Skip',
+  'inbox.addedShot': 'Screenshot added',
+  'inbox.pasteHintH5': 'Paste text, or Ctrl+V a screenshot',
+  'inbox.pasteHint': 'Paste text or add a screenshot first',
+  'inbox.parsing': 'Parsing…',
+  'inbox.parseBtn': 'Start parsing',
+  'inbox.addShot': 'Add screenshot',
+  'inbox.workTextOnly': 'The work assistant only accepts text for now — paste the text instead',
+  'inbox.workNeedContent': 'Paste the content you want analyzed first',
+  'mine.reconcileTitle': 'Payment result needs checking',
+  'mine.payGuideBtn': 'How to upgrade',
+  'mine.payGuideTitle': 'Upgrading on the web',
+  'mine.payGuideBody': 'The web version is a preview and does not offer online payment yet. If you have a promo code, redeem it below to activate PRO. All free features work without a code.',
+  'mine.payGuideAction': 'Enter promo code',
 
   'common.itemCount': 'items',
 

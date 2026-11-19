@@ -168,7 +168,7 @@ function InboxPage() {
           const paths = (res.tempFiles || []).map((f) => f.tempFilePath).filter(Boolean);
           if (paths.length === 0) return;
           setImages((prev) => [...prev, ...paths].slice(0, MAX_IMAGES));
-          Taro.showToast({ title: '已添加截图', icon: 'success', duration: 1000 });
+          Taro.showToast({ title: t('inbox.addedShot'), icon: 'success', duration: 1000 });
         },
         fail: (err) => console.info('[InboxPage] chooseMedia cancelled:', err && err.errMsg)
       });
@@ -215,7 +215,7 @@ function InboxPage() {
   const handleExtract = async () => {
     const text = content.trim();
     if (!text && images.length === 0) {
-      Taro.showToast({ title: isH5 ? '粘贴文字，或 Ctrl+V 粘贴截屏' : '先粘贴内容或添加截图', icon: 'none' });
+      Taro.showToast({ title: t(isH5 ? 'inbox.pasteHintH5' : 'inbox.pasteHint'), icon: 'none' });
       return;
     }
     if (extracting) return;
@@ -295,7 +295,7 @@ function InboxPage() {
   const handleWorkRun = async (action: WorkAction) => {
     const text = content.trim();
     if (!text) {
-      Taro.showToast({ title: images.length > 0 ? '工作助手暂只支持文字，请粘贴文字内容' : '先粘贴要分析的内容', icon: 'none' });
+      Taro.showToast({ title: t(images.length > 0 ? 'inbox.workTextOnly' : 'inbox.workNeedContent'), icon: 'none' });
       return;
     }
     if (workBusy) return;
@@ -613,11 +613,11 @@ function InboxPage() {
                 className={classnames(styles.extractButton, extracting && styles.disabled)}
                 onClick={handleExtract}
               >
-                {extracting ? '正在解析…' : '开始解析'}
+                {extracting ? t('inbox.parsing') : t('inbox.parseBtn')}
               </Button>
               {images.length === 0 ? (
                 <Button className={styles.addButton} onClick={handleAddImage}>
-                  🖼 添加截图
+                  🖼 {t('inbox.addShot')}
                 </Button>
               ) : null}
             </View>

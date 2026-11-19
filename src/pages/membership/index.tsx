@@ -175,6 +175,9 @@ function MembershipPage() {
   const [readStreak, setReadStreak] = useState(0);
   const [readFreezeCards, setReadFreezeCards] = useState(0);
   const [promoOpen, setPromoOpen] = useState(false);
+  /** H5 无支付通道时，点「立即订阅」不能只弹 3 秒 toast（一闪就没，等于没有转化路径）。
+   *  改成常驻说明 + 直接指向已存在的促销码兑换入口——这是当前唯一真实可开通的方式。 */
+  const [payGuideOpen, setPayGuideOpen] = useState(false);
   /** 支付已到账但权益没开成（函数未部署/凭证不属于本账号）—— 要显式告诉用户怎么兜底 */
   const [h5ClaimIssue, setH5ClaimIssue] = useState<string | null>(null);
   /** U-11：支付前可读的条款/隐私弹层 */
@@ -797,7 +800,7 @@ function MembershipPage() {
         {/* 支付成功但权益未确认（X7）：可见卡片 + 订单号 + 重新核对，不静默 */}
         {reconcileIssue ? (
           <View className={styles.reconcileCard}>
-            <Text className={styles.reconcileTitle}>支付结果待核对</Text>
+            <Text className={styles.reconcileTitle}>{t('mine.reconcileTitle')}</Text>
             <Text className={styles.reconcileText}>{reconcileIssue.text}</Text>
             <View className={styles.reconcileActions}>
               <Text
@@ -891,11 +894,17 @@ function MembershipPage() {
           <View className={styles.subButtonGroup}>
             <Button
               className={styles.subButton}
-              onClick={handleSubscribe}
+              onClick={isH5 && !currentPayChannel ? () => setPayGuideOpen(true) : handleSubscribe}
               loading={paying}
               disabled={disabledAttr(paying)}
             >
-              {paying ? t('mine.subscribing') : profile?.subscribed ? t('mine.renew') : t('mine.subscribe')}
+              {paying
+                ? t('mine.subscribing')
+                : isH5 && !currentPayChannel
+                  ? t('mine.payGuideBtn')
+                  : profile?.subscribed
+                    ? t('mine.renew')
+                    : t('mine.subscribe')}
             </Button>
             {currentPayChannel ? (
               <View className={styles.channelTag}>
@@ -1110,6 +1119,30 @@ function MembershipPage() {
       </View>
 
       {/* 促销码兑换弹层（与反馈/城市共用半屏语言与控件样式，不引入第三套观感） */}
+      {/* H5 无支付通道时的说明层：把「去哪开通」讲清楚，并给出唯一真实入口（促销码）。
+          小程序线已停，这里绝不能把人往不存在的地方指。 */}
+      {payGuideOpen ? (
+        <View className={styles.docMask} onClick={() => setPayGuideOpen(false)}>
+          <View className={styles.docCard} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.docTitle}>{t('mine.payGuideTitle')}</Text>
+            <Text className={styles.docBody}>{t('mine.payGuideBody')}</Text>
+            <View className={styles.fbRow}>
+              <Button className={styles.fbCancel} onClick={() => setPayGuideOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                className={styles.fbSubmit}
+                onClick={() => {
+                  setPayGuideOpen(false);
+                  setPromoOpen(true);
+                }}
+              >
+                {t('mine.payGuideAction')}
+              </Button>
+            </View>
+          </View>
+        </View>
+      ) : null}
       {promoOpen ? (
         <View className={styles.docMask} onClick={() => setPromoOpen(false)}>
           <View className={classnames(styles.docPanel, styles.fbPanel)} onClick={(e) => e.stopPropagation()}>

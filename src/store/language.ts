@@ -21,7 +21,21 @@ const zh = {
   'tab.mine': '我的',
 
   'app.title': '私人晨报助理',
-
+  'app.slogan': '今天的事，晨报先知道',
+  'app.skip': '点击跳过',
+  'inbox.addedShot': '已添加截图',
+  'inbox.pasteHintH5': '粘贴文字，或 Ctrl+V 粘贴截屏',
+  'inbox.pasteHint': '先粘贴内容或添加截图',
+  'inbox.parsing': '正在解析…',
+  'inbox.parseBtn': '开始解析',
+  'inbox.addShot': '添加截图',
+  'inbox.workTextOnly': '工作助手暂只支持文字，请粘贴文字内容',
+  'inbox.workNeedContent': '先粘贴要分析的内容',
+  'mine.reconcileTitle': '支付结果待核对',
+  'mine.payGuideBtn': '了解开通方式',
+  'mine.payGuideTitle': '网页版如何开通',
+  'mine.payGuideBody': '网页版目前是体验版，尚未开放在线支付。拿到促销码后可在下方的「输入促销码」里直接开通 PRO；没有促销码时，所有免费功能都可以照常使用。',
+  'mine.payGuideAction': '输入促销码',
   'common.itemCount': '项',
 
   // 「点头像」是交互说明写成了标签 —— 用户看到的是「我要做什么」而不是「这里能干嘛」。
@@ -1716,7 +1730,8 @@ export const dict: Record<Lang, Record<LangKey, string>> = {
     return enDict ?? zh;
   }
 };
-
+  'mine.deleteInputHint': 'Type "注销" to confirm',
+  'mine.deleteInputMismatch': 'Please type "注销" to confirm',
 interface LanguageState {
   lang: Lang;
   setLang: (l: Lang) => void;
