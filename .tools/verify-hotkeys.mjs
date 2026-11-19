@@ -224,11 +224,10 @@ assert(`D5 跳转目标必须是 tabBar 页（switchTab 打不开非 tab 页：$
 const nonNavWithRoute = hk.HOTKEYS.filter((h) => h.group !== 'navigate' && h.route);
 assert('D6 非跳转键不许带 route（带了说明表写错了组）', nonNavWithRoute.length === 0);
 
-const langSrc = read('src/store/language.ts');
-const enStart = langSrc.indexOf('const en: Record<keyof typeof zh, string> = {');
-const langKeyEnd = langSrc.indexOf('export type LangKey');
-const zhKeys = new Set([...langSrc.slice(0, enStart).matchAll(/'([a-zA-Z0-9_.]+)':/g)].map((m) => m[1]));
-const enKeys = new Set([...langSrc.slice(enStart, langKeyEnd).matchAll(/'([a-zA-Z0-9_.]+)':/g)].map((m) => m[1]));
+const langZh = read('src/store/language.ts');
+const langEn = read('src/store/language.en.ts');
+const zhKeys = new Set([...langZh.matchAll(/'([a-zA-Z0-9_.]+)':/g)].map((m) => m[1]));
+const enKeys = new Set([...langEn.matchAll(/'([a-zA-Z0-9_.]+)':/g)].map((m) => m[1]));
 const missingZh = hk.HOTKEYS.filter((h) => !zhKeys.has(h.labelKey)).map((h) => h.labelKey);
 const missingEn = hk.HOTKEYS.filter((h) => !enKeys.has(h.labelKey)).map((h) => h.labelKey);
 assert(`D7 每条 labelKey 中文文案都有（缺：${missingZh.join(',') || '无'}）`, missingZh.length === 0);

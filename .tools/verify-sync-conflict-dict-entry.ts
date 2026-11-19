@@ -2,5 +2,6 @@
 // 配套文件：verify-sync-conflict.mjs。
 // 变量名别叫 t；别用 export（vm 无 ESM 解析器）。
 import { dict } from '@/store/language';
+import { en } from '@/store/language.en';
 
-console.log(JSON.stringify({ zh: dict.zh, en: dict.en }));
+console.log(JSON.stringify({ zh: dict.zh, en }));

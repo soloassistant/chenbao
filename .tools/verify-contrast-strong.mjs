@@ -312,7 +312,7 @@ try {
 // ============ I. 订阅记录：三态分明 + 云端通道（2026-10-27 改走 WorkBuddy 云） ============
 try {
   const src = read('src/pages/membership/index.tsx');
-  const lang = read('src/store/language.ts');
+  const lang = read('src/store/language.ts') + read('src/store/language.en.ts');
   const svc = read('src/services/cloudOrders.ts');
 
   ok('I2 渲染分支区分 ordersError 与 orders.length===0', /ordersError && orders\.length === 0/.test(src));

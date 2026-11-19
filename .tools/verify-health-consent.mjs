@@ -143,7 +143,16 @@ ok(
 // 用桩 Taro 捕获 showModal 的 content，断言用词与实际能力一致；文案一改回旧口径立刻红。
 async function loadHealthModule(weapp, lang = 'zh') {
   const built = await esbuild.build({
-    entryPoints: [path.join(ROOT, 'src/services/healthConsent.ts')],
+    // 英文词典已拆到 language.en.ts（动态 chunk）：内联入口同时导出 loadEnDict，
+    // 否则英文用例会回退中文、测得的是中文文案。
+    stdin: {
+      contents: [
+        "export * from '@/services/healthConsent';",
+        "export { loadEnDict, isEnDictLoaded } from '@/store/language';"
+      ].join('\n'),
+      resolveDir: ROOT,
+      loader: 'ts'
+    },
     bundle: true,
     write: false,
     format: 'cjs',
@@ -183,6 +192,9 @@ async function loadHealthModule(weapp, lang = 'zh') {
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
   vm.runInContext(built.outputFiles[0].text, sandbox, { filename: 'healthConsent.ts' });
+  if (lang === 'en' && typeof sandbox.module.exports.loadEnDict === 'function') {
+    await sandbox.module.exports.loadEnDict();
+  }
   return { mod: sandbox.module.exports, sandbox };
 }
 

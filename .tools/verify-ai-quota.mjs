@@ -41,7 +41,7 @@ function assert(name, cond, detail = '') {
 const assistant = read('src/components/AiAssistant/index.tsx');
 const quotaSrc = read('src/services/aiQuota.ts');
 const rulesSrc = read('src/services/aiQuotaRules.ts');
-const lang = read('src/store/language.ts');
+const lang = read('src/store/language.ts') + read('src/store/language.en.ts');
 
 // ⚠️ 断言必须看在**未注释的代码**上：第一版直接把 `bumpLocalUsage();` 注释掉，
 //   字符串仍在文件里、A4/A5 照样通过 —— 变异测试当场抓出这个假绿。

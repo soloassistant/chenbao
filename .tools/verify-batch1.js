@@ -215,9 +215,9 @@ assert(
 // B-6 i18n：中英各 5 个 key 必须齐全（en 的类型是 Record<keyof typeof zh, string>）
 const lang = read('src/store/language.ts');
 const zhStart = at(lang, 'const zh = {');
-const enStart = at(lang, 'const en: Record<keyof typeof zh, string> = {');
-const zhSrc = lang.slice(zhStart, enStart);
-const enSrc = lang.slice(enStart);
+
+const zhSrc = lang.slice(zhStart);
+const enSrc = read('src/store/language.en.ts');
 const B_KEYS = ['mine.renew', 'mine.renewTitle', 'mine.renewBody', 'mine.renewConfirm', 'mine.subscribedUntil'];
 for (const k of B_KEYS) {
   assert(`B/i18n/zh/${k}`, has(zhSrc, `'${k}':`));

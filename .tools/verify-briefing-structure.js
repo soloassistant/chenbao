@@ -48,7 +48,7 @@ const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const count = (src, s) => src.split(s).length - 1;
 
 const PAGE = read('src/pages/briefing/index.tsx');
-const LANG = read('src/store/language.ts');
+const LANG = read('src/store/language.ts') + read('src/store/language.en.ts');
 
 /* ============================================================
  * 一、记账卡的位置：必须在 header 之外，且不在 headerActions 里

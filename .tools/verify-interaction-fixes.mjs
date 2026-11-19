@@ -629,7 +629,7 @@ ok('R3 前提可复现：fromNow(undefined) 确实返回「刚刚」', dateMod.f
 ok('R4 前提可复现：fromNow(合法 ISO) 不会退化成「刚刚」',
   dateMod.fromNow(new Date(Date.now() - 3 * 3600 * 1000).toISOString()) === '3 小时前');
 
-const langSrc = stripComments(read('src/store/language.ts'));
+const langSrc = stripComments(read('src/store/language.ts') + read('src/store/language.en.ts'));
 const fullQuotes = langSrc.match(/'briefing\.quoteFull':\s*'([^']*)'/g) || [];
 ok('R5 自选满额文案中英各一处，且都用 {max} 占位符（不写死 8）',
   fullQuotes.length === 2 && fullQuotes.every((l) => l.includes('{max}')));
@@ -757,7 +757,7 @@ ok('U4 顶栏渲染失败文案与重试入口（t(trade.feedDown) + onClick={re
     /t\('trade\.feedRetry'\)/.test(tradeSrc) &&
     /onClick=\{retryFeed\}/.test(tradeSrc));
 // U5 中英同步：两个键各出现 2 次（zh + en），中文文案与需求逐字一致
-const langU = stripComments(read('src/store/language.ts'));
+const langU = stripComments(read('src/store/language.ts') + read('src/store/language.en.ts'));
 ok('U5 失败文案与重试键中英各一处', (langU.match(/'trade\.feedDown':/g) || []).length === 2 &&
   (langU.match(/'trade\.feedRetry':/g) || []).length === 2);
 ok('U5b 中文失败文案逐字包含「实时行情暂不可用，已回到参考行情」',
