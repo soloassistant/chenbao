@@ -1,5 +1,10 @@
 @use '@/styles/variables.scss' as *;
 
+// 选中单元的文字色。$color-primary-strong(#c7371a) 压在 .unitChipActive 的
+// rgba(199,55,26,.08) 底色上（叠白卡后 rgb(246,231,223)）实测只有 4.36:1，
+// 达不到 AA 4.5；同色相加深一档，实测 5.74:1。只用于本页选中单元的两个文字类。
+$paper-active-ink: #a82c13;
+
 .page {
   min-height: 100vh;
   padding: $spacing-md $page-padding $spacing-xl;
@@ -157,7 +162,7 @@
 }
 
 .unitCodeActive {
-  color: $color-primary-strong;
+  color: $paper-active-ink;
 }
 
 .unitName {
@@ -168,7 +173,7 @@
 }
 
 .unitNameActive {
-  color: $color-primary-strong;
+  color: $paper-active-ink;
 }
 
 /* 考季列表 */
