@@ -557,6 +557,7 @@ export const en: Record<LangKey, string> = {
   'briefing.voiceLimitTitle': 'Voice quota used up',
   'briefing.voiceLimitContent': "This month's free voice messages are used up. Subscribe for unlimited chat.",
   'briefing.goSubscribe': 'Go Pro',
+  'briefing.subscribeUnavailable': 'Notifications are not enabled in this build yet',
   'briefing.subscribeWeappOnly': 'Subscription reminders are available on WeChat',
   'briefing.subscribeOk': 'See you tomorrow!',
   'briefing.subscribeFail': 'Subscription failed, please try again later',
