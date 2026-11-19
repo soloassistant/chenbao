@@ -10,6 +10,7 @@ import { filterByRange, summarize } from '@/utils/ledgerAggregate';
 import { getReadStreak } from '@/utils/readStreak';
 import { readUsageSummary } from '@/utils/usageLog';
 import { countBriefingOpenDays, listBriefingArchive, type BriefingArchiveEntry } from '@/utils/briefingArchive';
+import SubPageHeader from '@/components/SubPageHeader';
 import styles from '../mine/index.module.scss';
 
 /**
@@ -98,6 +99,7 @@ function ReportPage() {
 
   return (
     <View className={styles.page} style={brandVars(theme)}>
+      <SubPageHeader />
       {/* ===== A 价值周报 ===== */}
       <View className={styles.card}>
         <Text className={styles.cardTitle}>{t('report.weekTitle')}</Text>

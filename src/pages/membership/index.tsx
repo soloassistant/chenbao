@@ -33,6 +33,7 @@ import type { FeatureKey, UsageSummary } from '@/utils/featureUsage';
 import { readUsageSummary } from '@/utils/usageLog';
 import { clearReadStreak, getReadFreezeCards, getReadStreak } from '@/utils/readStreak';
 import { claimH5Order, createH5Order, queryH5Order, readReturnedOrderId, redirectToPayUrl } from '@/services/h5Pay';
+import SubPageHeader from '@/components/SubPageHeader';
 import styles from '../mine/index.module.scss';
 
 /**
@@ -730,6 +731,8 @@ function MembershipPage() {
 
   return (
     <View className={styles.page} style={brandVars(theme)}>
+      {/* H5 二级页返回入口（原生导航栏不渲染） */}
+      <SubPageHeader />
       {/* ===== 订阅区（B-01 锁价文案 / B-02 涨价通知 / 三通道支付） ===== */}
       <View className={styles.subCard}>
         <Text className={styles.subTitle}>{t('mine.subTitle')}</Text>

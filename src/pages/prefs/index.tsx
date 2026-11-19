@@ -18,6 +18,7 @@ import { SYNC_KEYS } from '@/services/cloudSync';
 import { readWatchKeywords, saveWatchKeywords } from '@/utils/intelWatchStore';
 import { getHotspotPayload, resetHotspotCache } from '@/services/cloud';
 import { readDisabledSources, setSourceEnabled } from '@/utils/sourcePrefs';
+import SubPageHeader from '@/components/SubPageHeader';
 import { CITY_TEXT } from '../mine/feedbackText';
 import styles from '../mine/index.module.scss';
 
@@ -324,6 +325,7 @@ function PrefsPage() {
 
   return (
     <View className={styles.page} style={brandVars(theme)}>
+      <SubPageHeader />
       <View className={styles.card}>
         <Text className={styles.cardTitle}>{t('mine.settingGeneral')}</Text>
         {/* 周报与晨报存档入口（2026-10-31，产品评估 §7.2 A/B）：个人数据视图，v1 先挂在设置页，
