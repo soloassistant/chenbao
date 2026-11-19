@@ -191,8 +191,6 @@ export const en: Record<LangKey, string> = {
   'papers.mockStart': 'Build a mock exam from this paper structure',
   'papers.mockUnsupported': 'No syllabus mapping for this unit yet — a mock exam would pull unrelated questions',
   // Mock exam
-  'mock.aiReviewStart': 'Get AI explanation',
-  'mock.aiReviewUnsafe': 'Content check failed, no explanation generated',
   'mock.title': 'Mock exam',
   'mock.loading': 'Building the paper…',
   'mock.loadFailed': 'Failed to load the question bank',

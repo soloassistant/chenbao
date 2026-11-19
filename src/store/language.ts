@@ -220,8 +220,6 @@ const zh = {
   'mock.genBadOutput': 'AI 返回的题目格式不合格，已丢弃，请重试',
   'mock.genFailed': '出题失败，请重试',
   'mock.aiReview': 'AI 讲解',
-  'mock.aiReviewStart': '获取 AI 错题讲解',
-  'mock.aiReviewUnsafe': '内容检查未通过，讲解未生成',
   'mock.aiReviewBusy': 'AI 正在分析你的错题…（约 20 秒）',
   'mock.aiReviewNote': '以下讲解由 AI 生成，仅供参考；分数以判分为准。',
   'mock.aiReviewFail': 'AI 讲解暂不可用，可对照上方标答与解析自己复盘',
