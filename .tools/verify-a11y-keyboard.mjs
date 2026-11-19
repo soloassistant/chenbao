@@ -150,8 +150,12 @@ const TOUCH = [
   ['src/pages/calendar/index.module.scss', '.cell', 'min', '日历日期格'],
   ['src/pages/library/index.module.scss', '.aiEditBtn', 'hit', '设置 兴趣/清除/重置统计'],
   ['src/pages/library/index.module.scss', '.sourceEntry', 'hit', '来源⚙'],
-  ['src/pages/trade/index.module.scss', '.wlTab', 'pseudo', '行情自选页签'],
-  ['src/pages/trade/index.module.scss', '.backBtn', 'pseudo', '行情返回条'],
+  // 2026-11-19：交易页 8 处从「伪元素外扩」改成「实尺寸 44」。页签间隙只有 2–4PX，
+  // 外扩必然与相邻页签重叠（点哪个取决于层叠顺序），所以判据改成认「实尺寸 44」。
+  ['src/pages/trade/index.module.scss', '.wlTab', 'minpx', '行情自选页签'],
+  ['src/pages/trade/index.module.scss', '.backBtn', 'minpx', '行情返回条'],
+  ['src/pages/trade/index.module.scss', '.toolTab', 'minpx', '行情底部工具页签'],
+  ['src/pages/trade/index.module.scss', '.toolPanel .segBtn', 'minpx', '行情计算方向'],
   ['src/pages/inbox/index.module.scss', '.modeTab', 'hit', '收件箱模式页签'],
   ['src/pages/inbox/index.module.scss', '.extractButton', 'hit', '收件箱提取按钮'],
   ['src/pages/learn/index.module.scss', '.langTab', 'hit', '学习语言页签'],
@@ -176,6 +180,9 @@ for (const [file, sel, mode, why] of TOUCH) {
         ? /@include\s+hit-expand(?:-min)?\(/.test(body)
         : mode === 'min'
           ? /min-height:\s*88rpx/.test(body)
+          : mode === 'minpx'
+            // 实尺寸 44：横排元素用 height（如返回条），可增长的元素用 min-height
+            ? /(min-)?height:\s*44PX/.test(body)
           : mode === 'box'
             ? /width:\s*88rpx/.test(body) && /height:\s*88rpx/.test(body)
             : /&::before[\s\S]*?background:\s*transparent/.test(body)
@@ -183,7 +190,7 @@ for (const [file, sel, mode, why] of TOUCH) {
   if (!ok) touchBad.push(`${why}(${sel})`);
 }
 assert(
-  `A14 ${TOUCH.length} 个 <44px 控件都按「视觉不变、热区 ≥44」处理（hit-expand-min(44px) / hit-expand / min-height / 透明伪元素）`,
+  `A14 ${TOUCH.length} 个 <44px 控件都按「视觉不变、热区 ≥44」处理（hit-expand-min / hit-expand / min-height / 实尺寸 44 / 透明伪元素）`,
   touchBad.length === 0,
   touchBad.join(' | ')
 );
