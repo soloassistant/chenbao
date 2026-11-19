@@ -12,9 +12,11 @@
  * 诚实性：题目由模型生成，**可能有错**。调用方必须在 UI 上标明来源，
  * 生成结果里同时写入 source='ai' 与一句提示，方便用户在题库里辨认。
  */
+import { LEVELS_BY_EXAM, SUBJECTS_BY_EXAM } from '@/types/questionBank';
 import { questionId, stemHash } from '@/utils/questionBank';
 import type { Board, ExamSystem, Level, Question } from '@/types/questionBank';
 import { cloudLlmChat } from './cloudLlm';
+import { finishAiEntry, guardAiEntry } from './aiEntryGuard';
 
 export interface GenQuestionDraft {
   stem: string;
@@ -28,6 +30,40 @@ export type GenResult =
   | { ok: false; reason: string };
 
 const KEYS = ['A', 'B', 'C', 'D'];
+
+/**
+ * 出题元数据必须**跟着试卷走**，不能把某一考试体系的 board/level 当全局默认值。
+ * 2026-11-16 的缺陷：高考 / AP 生成题被写成 `edexcel / a2`，而题库规则要求
+ * `level='na'` → 模型已经调用过、题目却全被 repo.add() 拒收；AQA 卷还可能被错标成 Edexcel。
+ *
+ * 原则：体系能唯一确定的就推导；推不出来的用 `other`（如实「未知」），
+ * 绝不用 Edexcel 冒充。调用方传了真实 board/level 时以调用方为准。
+ */
+export function resolveGenMetadata(opts: {
+  examSystem?: ExamSystem;
+  board?: Board;
+  subject?: string;
+  level?: Level;
+}): { ok: true; examSystem: ExamSystem; board: Board; subject: string; level: Level }
+  | { ok: false; reason: string } {
+  const examSystem = opts.examSystem || 'other';
+  const allowedLevels = LEVELS_BY_EXAM[examSystem];
+  if (!allowedLevels) return { ok: false, reason: 'metadata-exam-system' };
+
+  const boardBySystem: Record<ExamSystem, Board> = {
+    gaokao: 'china_moe', zhongkao: 'china_moe', ap: 'collegeboard', ib: 'ibo',
+    // 这三个体系的考试局不能由体系唯一确定；不猜 Edexcel，标 other
+    alevel: 'other', igcse: 'other', other: 'other'
+  };
+  const board = opts.board || boardBySystem[examSystem];
+  const subject = opts.subject || SUBJECTS_BY_EXAM[examSystem][0];
+  const level = opts.level || allowedLevels[0];
+
+  // 与题库 repo.add() 同一套闭集：调用模型前先校验，别等入库才拒收
+  if (!LEVELS_BY_EXAM[examSystem].includes(level)) return { ok: false, reason: 'metadata-level' };
+  if (!SUBJECTS_BY_EXAM[examSystem].includes(subject)) return { ok: false, reason: 'metadata-subject' };
+  return { ok: true, examSystem, board, subject, level };
+}
 
 /** 从模型输出里抠出 JSON 数组：模型常把结果包在 ```json ... ``` 里，或前后带解释文字。 */
 function extractJsonArray(raw: string): unknown {
@@ -81,11 +117,14 @@ export async function generateQuestions(opts: {
   subject?: string;
   level?: Level;
 }): Promise<GenResult> {
+  const meta = resolveGenMetadata(opts);
+  if (!meta.ok) return { ok: false, reason: meta.reason };
   const count = Math.min(10, Math.max(3, opts.count || 6));
   const tagLine = opts.tags.length ? `考点范围：${opts.tags.join('、')}` : '考点范围：该单元的核心考点';
 
   const prompt = [
-    `你是一位严谨的国际课程命题老师。请围绕「${opts.topic}」出 ${count} 道单项选择题。`,
+    `你是一位严谨的命题老师。请围绕「${opts.topic}」出 ${count} 道单项选择题。`,
+    `试卷元数据：考试体系=${meta.examSystem}，考试局=${meta.board}，学科=${meta.subject}，级别=${meta.level}。`,
     tagLine,
     '',
     '硬性要求：',
@@ -102,11 +141,19 @@ export async function generateQuestions(opts: {
    * 没有 reply 字段就返回 null（2026-11-16 实测：这里一直报「AI 暂不可用」，
    * 其实模型已经正常返回了 JSON 数组）。
    * cloudLlmChat 要求 system 非空（硬契约），所以这里的 system 是命题指令本身。 */
+  // 与 AI 助手同一套闸门：内容检查 + 额度检查必须在**调用模型之前**（2026-11-19）
+  const guard = await guardAiEntry(prompt);
+  if (!guard.ok) return { ok: false, reason: guard.reason };
   const raw = await cloudLlmChat({
     system: '你是严格的国际课程命题老师。只输出 JSON 数组，不要 markdown 代码块，不要任何解释文字。',
     userContent: prompt
   });
   if (!raw) return { ok: false, reason: 'ai-unavailable' };
+  const after = finishAiEntry(raw);
+  if (!after.ok) return { ok: false, reason: after.reason };
+
+  /* 用量由 cloudLlmChat 统一写一条 llm_events；finishAiEntry 只补本地镜像。
+   * 这里绝不再单独 llmEventInsert —— 那会把一次调用记成两次（2026-11-16 踩过）。 */
 
   let arr: unknown;
   try {
@@ -130,10 +177,10 @@ export async function generateQuestions(opts: {
       type: 'single',
       answerKey: String(o.answer).toUpperCase(),
       explanation: o.explanation ? String(o.explanation) : '',
-      examSystem: opts.examSystem || 'alevel',
-      board: opts.board || 'edexcel',
-      subject: opts.subject || 'mathematics',
-      level: opts.level || 'a2',
+      examSystem: meta.examSystem,
+      board: meta.board,
+      subject: meta.subject,
+      level: meta.level,
       knowledgeTags: opts.tags.length ? opts.tags.slice(0, 6) : ['AI 生成'],
       difficulty: 3,
       // 来源单列一档：用户要能分辨「模型出的题」和「自己出的题」

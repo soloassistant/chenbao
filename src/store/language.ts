@@ -201,6 +201,8 @@ const zh = {
   'papers.mockStart': '按这套真题的考卷结构组一套模拟卷',
   'papers.mockUnsupported': '该单元暂未建立考点映射，组不了模拟卷（考点对不上，硬抽会抽到不相干的题）',
   // 模拟考试
+  'mock.aiReviewStart': '获取 AI 错题讲解',
+  'mock.aiReviewUnsafe': '内容检查未通过，讲解未生成',
   'mock.title': '模拟考试',
   'mock.loading': '正在组卷…',
   'mock.loadFailed': '题库读取失败',
@@ -218,6 +220,8 @@ const zh = {
   'mock.genBadOutput': 'AI 返回的题目格式不合格，已丢弃，请重试',
   'mock.genFailed': '出题失败，请重试',
   'mock.aiReview': 'AI 讲解',
+  'mock.aiReviewStart': '获取 AI 错题讲解',
+  'mock.aiReviewUnsafe': '内容检查未通过，讲解未生成',
   'mock.aiReviewBusy': 'AI 正在分析你的错题…（约 20 秒）',
   'mock.aiReviewNote': '以下讲解由 AI 生成，仅供参考；分数以判分为准。',
   'mock.aiReviewFail': 'AI 讲解暂不可用，可对照上方标答与解析自己复盘',

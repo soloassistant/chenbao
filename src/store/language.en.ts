@@ -191,6 +191,8 @@ export const en: Record<LangKey, string> = {
   'papers.mockStart': 'Build a mock exam from this paper structure',
   'papers.mockUnsupported': 'No syllabus mapping for this unit yet — a mock exam would pull unrelated questions',
   // Mock exam
+  'mock.aiReviewStart': 'Get AI explanation',
+  'mock.aiReviewUnsafe': 'Content check failed, no explanation generated',
   'mock.title': 'Mock exam',
   'mock.loading': 'Building the paper…',
   'mock.loadFailed': 'Failed to load the question bank',
@@ -208,6 +210,8 @@ export const en: Record<LangKey, string> = {
   'mock.genBadOutput': 'AI returned malformed questions and they were discarded',
   'mock.genFailed': 'Generation failed, please retry',
   'mock.aiReview': 'AI explanation',
+  'mock.aiReviewStart': 'Get AI review of wrong answers',
+  'mock.aiReviewUnsafe': 'Content check failed; no review was generated',
   'mock.aiReviewBusy': 'AI is analysing your mistakes… (~20s)',
   'mock.aiReviewNote': 'AI-generated explanations for reference only; your score is final.',
   'mock.aiReviewFail': 'AI explanation unavailable — review the answer key above',

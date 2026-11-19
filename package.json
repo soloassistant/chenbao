@@ -93,6 +93,7 @@
     "verify:routes": "node .tools/verify-routes.mjs",
     "verify:deploy-fresh": "node .tools/verify-deploy-fresh.mjs dist",
     "verify:ai-quota": "node .tools/verify-ai-quota.mjs",
+    "verify:ai-entry": "node .tools/verify-ai-entry-audit.mjs",
     "verify:boot-skeleton": "node .tools/verify-boot-skeleton.mjs",
     "verify:boot-path": "node .tools/verify-boot-path.mjs",
     "verify:live-bridge": "node .tools/verify-live-bridge.mjs",
