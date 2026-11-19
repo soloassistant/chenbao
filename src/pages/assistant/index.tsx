@@ -1,5 +1,6 @@
 import { View } from '@tarojs/components';
 import AiAssistant from '@/components/AiAssistant';
+import SubPageHeader from '@/components/SubPageHeader';
 import styles from './index.module.scss';
 
 /**
@@ -18,6 +19,7 @@ import styles from './index.module.scss';
 export default function AssistantPage() {
   return (
     <View className={styles.page}>
+      <SubPageHeader />
       <AiAssistant embedded />
     </View>
   );

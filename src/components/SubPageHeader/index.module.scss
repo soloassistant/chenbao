@@ -1,0 +1,27 @@
+@use '@/styles/variables.scss' as *;
+
+/* 二级页返回条：高度 88rpx（44px）达标，视觉是一行轻量文字链接，
+   与 search 页的返回键同形，不抢正文权重。 */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  min-height: 88rpx;
+  padding: 0 $page-padding;
+  color: $color-text-secondary;
+  background: transparent;
+  user-select: none;
+
+  &:active {
+    opacity: 0.6;
+  }
+}
+
+.icon {
+  font-size: $font-size-xl;
+  line-height: 1;
+}
+
+.text {
+  font-size: $font-size-md;
+}
