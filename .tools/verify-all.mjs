@@ -448,7 +448,9 @@ for (const name of list) {
     // 变异组单独放宽（2026-10-24 实测定标）：133 条变异 × 每条「变异→跑门禁→还原→复跑」
     // 实测约 4.3s/条（mutations-verifyall 3 条 12.9s 基线）≈ 5.7 分钟，硬 300s 会把
     // 最后一口气掐死在还原前 → 退出码 -1 看起来像变异逃逸。900s ≈ 实测 × 1.6。
-    timeout: MUTATING.has(name) ? 900000 : 300000,
+    // verify:routes 同理放宽：27 路由 × 3 视口 × ~3.5s ≈ 300s+，默认 300s 必然把
+    // 正常跑完的那一次判成超时（2026-11-19 实测 300.0s 被杀）。
+    timeout: MUTATING.has(name) || name === 'verify:routes' ? 900000 : 300000,
     maxBuffer: 64 * 1024 * 1024,
     env: { ...process.env, FORCE_COLOR: '0' }
   });
