@@ -1,7 +1,7 @@
 {
-  "builtAt": "2026-11-16T11:00:02.698Z",
-  "head": "0c525b5c94fda5c9539b953495081c308563300d",
-  "inputsHash": "784d74d1a53af6c98fabf9a98a167153b2706a1ec306b98c1b849c03bcd58e01",
+  "builtAt": "2026-11-19T05:36:35.389Z",
+  "head": "875866c47d04e6be68a1c74ac9b8ab6d7cddc705",
+  "inputsHash": "cce7d7bd07259f1067046241dce58213f8ba3f3d3be6f06304f6bd095870b85a",
   "srcHash": "b8869d9e06f7c8f9aac1c4cecca8c1c7b30679947ef0412159b1156306a437e1",
   "inputCount": 282,
   "dirty": false,
@@ -11,7 +11,7 @@
   "treeDirtyCount": 0,
   "files": {
     "config/dev.ts": "7b65879c015d38bd96fad216db6265a55156f4fdacda43b44948ff60b2209190",
-    "config/index.ts": "707a044c38acadf1d64b20b8945109d4d1db578a9dfe6f74e36ae28a539d9768",
+    "config/index.ts": "be47c17be5e1f24115ffa81e1044680fa5d3c88cae655df7c951f6ce8613de64",
     "config/prod.ts": "39fc22a2b0a5dac80034fc9fa1663bada704e73cb5f63afc558eab345e60ec2b",
     "package.json": "ff308d937da86bf0639b21c89c0ace1df0e96baebe36c4beb232b6cb457c7f99",
     "src/app.config.ts": "26d24a08caa670223d78924262cf96a3c69ffa15327345f913c04af9392d7f2a",
