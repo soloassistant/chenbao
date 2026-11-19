@@ -19,9 +19,17 @@ export default function SubPageHeader() {
   const t = useT();
 
   const handleBack = useCallback(() => {
-    Taro.navigateBack().catch(() => {
+    const fallback = () => {
       Taro.reLaunch({ url: '/pages/briefing/index' }).catch(() => {});
-    });
+    };
+    // H5 直接打开二级页（书签/分享链接）时页面栈只有 1 页；此时 navigateBack
+    // **不一定 reject**（实测直接加载会员页点返回，URL 原地不动），必须按栈深判断。
+    const stack = Taro.getCurrentPages ? Taro.getCurrentPages() : [];
+    if (stack.length > 1) {
+      Taro.navigateBack().catch(fallback);
+    } else {
+      fallback();
+    }
   }, []);
 
   if (process.env.TARO_ENV !== 'h5') return null;
