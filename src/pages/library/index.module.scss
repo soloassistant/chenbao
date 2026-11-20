@@ -1319,3 +1319,55 @@
     border-left: 1PX solid $color-card-border;
   }
 }
+
+/* 2026-11-20：320 下 rpx 会把 88rpx 缩成 38px，命中区不足 44。
+   这些控件改为实尺寸 44PX（相邻控件保持原有间距，不做透明外扩）。 */
+.proBadge {
+  min-height: 44PX;
+  min-width: 44PX;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.searchBar {
+  min-height: 44PX;
+}
+
+.searchInput {
+  height: 44PX;
+  min-height: 44PX;
+}
+
+/* Taro Input 真正可点的是内部 input.weui-input */
+.searchInput :global(.weui-input) {
+  height: 44PX;
+  min-height: 44PX;
+}
+
+.aiEditBtn,
+.aiGoBtn,
+.personalOffEntry,
+.feedbackBtn,
+.shareBtn {
+  min-height: 44PX;
+  min-width: 44PX;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sourceEntry {
+  min-height: 44PX;
+}
+
+.loadMore {
+  height: 44PX;
+  line-height: 44PX;
+}
+
+/* 实尺寸后不再需要透明外扩，避免压到相邻控件 */
+.aiEditBtn::before,
+.sourceEntry::before {
+  content: none;
+}
