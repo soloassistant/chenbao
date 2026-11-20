@@ -248,6 +248,27 @@
   }
 }
 
+// 2026-11-19：320x568 实测标题区只剩 49PX 宽（两个按钮各 108PX），
+// 「今天 · 11月19日 周四」被挤成 3 行且末行贴住底栏。≤360PX 让标题独占一行、
+// 两个同步按钮移到下一行左侧并排；361PX 以上维持原布局。
+@media (max-width: 360PX) {
+  .dayHeader {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 12PX;
+  }
+
+  .dayTitle {
+    flex: 1 0 100%;
+  }
+
+  // Taro button 默认撑满一行；折行后必须收回内容宽，否则两个按钮各占一整行
+  .syncButton {
+    flex: 0 0 auto;
+    width: auto;
+  }
+}
+
 /* 手动快速添加日程 */
 .quickAdd {
   display: flex;
