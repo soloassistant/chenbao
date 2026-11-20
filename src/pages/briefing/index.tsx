@@ -42,7 +42,7 @@ import {
 } from '@/utils/permission';
 import type { LocateFailReason } from '@/utils/permission';
 import { useUserStore } from '@/store/user';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { dayKey, formatEventTime } from '@/utils/date';
 import { logActivity } from '@/utils/activityLog';
 import { computeAdaptive } from '@/utils/adaptive';
@@ -189,6 +189,7 @@ function BriefingPage() {
   const t = useT();
   const lang = useLanguageStore((s) => s.lang);
   const { theme } = useThemeStore();
+  const { resolved } = useThemeMode();
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   /* 记账（v2.0 F23 · 晨报呈报）：**刻意不放进 Briefing 类型**。
      记账数据是本地 storage 里的高频可写数据，若塞进 briefing 会连带触发
@@ -1198,7 +1199,7 @@ function BriefingPage() {
   };
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={`${styles.page} ${themeModeClass(resolved)}`} style={brandVars(theme, resolved)}>
       {/* 桌面端左侧栏（≥1024px 才显示，移动端 display:none）：真实 tabBar 路由，全部走
           switchTab（navigateTo 对 tabBar 页会直接抛错）；底部为登录用户信息 ——
           profile 只有昵称与订阅档位，没有手机号字段，不编。 */}

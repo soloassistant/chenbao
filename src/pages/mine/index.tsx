@@ -7,7 +7,8 @@ import PromptModal from '@/components/PromptModal';
 import DemoDataHint from '@/components/DemoDataHint';
 import SyncConflictHint from '@/components/SyncConflictHint';
 import { useUserStore } from '@/store/user';
-import { brandVars, useThemeStore, THEME_PRESETS } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass, THEME_PRESETS } from '@/store/theme';
+import type { ThemeMode } from '@/store/theme';
 import { useUiScaleStore, UI_SCALE_PRESETS } from '@/store/uiScale';
 import { useT, useLanguageStore, LANG_OPTIONS } from '@/store/language';
 import type { LangKey } from '@/store/language';
@@ -212,6 +213,13 @@ const DEFAULT_CUSTOM: CustomSettings = {
   morningReminderEnabled: true
 };
 
+/** 显示模式三档（跟随系统/浅色/深色） */
+const THEME_MODES: { id: ThemeMode; zh: string; en: string }[] = [
+  { id: 'system', zh: '跟随系统', en: 'System' },
+  { id: 'light', zh: '浅色', en: 'Light' },
+  { id: 'dark', zh: '深色', en: 'Dark' }
+];
+
 /* ---------------- 续费提醒偏好（2026-10-24） ----------------
  * 两个 key 都是**本机偏好**，刻意不进 cloudSync：
  *   · `mb_renew_remind`     —— 开关（默认开）
@@ -258,6 +266,7 @@ function loadCustom(): CustomSettings {
 function MinePage() {
   const { profile, usage, init, saveSettings } = useUserStore();
   const { theme, setTheme } = useThemeStore();
+  const { mode, resolved, setMode } = useThemeMode();
   const { id: scaleId, setScale } = useUiScaleStore();
   const t = useT();
   const { lang, setLang } = useLanguageStore();
@@ -1280,7 +1289,7 @@ function MinePage() {
   );
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       {/* 云端不可用、已回退本地/演示实现时如实提示（诚实性，来源 briefing.degraded） */}
       {/* 2026-10-30：去掉 'getUsage' —— 它在 cloud.ts 的 REAL_LOCAL_ACTIONS 里
           （H5 回退读的是**真实本地**用量计数，不是演示数据）⇒ 永不登记降级，
@@ -1690,6 +1699,78 @@ function MinePage() {
         </>
       ) : null}
 
+      <View className={styles.card}>
+        <Text className={styles.cardTitle}>{t('mine.settingAppearance')}</Text>
+        <View className={styles.row}>
+          <Text className={styles.rowLabel}>{t('mine.uiColor')}</Text>
+          <View className={styles.swatchList}>
+            {THEME_PRESETS.map((preset) => (
+              <View
+                key={preset.id}
+                className={classnames(styles.swatch, theme.id === preset.id && styles.swatchActive)}
+                style={{ background: preset.color }}
+                onClick={() => setTheme(preset.id)}
+              >
+                {theme.id === preset.id ? <Text className={styles.swatchCheck}>✓</Text> : null}
+              </View>
+            ))}
+          </View>
+        </View>
+        {/* 显示模式：跟随系统 / 浅色 / 深色（默认跟随系统） */}
+        <View className={styles.row}>
+          <Text className={styles.rowLabel}>{lang === 'en' ? 'Appearance mode' : '显示模式'}</Text>
+          <View className={styles.scaleList}>
+            {THEME_MODES.map((item) => (
+              <View
+                key={item.id}
+                className={classnames(styles.scaleChip, mode === item.id && styles.scaleChipActive)}
+                onClick={() => setMode(item.id)}
+              >
+                <Text className={classnames(styles.scaleText, mode === item.id && styles.scaleTextActive)}>
+                  {lang === 'en' ? item.en : item.zh}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+        {/* 界面大小：H5 端通过 --ui-scale 调节 rem 基准，即时生效（weapp 端 rpx 字号暂不支持全局缩放） */}
+        {isH5 ? (
+          <View className={styles.row}>
+            <Text className={styles.rowLabel}>{t('mine.uiSize')}</Text>
+            <View className={styles.scaleList}>
+              {UI_SCALE_PRESETS.map((p) => (
+                <View
+                  key={p.id}
+                  className={classnames(styles.scaleChip, scaleId === p.id && styles.scaleChipActive)}
+                  onClick={() => setScale(p.id)}
+                >
+                  <Text className={classnames(styles.scaleText, scaleId === p.id && styles.scaleTextActive)}>
+                    {t(UI_SCALE_LABEL[p.id])}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+        {/* 语言切换：中 / EN，全局即时生效 */}
+        <View className={styles.row}>
+          <Text className={styles.rowLabel}>{t('mine.uiLang')}</Text>
+          <View className={styles.scaleList}>
+            {LANG_OPTIONS.map((opt) => (
+              <View
+                key={opt.id}
+                className={classnames(styles.scaleChip, lang === opt.id && styles.scaleChipActive)}
+                onClick={() => setLang(opt.id)}
+              >
+                <Text className={classnames(styles.scaleText, lang === opt.id && styles.scaleTextActive)}>
+                  {opt.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+
       {/* 推送偏好（2026-10-25 折叠）：低频调整 */}
       <View className={styles.foldHeadCard} onClick={() => setFoldPush(!foldPush)}>
         <Text className={styles.foldIcon}>🔔</Text>
@@ -1806,60 +1887,6 @@ function MinePage() {
         ) : null}
       </View>
 
-      <View className={styles.card}>
-        <Text className={styles.cardTitle}>{t('mine.settingAppearance')}</Text>
-        <View className={styles.row}>
-          <Text className={styles.rowLabel}>{t('mine.uiColor')}</Text>
-          <View className={styles.swatchList}>
-            {THEME_PRESETS.map((preset) => (
-              <View
-                key={preset.id}
-                className={classnames(styles.swatch, theme.id === preset.id && styles.swatchActive)}
-                style={{ background: preset.color }}
-                onClick={() => setTheme(preset.id)}
-              >
-                {theme.id === preset.id ? <Text className={styles.swatchCheck}>✓</Text> : null}
-              </View>
-            ))}
-          </View>
-        </View>
-        {/* 界面大小：H5 端通过 --ui-scale 调节 rem 基准，即时生效（weapp 端 rpx 字号暂不支持全局缩放） */}
-        {isH5 ? (
-          <View className={styles.row}>
-            <Text className={styles.rowLabel}>{t('mine.uiSize')}</Text>
-            <View className={styles.scaleList}>
-              {UI_SCALE_PRESETS.map((p) => (
-                <View
-                  key={p.id}
-                  className={classnames(styles.scaleChip, scaleId === p.id && styles.scaleChipActive)}
-                  onClick={() => setScale(p.id)}
-                >
-                  <Text className={classnames(styles.scaleText, scaleId === p.id && styles.scaleTextActive)}>
-                    {t(UI_SCALE_LABEL[p.id])}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : null}
-        {/* 语言切换：中 / EN，全局即时生效 */}
-        <View className={styles.row}>
-          <Text className={styles.rowLabel}>{t('mine.uiLang')}</Text>
-          <View className={styles.scaleList}>
-            {LANG_OPTIONS.map((opt) => (
-              <View
-                key={opt.id}
-                className={classnames(styles.scaleChip, lang === opt.id && styles.scaleChipActive)}
-                onClick={() => setLang(opt.id)}
-              >
-                <Text className={classnames(styles.scaleText, lang === opt.id && styles.scaleTextActive)}>
-                  {opt.label}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </View>
         </>
       ) : null}
 
