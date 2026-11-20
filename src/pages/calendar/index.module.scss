@@ -27,14 +27,14 @@
 
 .navButton {
   @include button-reset;
-  // U-03：33×33 低于 44px 触控下限；把实际盒子提到 44，而不是只靠透明外扩
-  width: 88rpx;
-  height: 88rpx;
+  // U-03：33×33 低于 44px 触控下限；2026-11-20 改实尺寸 44PX（rpx 在 320 会缩到 38）
+  width: 44PX;
+  height: 44PX;
   border-radius: $radius-round;
   background: #fff;
   color: $color-text-primary;
   font-size: $font-size-xxl;
-  line-height: 64rpx;
+  line-height: 44PX;
   padding: 0;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
   transition: transform $transition-fast;
@@ -68,8 +68,9 @@
   align-items: center;
   justify-content: center;
   gap: 4rpx;
-  // 2026-11-04：原 76rpx（375 下 38px）低于 44px 触控下限；只加高不缩放，日期数字仍居中
-  min-height: 88rpx;
+  // 2026-11-04：原 76rpx（375 下 38px）低于 44px 触控下限
+  // 2026-11-20：改用 PX，避免 320 下 rpx 缩成 37.5；宽度在 ≤360 媒体查询里补到 44
+  min-height: 44PX;
   border-radius: $radius-md;
   transition: all $transition-fast;
 
@@ -230,18 +231,15 @@
 
 .syncButton {
   @include button-reset;
-  // 2026-11-19：实测 126×28（375）/ 108×24（320）；视觉不变，纵向补到 44px
-  @include hit-expand-min(44PX);
-  // Taro 默认 taro-button-core{overflow:hidden} 会把外扩的 ::before 裁掉 —— 必须放开
-  overflow: visible;
-  height: 56rpx;
+  // 2026-11-20：不再靠透明外扩；rpx 在 320 会缩到 24 高，改为实尺寸 44PX
+  height: 44PX;
   padding: 0 $spacing-md;
   border-radius: $radius-button;
   background: var(--brand-soft);
   color: var(--brand-strong, $color-primary-strong); // 5.55:1（原 --brand-deep #e85d2a 仅 3.2:1）
   font-size: $font-size-xs;
   font-weight: $font-weight-medium;
-  line-height: 56rpx;
+  line-height: 44PX;
 
   &:active {
     opacity: 0.85;
@@ -299,8 +297,12 @@
 
 .qaBtn {
   @include button-reset;
-  // 2026-11-19：实测 50×26（375）/ 43×23（320）；视觉不变，纵向补到 44px，横向补 2px
-  @include hit-expand-min(44PX, 2PX);
+  // 2026-11-20：实测 43×24（320）低于 44；改实尺寸，不再透明外扩
+  min-width: 44PX;
+  min-height: 44PX;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--brand-strong); // 白字 4.95:1（原 --brand 白字 2.59:1）
   color: #fff;
   border-radius: $radius-sm;
@@ -527,4 +529,30 @@
   font-size: $font-size-xs;
   color: $color-text-tertiary; // 5.02:1（原误用禁用灰 1.59:1 —— 截止时间不是禁用态）
   flex-shrink: 0;
+}
+
+/* 2026-11-20：快捷添加的 Taro Input 真正可点的是内部 input.weui-input */
+.qaTitle,
+.qaTime {
+  min-height: 44PX;
+}
+
+.quickAdd :global(.weui-input) {
+  height: 44PX;
+  min-height: 44PX;
+}
+
+/* 320 下 7×38=266 装不下 44 的日期格。把月历面板向两侧各扩 12PX、
+   面板内边距收到 2PX，给 7 列腾出 308PX；页头与其他卡片不动。 */
+@media (max-width: 360PX) {
+  .panel {
+    margin-left: -12PX;
+    margin-right: -12PX;
+    padding-left: 2PX;
+    padding-right: 2PX;
+  }
+
+  .cell {
+    min-width: 44PX;
+  }
 }
