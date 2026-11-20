@@ -1642,7 +1642,22 @@ function LibraryPage() {
             </>
           ) : null}
         </View>
-        ) : null}
+        ) : loading ? null : (
+          // 2026-11-20：空与失败分流后，空列表需要一句陈述式空态（不是「云端不可用」）。
+          // 失败仍由上方 DemoDataHint 的降级横幅承担，两者视觉可区分。
+          <View className={classnames(styles.hotspot, styles.contentFade)}>
+            <View className={styles.sectionBar}>
+              <Text className={styles.sectionBarIcon}>🔥</Text>
+              <Text className={styles.sectionBarTitle}>{t('library.hotTitle')}</Text>
+              <Text className={styles.sectionBarHint}>{t('library.hotHint')}</Text>
+            </View>
+            <EmptyState
+              icon='📰'
+              title={t('library.hotEmptyTitle')}
+              hint={t('library.hotEmptyHint')}
+            />
+          </View>
+        )}
         </View>
         {/* 桌面右侧辅助栏（2026-11-03 J3）：只放热榜与频道筛选，手机端 display:none。 */}
         <View className={styles.sideRail}>

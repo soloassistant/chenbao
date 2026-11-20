@@ -732,6 +732,8 @@ const zh = {
 
   'library.hotTitle': '今日热点',
   'library.hotHint': '按你的偏好聚合 · 标注来源',
+  'library.hotEmptyTitle': '今天还没有热点资讯',
+  'library.hotEmptyHint': '稍后刷新看看；想先看点别的，可以去收藏里翻翻。',
   'library.dataUpdated': '数据更新于',
   'library.dataUpdatedUnknown': '更新时间未知',
   'library.dataStale': '离线缓存 · 实时源暂时不可用',
@@ -2366,6 +2368,8 @@ const en: Record<keyof typeof zh, string> = {
 
   'library.hotTitle': "Today's Hotspot",
   'library.hotHint': 'Curated by your interests · sources labeled',
+  'library.hotEmptyTitle': 'No stories yet today',
+  'library.hotEmptyHint': 'Check back in a little while, or browse your saved items.',
   'library.dataUpdated': 'Data updated ',
   'library.dataUpdatedUnknown': 'Update time unknown',
   'library.dataStale': 'offline cache · live sources unavailable',
