@@ -1,0 +1,262 @@
+@use '@/styles/variables.scss' as *;
+
+// pages/travel —— 旅行推荐 + 攻略
+// 视觉与晨报一致：暖纸底、白卡、发丝描边。尺寸用 rpx（37.5 基准）。
+
+.page {
+  min-height: 100vh;
+  padding: $spacing-lg $page-padding $spacing-xl;
+  background: $color-bg-page;
+  box-sizing: border-box;
+  color: $color-text-primary;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: $spacing-sm;
+}
+
+.back {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding-right: $spacing-md;
+  color: $color-text-secondary;
+  font-size: $font-size-sm;
+}
+
+.title {
+  font-size: $font-size-xl;
+  font-weight: 600;
+}
+
+.subtitle {
+  display: block;
+  margin-bottom: $spacing-md;
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+  line-height: 1.6;
+}
+
+.section {
+  margin-bottom: $spacing-md;
+}
+
+.label {
+  display: block;
+  margin-bottom: $spacing-xs;
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+}
+
+.chipScroll {
+  white-space: nowrap;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.chip {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 $spacing-md;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999rpx;
+  border: 1PX solid $color-border;
+  background: $color-bg-card;
+  color: $color-text-secondary;
+  font-size: $font-size-sm;
+}
+
+.chipOn {
+  border-color: $color-primary;
+  background: $color-bg-page;
+  color: $color-primary-strong;
+  font-weight: 600;
+}
+
+.card {
+  padding: $spacing-md;
+  margin-bottom: $spacing-sm;
+  border-radius: $radius-md;
+  border: 1PX solid $color-border;
+  background: $color-bg-card;
+}
+
+.cardOn {
+  border-color: $color-primary;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-sm;
+}
+
+.cardName {
+  font-size: $font-size-lg;
+  font-weight: 600;
+}
+
+.cardRegion {
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+}
+
+.cardBudget {
+  margin-left: auto;
+  color: $color-primary-strong;
+  font-size: $font-size-xs;
+}
+
+.cardReason {
+  display: block;
+  margin-top: $spacing-xs;
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+  line-height: 1.6;
+}
+
+.detail {
+  margin-top: $spacing-lg;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  background: $color-bg-card;
+  border: 1PX solid $color-border;
+}
+
+.detailHead {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.detailTitle {
+  font-size: $font-size-lg;
+  font-weight: 600;
+}
+
+.detailMeta {
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+}
+
+.weatherRow {
+  display: flex;
+  gap: $spacing-sm;
+  overflow-x: auto;
+  margin-bottom: $spacing-sm;
+}
+
+.weatherCell {
+  min-width: 96rpx;
+  padding: $spacing-xs;
+  border-radius: $radius-sm;
+  background: $color-bg-page;
+  text-align: center;
+}
+
+.weatherDate {
+  display: block;
+  color: $color-text-secondary;
+  font-size: 20rpx;
+}
+
+.weatherTemp {
+  display: block;
+  font-size: $font-size-xs;
+}
+
+.weatherText {
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+}
+
+.budget {
+  display: block;
+  margin-bottom: $spacing-sm;
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+}
+
+.dayCard {
+  padding: $spacing-sm 0;
+  border-top: 1PX solid $color-border;
+}
+
+.dayTitle {
+  display: block;
+  margin-bottom: $spacing-xs;
+  font-weight: 600;
+  font-size: $font-size-sm;
+}
+
+.dayItem {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: 6rpx;
+}
+
+.daySlot {
+  flex: 0 0 64rpx;
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+}
+
+.dayText {
+  flex: 1;
+  font-size: $font-size-sm;
+  line-height: 1.6;
+}
+
+.tip {
+  display: block;
+  margin-top: $spacing-sm;
+  padding: $spacing-sm;
+  border-radius: $radius-sm;
+  background: $color-bg-page;
+  color: $color-text-primary;
+  font-size: $font-size-xs;
+  line-height: 1.6;
+}
+
+.disclaimer {
+  display: block;
+  margin-top: $spacing-xs;
+  color: $color-text-secondary;
+  font-size: 20rpx;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+.action {
+  flex: 1;
+  min-height: 44px;
+  border-radius: $radius-md;
+  background: $color-primary;
+  color: #fff;
+  font-size: $font-size-sm;
+}
+
+.actionGhost {
+  flex: 1;
+  min-height: 44px;
+  border-radius: $radius-md;
+  border: 1PX solid $color-border;
+  background: $color-bg-card;
+  color: $color-text-primary;
+  font-size: $font-size-sm;
+}

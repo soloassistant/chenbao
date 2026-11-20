@@ -145,6 +145,11 @@ jobs:
         # 真失败留痕不谎报成功。上线 SQL 未执行前 PG1 是唯一保证注销不报错的闸。
         run: npm run verify:h5-purge
 
+      - name: 旅行推荐 / 攻略回归
+        # 守确定性（同输入同结果）、行程结构（首末日照形状）、预算按天乘，
+        # 以及页面不写票价、明确「自行核对」的诚实边界。
+        run: npm run verify:travel
+
       - name: AI 动作执行回归
         # 守「模型说已做 ≠ 真的写进去」：载荷不合法必须 ok:false 且不调写入、
         # 改期失败原日程原样不动、schedule/shopping 一律不写库、载荷真的透传。

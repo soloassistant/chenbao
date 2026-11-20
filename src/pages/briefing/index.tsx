@@ -1341,6 +1341,14 @@ function BriefingPage() {
             </Button>
             {/* ⑤ 手动刷新（竞品倒推 2026-10-25，SmartNews 模式）：force=true 跳过当日缓存重拉。
                 与下拉刷新同一通道；不加 loading 转圈（apiGetBriefing 秒级返回,骨架已有） */}
+            {/* 旅行推荐入口（2026-11-20）：晨报的「周末去哪儿」延伸 */}
+            <Button
+              className={styles.searchButton}
+              onClick={() => Taro.navigateTo({ url: '/pages/travel/index' })}
+              {...pressableProps(t('travel.title'))}
+            >
+              🧳
+            </Button>
             <Button className={styles.searchButton} onClick={() => void loadBriefing(true)}>
               🔄
             </Button>
