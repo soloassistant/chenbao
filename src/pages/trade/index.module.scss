@@ -969,6 +969,14 @@
       white-space: normal;
     }
 
+    // 2026-11-19：320 视口实测 badge 宽 336PX、右缘到 346（出屏 26PX）。
+    // 父条已允许换行，但 badge 仍是 flex:0 0 auto（按内容取宽、拒绝收缩），
+    // 文本换行永远不触发。放宽为可收缩 + min-width:0，让它按剩余宽度折行。
+    .demoBadge {
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+
     .clock { margin-left: 0; }
 
     .leftPanel,
