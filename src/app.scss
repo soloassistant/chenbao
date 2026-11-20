@@ -238,6 +238,30 @@ html {
   }
 }
 
+// ============================================================
+// 深色模式：原生 TabBar 壳层（2026-11-20）
+// ------------------------------------------------------------
+// 底色与文字色由 Taro 以**内联样式**写在 tabbar/label 上，常规声明赢不了，必须 !important；
+// 选中色用 theme.ts 写入 html 的 --dm-tabbar-active（随品牌变化），小程序端另走 setTabBarStyle。
+// 桌面端 Taro tabBar 已被 DesktopNav 取代，本组规则不影响桌面。
+// ============================================================
+html.theme-dark {
+  .taro-tabbar__tabbar .weui-tabbar {
+    background-color: var(--dm-bg-card) !important;
+  }
+  // 文字色是 Taro 写在 label 内联上的，必须 !important；选中色取 theme.ts 写入的品牌深色高亮
+  .taro-tabbar__tabbar .weui-tabbar__label {
+    color: var(--dm-text-tertiary) !important;
+  }
+  .taro-tabbar__tabbar .weui-bar__item_on .weui-tabbar__label {
+    color: var(--dm-tabbar-active, #ffb59a) !important;
+  }
+  // borderStyle=black 时 Taro 的顶部发丝线是 #c0bfc4，深色底上过亮
+  .taro-tabbar__tabbar .weui-tabbar::before {
+    border-top-color: var(--dm-border) !important;
+  }
+}
+
 // 窄带（600~747px）：左栏收成图标栏，面板保住 20rem
 @media (min-width: 600px) and (max-width: 747px) {
   .taro-tabbar__tabbar {
@@ -480,6 +504,22 @@ body.is-login-page .taro-tabbar__panel {
   outline: 2PX solid var(--brand, #c7371a);
   outline-offset: 2PX;
   border-radius: 8PX;
+}
+
+// ============================================================
+// 桌面端（≥1024px）二级页的「‹ 返回」隐藏（2026-10-30）
+// ------------------------------------------------------------
+// 桌面有常驻左栏导航（11 项，任何页都能直达），浏览器也自带后退；页面顶部再留一个
+// 只有鼠标能点的小箭头，既冗余又白占一行高度。4 个二级页学习/搜索/记账/购物都有。
+//
+// 为什么用属性选择器：类名由 CSS Modules 生成（`index-module__backButton___hash`），
+// 但原词根保留在类名里，`[class*='backButton']` 能一次命中全部 ——
+// 一处收口，比在每个页面的 module.scss 各写一遍更不容易漏。
+// 1024 以下（手机 / iPad）保留返回：那些场景里它仍是最快的退出路径。
+@media (min-width: 1024px) {
+  [class*='backButton'] {
+    display: none !important;
+  }
 }
 
 // ============================================================
