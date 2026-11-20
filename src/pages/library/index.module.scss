@@ -4,6 +4,17 @@
   @include page-root($page-pad-bottom-tab, 0);
 }
 
+/* 深色模式：搜索条/清除钮不再靠白卡阴影区分层级 */
+.page:global(.theme-dark) {
+  .searchBar {
+    box-shadow: none;
+  }
+
+  .searchClear {
+    background: var(--dm-bg-hover);
+  }
+}
+
 .sectionBar {
   display: flex;
   align-items: center;
@@ -37,7 +48,8 @@
   margin: $spacing-md $page-padding 0;
   padding: 0 $spacing-lg;
   height: $button-height-md;
-  background: $color-bg-card;
+  background: var(--dm-input-bg, #{$color-bg-card});
+  border: 1rpx solid var(--dm-input-border, transparent);
   border-radius: $radius-button;
   box-shadow: $shadow-card;
   transition: box-shadow $transition-fast;
@@ -283,7 +295,7 @@
   margin-top: $spacing-md;
   padding: 10rpx 40rpx;
   border-radius: $radius-round;
-  background: var(--brand-strong, $color-secondary-strong); // 白字 5.26:1（原 --brand 白字 2.59:1）
+  background: var(--dm-brand-solid, var(--brand-strong, $color-secondary-strong)); // 白字 5.26:1（原 --brand 白字 2.59:1）
   color: #fff;
   font-size: $font-size-md;
   font-weight: $font-weight-medium;
@@ -311,7 +323,7 @@
   flex-shrink: 0;
   padding: 10rpx 30rpx;
   border-radius: $radius-round;
-  background: var(--brand-strong, $color-secondary-strong); // 白字 5.26:1（原 --brand 白字 2.59:1）
+  background: var(--dm-brand-solid, var(--brand-strong, $color-secondary-strong)); // 白字 5.26:1（原 --brand 白字 2.59:1）
   color: #fff;
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
@@ -647,7 +659,7 @@
   font-size: $font-size-xs;
   font-weight: $font-weight-semibold;
   color: #fff;
-  background: var(--brand-strong, $color-secondary-strong); // 白字 5.26:1（原 --brand 白字 2.59:1）
+  background: var(--dm-brand-solid, var(--brand-strong, $color-secondary-strong)); // 白字 5.26:1（原 --brand 白字 2.59:1）
   border-radius: $radius-xs;
   padding: 2rpx 10rpx;
   line-height: 1.4;
