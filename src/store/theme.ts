@@ -203,3 +203,54 @@ export function useThemeMode() {
 
   return { mode, resolved, setMode };
 }
+
+/**
+ * 原生 TabBar 壳层跟随显示模式（2026-11-20）。
+ *
+ * H5 的内置 tabbar 把底色与文字色写成**内联样式**（来自 app.config），只靠 CSS 覆盖
+ * 既需要 !important，也拿不到当前品牌的深色高亮色。改走官方 setTabBarStyle：
+ * 一次更新底色、选中/未选中文字色，小程序端原生 tabBar 同样生效。
+ *
+ * 只在应用根调用一次：tab 页里未必都用了 useThemeMode（如收件箱/日历），
+ * 挂到页面级会漏掉「从这些页启动」的场景。
+ */
+export function useTabBarTheme() {
+  const resolved = useThemeModeStore((s) => s.resolved);
+  const theme = useThemeStore((s) => s.theme);
+
+  useEffect(() => {
+    type TabBarApi = {
+      setTabBarStyle?: (opts: {
+        color: string;
+        selectedColor: string;
+        backgroundColor: string;
+        borderStyle: 'black' | 'white';
+      }) => void;
+    };
+    const api = Taro as unknown as TabBarApi;
+    const dark = resolved === 'dark';
+    // H5 的 tabbar 在路由切换时会用 app.config 的内联色重渲染，事件式 API 会被覆盖；
+    // 把当前品牌的深色高亮写到 html 上，供 app.scss 的 !important 规则兜底（小程序无 CSS，仍靠 API）。
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.setProperty('--dm-tabbar-active', dark ? theme.onDark : '#C7371A');
+    }
+    if (typeof api.setTabBarStyle !== 'function') return;
+    const apply = () => {
+      try {
+        api.setTabBarStyle?.({
+          // 浅色保持 app.config 现值（零回归）；深色用 token：未选中 6.23:1、选中 9.83:1（日出橙）
+          color: dark ? '#a89c8d' : '#657080',
+          selectedColor: dark ? theme.onDark : '#C7371A',
+          backgroundColor: dark ? '#211d18' : '#FFFFFF',
+          borderStyle: dark ? 'black' : 'white'
+        });
+      } catch (err) {
+        console.warn('[ThemeMode] tabBar 样式同步失败:', err);
+      }
+    };
+    apply();
+    // tabbar 元素由路由在应用渲染前创建；首帧事件若早于监听挂载，补一次
+    const timer = setTimeout(apply, 0);
+    return () => clearTimeout(timer);
+  }, [resolved, theme]);
+}
