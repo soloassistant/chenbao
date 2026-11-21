@@ -849,6 +849,8 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   const needed = ['inbox.parseFailed','inbox.analyzeFailed','inbox.selectFirst','inbox.collectionFull','inbox.writeFailed','inbox.ledgerFailed','inbox.shopFailed','inbox.glossCopied','inbox.copyFailed','community.empty','mine.need4Digit','mine.pinWrong','mine.minorExited','mine.pinReset','mine.privacyWechatManage','mine.privacyWechatOnly','mine.deleteFailed','shopping.added','shopping.priceFormat','shopping.priceSaved','mine.payCancel','mine.payRetry','mine.payOrderFail'];
   const missing = needed.filter((k) => !langZh.includes(`'${k}':`) || !langEn.includes(`'${k}':`));
   ok('M39b 新增提示文案中英齐全', missing.length === 0);
+}
+
 /* M37（2026-11-19）：热点每日新鲜度 */
 {
   const wf = read('.github/workflows/refresh-data.yml');
@@ -873,6 +875,7 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M37c 热点页可手动刷新，且可见时每 10 分钟静默取新',
     lib.includes('refreshHotspotPayload()') && lib.includes("t('library.refresh')") &&
     lib.includes('10 * 60 * 1000') && lib.includes("document.visibilityState === 'visible'"));
+}
 /* M38（2026-11-19）：订阅模板 id 不写死空串，未配置时 UI 如实提示 */
 {
   const cfg = read('src/config/subscribe.ts');
