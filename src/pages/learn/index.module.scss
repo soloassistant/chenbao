@@ -487,3 +487,62 @@
   font-size: $font-size-xs;
   color: $color-text-secondary;
 }
+
+// 深色（2026-11-21）：本页多数颜色走全局 token，以下取值为「照浅色底/白底调过」的定点色，
+// 深色下必须换档，否则浅色底变亮块、深色字融进暗底。
+.page:global(.theme-dark) {
+  // 语种胶囊：浅色是 80% 白底，深色成发亮白块（secondary 字压白 ≈1.5:1）。
+  // 底用卡片色而不是 chip 色：chip 色比卡片亮，会把 --dm-border 的 3:1 稀释到 2.76。
+  .langTab {
+    background: var(--dm-bg-card);
+    border-color: var(--dm-border);
+    color: var(--dm-chip-text);
+  }
+
+  // 激活项自带 accent 实底，内联 borderColor 与底色同值；深色下把描边宽度收掉
+  // （不是改色：内联优先于 class），否则会留下一条 1:1 的同色「边界」被计量。
+  .langTabActive {
+    border-width: 0;
+    // 补齐被收掉的 2rpx 描边，激活项与其余胶囊同高同宽（本页未设 border-box）
+    padding: 14rpx 30rpx;
+    // 上面 .langTab 的 chip 文字色特异性更高，会把激活项的白字压成灰（3.4:1）
+    color: #fff;
+  }
+
+  // 统计卡的橙色描边只是浅色下的柔边；深色里同色透层贴着暗底等于没有，
+  // 层次交给 10% 品牌 wash + 阴影，不留一条 1.13:1 的假边界。
+  .statsCard {
+    border-color: transparent;
+  }
+
+  // 统计卡：标签固定 #5f6977（为暖橙浅底加深过），压深色 wash 只剩 ~2:1
+  .statLabel,
+  .statUnit {
+    color: var(--dm-text-secondary);
+  }
+
+  .statDivider {
+    background: var(--dm-divider);
+  }
+
+  // 冻结卡：固定深蓝字 #0b57c9 是照浅蓝底调的，深色下几乎融进底；
+  // 该胶囊可点，边界要 ≥3:1，描边透明度比浅色态提高（0.4 实测 1.87）。
+  .freezeBadge {
+    background: rgba(91, 141, 239, 0.16);
+    border-color: rgba(91, 141, 239, 0.72);
+  }
+
+  .freezeText {
+    color: var(--dm-secondary-strong);
+  }
+
+  // 白字按钮：深色下 --brand-strong 是 onDark（浅橙），白字压它只有 1.7:1，用实心变体
+  .makeupBtn {
+    background: var(--dm-brand-solid, var(--brand-strong));
+  }
+
+  // 禁用态浅灰 #c9cdd4 在暗页上是一整条发亮；改悬停底，白字仍可读
+  .makeupDisabled {
+    background: var(--dm-bg-hover);
+  }
+}
