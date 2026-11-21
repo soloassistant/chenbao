@@ -291,6 +291,33 @@ ok(
   ok(offenders.length === 0, 'B4 .tools 里没有会真发请求的旧仓库名（9-8）', offenders.join(', '));
 }
 
+/* B5（2026-11-21）：文档里的同步键数量必须等于代码实际值。
+ * 漂移过两次（18 / 45 都写过），靠人眼对不齐，直接比数组长度。 */
+{
+  const claim = (text['AGENTS.md'] || '').match(/(\d+) 个 `SYNC_KEYS`/);
+  const src = fs.readFileSync(path.join(ROOT, 'src/services/cloudSync.ts'), 'utf8');
+  const start = src.indexOf('export const SYNC_KEYS = [');
+  let depth = 0;
+  let end = -1;
+  for (let i = src.indexOf('[', start); i < src.length; i += 1) {
+    if (src[i] === '[') depth += 1;
+    else if (src[i] === ']') {
+      depth -= 1;
+      if (depth === 0) { end = i; break; }
+    }
+  }
+  const keys = src
+    .slice(src.indexOf('[', start) + 1, end)
+    .split('\n')
+    .map((line) => line.split('//')[0].trim())
+    .filter((line) => /^'[^']+',?$/.test(line)).length;
+  ok(
+    claim !== null && Number(claim[1]) === keys,
+    `B6 AGENTS.md 的 SYNC_KEYS 数量等于实际数组长度（实际 ${keys}）`,
+    claim ? `文档写 ${claim[1]}` : '文档未声明'
+  );
+}
+
 console.log('\n' + '─'.repeat(58));
 console.log(`PASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 console.log('─'.repeat(58) + '\n');
