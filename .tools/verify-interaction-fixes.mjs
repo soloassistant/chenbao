@@ -1021,5 +1021,16 @@ if (typeof feedMod.feedRetryDelay === 'function') {
       !/saved\s*=\s*events\.length/.test(api));
 }
 
+/* M49（2026-11-22）：搜索空结果给示例；H5 本地降级回复必须带标识。
+ * 两者都是 H5 主形态上用户直接看到的位置。 */
+{
+  const search = read('src/pages/search/index.tsx');
+  ok('M49a 搜索无结果给「试试」示例，不是只报一句没找到',
+    (search.match(/t\('search\.tryExamples'\)/g) || []).length >= 2);
+  const ai = read('src/components/AiAssistant/index.tsx');
+  ok('M49b 本地模板回复有降级标识（A02 不得冒充模型）',
+    ai.includes("m.notice === 'fallback'") && ai.includes("t('ai.fallbackLocal')"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

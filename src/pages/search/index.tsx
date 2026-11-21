@@ -237,12 +237,14 @@ function SearchPage() {
           <View className={styles.hint}>
             <Text className={styles.hintIcon}>🫙</Text>
             <Text>{t('search.noResult', { q: keyword.trim() })}</Text>
+            <Text className={styles.hintSub}>{t('search.tryExamples')}</Text>
           </View>
         )
       ) : total === 0 ? (
         <View className={styles.hint}>
           <Text className={styles.hintIcon}>🫙</Text>
           <Text>{t('search.noResult', { q: keyword.trim() })}</Text>
+          <Text className={styles.hintSub}>{t('search.tryExamples')}</Text>
         </View>
       ) : (
         <ScrollView scrollY className={styles.results}>

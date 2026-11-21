@@ -39,6 +39,7 @@ export const en: Record<LangKey, string> = {
   'shopping.deleteBody': 'It cannot be recovered; you will have to add it again.',
   'shopping.deleteConfirm': 'Delete',
   'shopping.deleteCancel': 'Keep',
+  'search.tryExamples': 'Try: meeting, delivery, favorites',
   'search.webUnavailable': 'Web search is unavailable right now (cloud not ready). Switch to In-app to search your schedule, to-dos and favorites.',
   'shopping.added': 'Added to shopping list',
   'shopping.priceFormat': 'Format: platform price',

@@ -45,6 +45,7 @@ const zh = {
   'shopping.deleteBody': '删掉后就找不回来了，只能重新加一次。',
   'shopping.deleteConfirm': '删掉',
   'shopping.deleteCancel': '留着',
+  'search.tryExamples': '试试：会议、快递、收藏',
   'search.webUnavailable': '全网检索暂不可用（云端服务未就绪），可切回「本站」搜索你的日程、待办与收藏',
   'shopping.added': '已加入购物清单',
   'shopping.priceFormat': '格式：平台 价格',
