@@ -11,12 +11,14 @@ import styles from './index.module.scss';
 interface GrammarDrillProps {
   course: LearnCourse;
   accent: string;
+  /** 文字/描边用的强调色（深色下由页面换高对比档；缺省同 accent） */
+  accentText?: string;
   /** 该课语法练习历史最高分 */
   best: number;
 }
 
 /** 语法练习：例句关键词填空，四选一补全句子 */
-function GrammarDrill({ course, accent, best }: GrammarDrillProps) {
+function GrammarDrill({ course, accent, accentText = accent, best }: GrammarDrillProps) {
   const t = useT();
   // round 用于「再来一轮」时重新洗牌
   const [round, setRound] = useState(0);
@@ -71,6 +73,7 @@ function GrammarDrill({ course, accent, best }: GrammarDrillProps) {
         score={`${t('learn.correctCount', { count: correct, total: questions.length })} · ${pct}%`}
         best={Math.max(best, pct)}
         accent={accent}
+        accentText={accentText}
         onRestart={restart}
       />
     );
@@ -86,7 +89,7 @@ function GrammarDrill({ course, accent, best }: GrammarDrillProps) {
             <Text key={i}>
               {seg}
               {i < arr.length - 1 ? (
-                <Text className={styles.blank} style={{ color: picked ? (q.answer === picked ? accent : undefined) : undefined }}>
+                <Text className={styles.blank} style={{ color: picked ? (q.answer === picked ? accentText : undefined) : undefined }}>
                   {picked && i === 0 ? picked : '____'}
                 </Text>
               ) : null}
@@ -95,7 +98,7 @@ function GrammarDrill({ course, accent, best }: GrammarDrillProps) {
         </Text>
       </View>
 
-      <DrillOptions options={q.options} answer={q.answer} picked={picked} accent={accent} onPick={pick} />
+      <DrillOptions options={q.options} answer={q.answer} picked={picked} accent={accent} accentText={accentText} onPick={pick} />
 
       {picked !== null ? (
         <DrillReveal
