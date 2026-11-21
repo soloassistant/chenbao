@@ -17,13 +17,13 @@
 
 .backRow,
 .backRowInline {
-  // 2026-11-04：实测 56×23（375，含 padding）低于 44px；视觉不变，外扩到 44
-  // backRowInline（padding:0）基准更矮，26rpx 保证两种返回条都 ≥44
-  @include hit-expand(8rpx, 26rpx);
+  // 2026-11-21：不再透明外扩；320 下只有 20×48，改实尺寸 44PX
   display: inline-flex;
   align-items: center;
   gap: 6rpx;
   padding: 4rpx 0;
+  min-height: 44PX;
+  min-width: 44PX;
   cursor: pointer;
 }
 
@@ -63,6 +63,8 @@
 .card {
   margin-bottom: $spacing-md;
   padding: $spacing-md;
+  /* 2026-11-21：空态卡（最近一次）320 下只有 39px 高，命中区补到 44PX */
+  min-height: 44PX;
   background: $color-bg-card;
   border: 1rpx solid $color-card-border;
   border-radius: $radius-lg;
@@ -121,7 +123,10 @@
 
 /* 健康数据单独同意的状态行（见 services/healthConsent.ts） */
 .healthRow {
-  display: block;
+  display: flex;
+  align-items: center;
+  /* 2026-11-21：可点告知行 320 下只有 15px 高，改实尺寸 44PX */
+  min-height: 44PX;
   margin-top: $spacing-sm;
   font-size: $font-size-sm;
   line-height: 1.5;
@@ -165,7 +170,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100rpx;
+  height: 44PX;
+  min-height: 44PX;
   margin-bottom: $spacing-md;
   border-radius: $radius-button;
   // 与晨报/收件箱/登录的主按钮同源（$gradient-emphasis，白字 5.26:1）。
