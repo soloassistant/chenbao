@@ -165,6 +165,14 @@
   padding: $spacing-sm $page-padding;
   background: rgba(245, 63, 63, 0.08);
   border-bottom: 1rpx solid rgba(245, 63, 63, 0.16);
+
+  // 深色（2026-11-21）：8% 红底在暗页上几乎看不见，底/边各提一档；
+  // 嵌在原块里而不是另起 :global(.theme-dark) 段——J28 的单块判据会因同
+  // 类名出现两段而报「读取失败」，而该门禁文件正被另一条线（#171）修改。
+  :global(.theme-dark) & {
+    background: rgba(245, 63, 63, 0.16);
+    border-bottom-color: rgba(255, 138, 128, 0.6);
+  }
 }
 
 .panelNoticeText {
@@ -177,6 +185,11 @@
   // 所以走 error-strong(#c62828)：8% 红底 4.66:1，AA 通过。
   color: $color-error-strong;
   text-align: center;
+
+  // 深色（2026-11-21）：#c62828 压 16% 红底只有 ~2:1，换深色 token（1.7→6.87:1）
+  :global(.theme-dark) & {
+    color: var(--dm-danger-text);
+  }
 }
 
 .msgList {
@@ -405,4 +418,54 @@
 .memoryPanelMeta {
   font-size: $font-size-xs;
   color: $color-text-tertiary;
+}
+
+
+// 深色（2026-11-21，整页模式 `pages/assistant`）：组件根在页面 token 子树里，
+// 下面把「照浅底/白底调过」的定点色换档；浮层模式若宿主页已挂 .theme-dark 同样生效。
+:global(.theme-dark) {
+  // 白字实心：用户气泡 / 发送键 / 记忆撤销，深色下 --brand(-strong) 不是浅橙就是浅蓝，
+  // 白字压上去 1.7~3.2:1，统一换实心变体（白字 6.92:1）
+  .msgBubbleUser,
+  .sendBtn,
+  .memoryUndo {
+    background: var(--dm-brand-solid, var(--brand-strong));
+  }
+
+  // 本地模板回复/失败提示：固定琥珀 #b45309 是照白卡调的，深色下 2.2:1
+  .msgNoticeText,
+  .msgRetryText {
+    color: #ffc078;
+  }
+
+  .msgRetry {
+    border-color: #ffc078;
+  }
+
+  // 输入框：浅色是页底色嵌在卡片输入栏里，深色下默认黑字几乎看不见
+  .input {
+    box-sizing: border-box;
+    background: var(--dm-input-bg);
+    border: 1rpx solid var(--dm-input-border);
+    color: var(--dm-text-primary);
+  }
+
+  .input :global(.weui-input) {
+    color: var(--dm-text-primary);
+  }
+
+  .input:focus-within {
+    box-shadow: 0 0 0 2rpx var(--dm-secondary-strong);
+  }
+
+  // 记忆 toast / 悬浮球：10% 浅橙与亮橙渐变在暗底上过亮
+  .memoryToast {
+    background: rgba(255, 122, 69, 0.14);
+    border-color: rgba(255, 122, 69, 0.35);
+  }
+
+  .fab {
+    background: var(--dm-brand-solid, var(--brand-strong));
+    box-shadow: 0 8rpx 24rpx rgba(168, 44, 19, 0.45);
+  }
 }
