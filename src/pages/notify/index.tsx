@@ -5,10 +5,11 @@
  * 没有事件时就是空态 —— 不用假条目把页面填满（用户会照通知去收件箱找，找不到就是骗）。
  */
 import { useCallback, useMemo, useState } from 'react';
+import classnames from 'classnames';
 import { View, Text } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
 import { useT } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import {
   KEEP_DAYS,
   formatNotifyTime,
@@ -29,6 +30,7 @@ const KIND_ICON: Record<NotifyKind, string> = {
 export default function NotifyPage() {
   const t = useT();
   const { theme } = useThemeStore();
+  const { resolved } = useThemeMode();
   const [entries, setEntries] = useState<NotifyEntry[]>([]);
   const [now, setNow] = useState(Date.now());
 
@@ -51,7 +53,7 @@ export default function NotifyPage() {
   }, []);
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.header}>
         <View className={styles.back} onClick={handleBack}>
           <Text className={styles.backIcon}>‹</Text>
