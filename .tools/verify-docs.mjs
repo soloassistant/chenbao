@@ -270,6 +270,27 @@ ok(
   'D2 AGENTS.md §4 仍保有「gh-pages 不是产品入口」的结论句（单一事实来源）'
 );
 
+/* B2（2026-11-21）：仓库改名后，.tools 里任何「可执行」的旧名都必须清掉。
+ * ①②（deploy 自救地址 / verify-docs 死变量）都是同一类残留；只查注释不算，
+ * 只盯两种会真发请求/真推仓库的写法。 */
+{
+  const offenders = [];
+  const walk = (dir) => {
+    for (const name of fs.readdirSync(dir)) {
+      const full = path.join(dir, name);
+      const st = fs.statSync(full);
+      if (st.isDirectory()) { walk(full); continue; }
+      if (!/\.(mjs|js|py|cjs)$/.test(name)) continue;
+      const src = fs.readFileSync(full, 'utf8');
+      if (/REPO\s*=\s*["']9-8["']/.test(src) || /github\.io\/9-8/.test(src)) {
+        offenders.push(path.relative(ROOT, full));
+      }
+    }
+  };
+  walk(path.join(ROOT, '.tools'));
+  ok(offenders.length === 0, 'B4 .tools 里没有会真发请求的旧仓库名（9-8）', offenders.join(', '));
+}
+
 console.log('\n' + '─'.repeat(58));
 console.log(`PASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 console.log('─'.repeat(58) + '\n');
