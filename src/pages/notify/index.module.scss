@@ -159,3 +159,12 @@
   text-align: center;
   color: $color-text-tertiary;
 }
+
+// 深色（2026-11-21）：本页其余颜色都走全局 token，挂 .theme-dark 即切换。
+// 唯一写死的是「晨报」徽标的浅橙底 $color-voice-bg(#fff3ec) —— 在暗卡上是一块
+// 发亮白斑，抢过标题；改用同色相低透明层，保留「晨报=橙」的识别。
+.page:global(.theme-dark) {
+  .badge_briefing {
+    background: rgba(255, 122, 69, 0.18);
+  }
+}
