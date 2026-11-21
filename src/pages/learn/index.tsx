@@ -19,7 +19,7 @@ import {
   LearnStore
 } from '@/utils/learn';
 import { useT, useLanguageStore } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import LearnSources from '@/components/LearnSources';
 import styles from './index.module.scss';
 
@@ -28,6 +28,7 @@ function LearnPage() {
   const t = useT();
   const uiLang = useLanguageStore((s) => s.lang);
   const theme = useThemeStore((s) => s.theme);
+  const { resolved } = useThemeMode();
   const [langId, setLangId] = useState<LearnLangId>(() => readLearnStore().activeLang || 'en');
   // 只需 setStore 触发重渲染（渲染数据走 getLangStats/getCourseProgress 直读工具层）；store 值本身不使用
   const [, setStore] = useState<LearnStore>(() => readLearnStore());
@@ -133,7 +134,7 @@ function LearnPage() {
   }, []);
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.backButton} onClick={handleBack}>
         <Text className={styles.backIcon}>‹</Text>
         <Text className={styles.backText}>{t('common.back')}</Text>
@@ -250,7 +251,7 @@ function LearnPage() {
       {lang.levels.map((level) => (
         <View key={level.id} className={styles.levelBlock}>
           <View className={styles.levelHeader}>
-            <Text className={styles.levelName} style={{ color: lang.accent }}>
+            <Text className={styles.levelName} style={{ color: resolved === 'dark' ? 'var(--dm-secondary-strong)' : lang.accent }}>
               {level.name}
             </Text>
             <Text className={styles.levelDesc}>{level.desc}</Text>
