@@ -531,6 +531,11 @@ if (NO_BROWSER) {
       return out;
     };
     const hasSrc = (m) => (m.getAttribute('src') || '').length > 0;
+    // 降级占位：SafeImage 加载失败会卸载 <img> 换成这个稳定锚点。
+    // 断言不能只认「必须有图解码成功」——外部图源 404/TLS 失败时页面行为是正确的（占位），
+    // 判据要区分「正确降级」与「破图直接露出」。
+    const fallbacks = [...document.querySelectorAll('[class*="newsCard"] [class*="safe-image-fallback"]')]
+      .filter(laidOut).length;
     let cardImgs = pickImgs();
     let srcCount = cardImgs.filter(hasSrc).length;
     let imgOk = cardImgs.filter((m) => hasSrc(m) && m.naturalWidth > 0).length;
@@ -541,8 +546,10 @@ if (NO_BROWSER) {
       imgOk = cardImgs.filter((m) => hasSrc(m) && m.naturalWidth > 0).length;
     }
     const firstImg = cardImgs.find(hasSrc) || cardImgs[0];
+    // 真破图：浏览器已放弃（complete）但仍无尺寸；还在下载的不算。
+    const broken = cardImgs.filter((m) => hasSrc(m) && m.complete && m.naturalWidth === 0).length;
     return JSON.stringify({ nodes, textLen: txt.length, cards: cards.length, titled, labelled,
-      imgCards, cardImgs: cardImgs.length, srcCount, imgOk,
+      imgCards, cardImgs: cardImgs.length, srcCount, imgOk, fallbacks, broken,
       trace: trace.join(','),
       imgSample: firstImg ? String(firstImg.getAttribute('src') || '').slice(0, 80) : '',
       overlay: !!document.getElementById('wb-boot-failure'),
@@ -558,8 +565,10 @@ if (NO_BROWSER) {
     pageShape.cards >= 10 && pageShape.titled === pageShape.cards, shapeText);
   assert('B-2d 卡片里至少 3 个可点击元素带非空 aria-label（读屏有名字可念）',
     pageShape.labelled >= 3, shapeText);
-  assert('B-2e 至少 1 张卡片配图有真实 src 且 naturalWidth > 0（不是破图/占位）',
-    pageShape.imgOk >= 1, shapeText);
+  assert('B-2e 配图要么有解码成功的图，要么已降级为显式占位（不允许空洞）',
+    pageShape.imgOk >= 1 || pageShape.fallbacks >= 1, shapeText);
+  assert('B-2f 没有「浏览器已放弃但仍留在 DOM 里」的破图',
+    pageShape.broken === 0, shapeText);
 
   // B5：输入框能正常取得焦点（让路逻辑不能把输入框也一起 ban 掉）。
   // ⚠️ 这一条必须跑在「按 Enter 切页」之前：切页后 DOM 换了一茬，
