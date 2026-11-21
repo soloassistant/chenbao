@@ -165,7 +165,7 @@ const TOUCH = [
   ['src/pages/ledger/index.module.scss', '.backButton', 'minpx', '记账返回条'],
   ['src/pages/shopping/index.module.scss', '.backButton', 'hit', '购物返回条'],
   ['src/pages/search/index.module.scss', '.backButton', 'minpx', '搜索返回条'],
-  ['src/pages/sport/index.module.scss', '.backRow', 'hit', '运动返回条'],
+  ['src/pages/sport/index.module.scss', '.backRow', 'minpx', '运动返回条'],
   ['src/pages/notify/index.module.scss', '.back', 'hit', '通知返回条'],
 ];
 const touchBad = [];
