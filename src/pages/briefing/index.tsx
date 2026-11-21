@@ -101,10 +101,12 @@ const BRIEF_STREAK_KEY = 'mb-brief-streak';
  * 与其他写路径一致：writePlan 会吞掉 storage 异常，必须**回读**确认真的落盘，
  * 否则「已加入待办」就是假的。
  */
-function addDigestAsTodo(text: string): boolean {
+function addDigestAsTodo(text: string): 'ok' | 'duplicate' | 'fail' {
   const title = text.trim().slice(0, 60);
-  if (!title) return false;
+  if (!title) return 'fail';
   const plan = readPlan();
+  // 幂等：同一收藏重复点击不再塞第二条（用户看不到 id，只能按标题+来源判重）
+  if (plan.todos.some((item) => item.title === title && item.source === '晨报收藏')) return 'duplicate';
   const todo = {
     id: nextId('todo'),
     title,
@@ -114,7 +116,7 @@ function addDigestAsTodo(text: string): boolean {
   };
   plan.todos.push(todo);
   writePlan(plan);
-  return readPlan().todos.some((item) => item.id === todo.id);
+  return readPlan().todos.some((item) => item.id === todo.id) ? 'ok' : 'fail';
 }
 
 /** 读当日晨报缓存：跨日或损坏时视为未命中 */
@@ -1653,10 +1655,16 @@ function BriefingPage() {
                     className={styles.digestAdd}
                     {...pressableProps(t('briefing.favToTodo'))}
                     onClick={() => {
-                      const ok = addDigestAsTodo(text);
+                      const result = addDigestAsTodo(text);
                       Taro.showToast({
-                        title: t(ok ? 'briefing.favToTodoDone' : 'briefing.favToTodoFail'),
-                        icon: ok ? 'success' : 'none'
+                        title: t(
+                          result === 'ok'
+                            ? 'briefing.favToTodoDone'
+                            : result === 'duplicate'
+                              ? 'briefing.favToTodoDup'
+                              : 'briefing.favToTodoFail'
+                        ),
+                        icon: result === 'ok' ? 'success' : 'none'
                       });
                     }}
                   >

@@ -23,6 +23,7 @@ const zh = {
   'app.title': '私人晨报助理',
   'app.slogan': '今天的事，晨报先知道',
   'app.skip': '点击跳过',
+  'inbox.schemaInvalid': 'AI 返回格式不对，请重试',
   'inbox.parseFailed': '没能解析，检查网络后再点一次',
   'inbox.analyzeFailed': '没能分析，网络或服务暂时不可用',
   'inbox.selectFirst': '先勾一条要写进去的',
@@ -576,6 +577,7 @@ const zh = {
   'briefing.sectionTodo': '待办',
   'briefing.favToTodo': '转为待办',
   'briefing.favToTodoDone': '已加入待办',
+  'briefing.favToTodoDup': '已经在待办里了',
   'briefing.favToTodoFail': '加入失败，请重试',
   'briefing.sectionFav': '昨日收藏精选',
   // 2026-10-27 参考稿改版：深色概览卡 + 桌面三栏（侧栏导航 / 右栏天气与快捷入口）

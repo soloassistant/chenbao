@@ -902,8 +902,10 @@ if (typeof feedMod.feedRetryDelay === 'function') {
       src.includes("t('briefing.favToTodo')"));
   ok('M40b 写入后回读校验（writePlan 吞异常，不能只凭返回值报成功）',
     /readPlan\(\)\.todos\.some\(/.test(src));
-  ok('M40c 成功/失败文案分开，失败不报「已加入」',
-    src.includes("t(ok ? 'briefing.favToTodoDone' : 'briefing.favToTodoFail')"));
+  ok('M40c 成功/重复/失败文案分开，失败不报「已加入」',
+    src.includes("'briefing.favToTodoDone'") &&
+      src.includes("'briefing.favToTodoDup'") &&
+      src.includes("'briefing.favToTodoFail'"));
   const zh = read('src/store/language.ts');
   const en = read('src/store/language.en.ts');
   ok('M40d 三条文案中英齐全',
@@ -971,6 +973,29 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   const all = ['src/store/language.ts', 'src/store/language.en.ts', 'src/pages/briefing/index.tsx']
     .map((f) => read(f)).join('\n');
   ok('M44b 死键文案与读写点也清干净', !all.includes('briefingChatLog'));
+}
+
+/* M45（2026-11-22）：A06 结构化校验必须真校验，不是「能 parse 就信」。
+ * M46：F92 收藏转待办必须幂等，同一标题不得重复入库。 */
+{
+  const schema = read('src/utils/aiSchema.ts');
+  const api = read('src/services/api.ts');
+  ok('M45a 提取结果有字段级校验（类型/日期格式/上限），失败抛 AiSchemaError',
+    schema.includes('validateExtractResult') &&
+      schema.includes('class AiSchemaError') &&
+      schema.includes('bad_datetime') &&
+      schema.includes('not_string'));
+  ok('M45b apiExtract 真的调用校验，不是只 import',
+    /apiExtract[\s\S]{0,400}validateExtractResult\(raw\)/.test(api));
+  const inbox = read('src/pages/inbox/index.tsx');
+  ok('M45c 校验失败给专门文案，不混进网络失败',
+    inbox.includes('instanceof AiSchemaError') && inbox.includes("'inbox.schemaInvalid'"));
+
+  const brief = read('src/pages/briefing/index.tsx');
+  ok('M46a 收藏转待办按标题+来源判重',
+    /plan\.todos\.some\([\s\S]{0,120}item\.title === title[\s\S]{0,80}晨报收藏/.test(brief));
+  ok('M46b 重复点击返回 duplicate，不写第二条',
+    brief.includes("'duplicate'") && brief.includes("'briefing.favToTodoDup'"));
 }
 
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);

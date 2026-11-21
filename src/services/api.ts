@@ -18,6 +18,7 @@ import {
 import type { LedgerExportResult } from '@/data/ledger';
 /** 仅取类型：schedule.ts 反向依赖 api.ts，用 import type 避免运行时循环依赖 */
 import type { PlanProposalRaw } from '@/utils/schedule';
+import { validateExtractResult } from '@/utils/aiSchema';
 import { applyPlanLocally, setTodoStatus, updateEvent } from '@/data/dailyPlan';
 import { normalizeVideoItems } from '@/utils/videoNews';
 import type { VideoNewsItem } from '@/utils/videoNews';
@@ -56,7 +57,9 @@ export async function apiLogin(): Promise<UserProfile> {
 
 /** AI 提取转发内容/截图 → 日程/待办/收藏（images 为 base64 数组，不含 dataURL 前缀） */
 export function apiExtract(payload: { content?: string; images?: string[] }): Promise<ExtractResult> {
-  return callFunction<ExtractResult>('extract', payload);
+  // A06：模型返回必须过结构与类型校验；不合法直接抛 AiSchemaError，
+  // 由调用方展示明确失败，不把半截数据渲染成「提取成功」。
+  return callFunction<ExtractResult>('extract', payload).then((raw) => validateExtractResult(raw));
 }
 
 /** 确认提取结果入库 */

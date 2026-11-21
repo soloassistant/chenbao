@@ -14,6 +14,7 @@ import PlanProposalCard from '@/components/PlanProposalCard';
 import type { Briefing, ExtractResult } from '@/types';
 import { useLanguageStore, useT } from '@/store/language';
 import { safetyRefusal, screenContent } from '@/utils/contentSafety';
+import { AiSchemaError } from '@/utils/aiSchema';
 import { useSubmitHotkey } from '@/hooks/useHotkeys';
 import styles from './index.module.scss';
 
@@ -286,7 +287,11 @@ function InboxPage() {
       }
     } catch (err) {
       console.error('[InboxPage] extract failed:', err);
-      Taro.showToast({ title: t('inbox.parseFailed'), icon: 'none' });
+      // A06：模型返回结构不合法时给专门文案，不混进「网络/能力不可用」
+      Taro.showToast({
+        title: t(err instanceof AiSchemaError ? 'inbox.schemaInvalid' : 'inbox.parseFailed'),
+        icon: 'none'
+      });
     } finally {
       setExtracting(false);
     }
