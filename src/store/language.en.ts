@@ -183,6 +183,7 @@ export const en: Record<LangKey, string> = {
   'mine.promoDone': 'Activated, valid until {date}',
   'mine.promoBadFormat': 'Invalid format, expected PRO-XXXX-XXXX',
   'mine.promoUnknown': 'Code not recognized',
+  'mine.promoUsed': 'This code was already used',
   'mine.promoExpired': 'This campaign has ended',
   'mine.promoUnverified': 'Redemption could not be recorded in the cloud (not signed in or network error), so PRO was not activated. Please retry or contact support.',
   'mine.learn': '📚 Language Learning',
@@ -1420,6 +1421,8 @@ export const en: Record<LangKey, string> = {
   /* ---- Sync conflicts (cloudSync "newest wins" no longer overwrites silently, 2026-10-19) ---- */
   'syncConflict.title': 'Data sync conflict',
   'syncConflict.desc': 'Another device also modified the data below, and this device has changes not yet uploaded. Choose which copy to keep for each item; until you choose, neither copy is overwritten and that item pauses syncing.',
+  'syncConflict.resolveAll': 'Use the newer for all',
+  'syncConflict.toastAll': 'Resolved with newer versions',
   'syncConflict.keepLocal': 'Keep this device',
   'syncConflict.takeRemote': 'Use cloud copy',
   'syncConflict.toastLocal': 'Kept local copy — uploading now',

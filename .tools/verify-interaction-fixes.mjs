@@ -912,5 +912,40 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     ));
 }
 
+/* M41（2026-11-21）：促销码防叠加 + 同步冲突批量裁决。
+ * 促销码是 H5 唯一开 PRO 的通道，必须防「一个码无限续期」；
+ * 冲突 45 键在换设备时可能一次冒出十几条，必须给一键出口。 */
+{
+  const promo = read('src/utils/promo.ts');
+  const member = read('src/pages/membership/index.tsx');
+  ok('M41a 促销码同码同用户只算一次（本机账本）',
+    promo.includes("PROMO_USED_KEY = 'promo-redeemed'") &&
+      promo.includes("reason: 'used'") &&
+      promo.includes('markPromoUsed'));
+  ok('M41b 已用记录在「服务端权益成立」之后才写（订单失败不白吃码）',
+    member.includes('if (ent.active) {') && member.includes('markPromoUsed(code)'));
+  ok('M41c 兑换失败有 used 的独立文案，不落到「未知错误」',
+    member.includes("res.reason === 'used'") && member.includes("'mine.promoUsed'"));
+
+  const hint = read('src/components/SyncConflictHint/index.tsx');
+  ok('M41d 冲突裁决提供「全部以较新者为准」，逐条比时间戳而非一刀切',
+    hint.includes('handleResolveAll') &&
+      hint.includes('c.remoteTs >= c.localTs') &&
+      hint.includes("t('syncConflict.resolveAll')"));
+}
+
+/* M42（2026-11-21）：H5 内容护栏词库不得静默清空/漂移。
+ * 只看行为不够——词库被删一半，正常输入仍然全过。这里锁「结构 + 样本」。 */
+{
+  const src = read('src/utils/contentSafety.ts');
+  const rules = (src.match(/\{ category: '/g) || []).length;
+  ok('M42a 护栏词库至少 6 类且非空', rules >= 6, `rules=${rules}`);
+  const categories = ['explosive', 'drugs', 'minor', 'self-harm', 'fraud', 'cheat'];
+  ok('M42b 六类红线齐全（删任一类即红）',
+    categories.every((c) => src.includes(`category: '${c}'`)));
+  ok('M42c 归一化在匹配前执行（全角/零宽/空格绕不过）',
+    src.includes('function normalize') && /screenContent[\s\S]*normalize\(text\)/.test(src));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

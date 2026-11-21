@@ -192,6 +192,7 @@ const zh = {
   'mine.promoDone': '已开通，生效至 {date}',
   'mine.promoBadFormat': '格式不对，应为 PRO-XXXX-XXXX',
   'mine.promoUnknown': '促销码不正确',
+  'mine.promoUsed': '这个码你已经用过了',
   'mine.promoExpired': '该活动已结束',
   'mine.promoUnverified': '兑换未能登记到云端（未登录或网络异常），权益未开通。请重试或联系客服。',
   'mine.learn': '📚 语言学习',
@@ -1492,6 +1493,8 @@ const zh = {
   /* ---- 同步冲突（cloudSync「新者赢」不再静默覆盖，2026-10-19）---- */
   'syncConflict.title': '数据同步冲突',
   'syncConflict.desc': '另一台设备也修改过以下数据，本机有尚未上传的修改。请逐条选择保留哪一份；未选择前两端数据都不会被覆盖，该条目的同步会暂停。',
+  'syncConflict.resolveAll': '全部以较新者为准',
+  'syncConflict.toastAll': '已按较新版本处理',
   'syncConflict.keepLocal': '保留本机',
   'syncConflict.takeRemote': '采用云端',
   'syncConflict.toastLocal': '已保留本机版本，正在上传',

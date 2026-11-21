@@ -17,7 +17,7 @@ import { disabledAttr } from '@/utils/buttonDisabled';
 import { dayKey } from '@/utils/date';
 import { copyKeyOf, resolveRenewal, shouldRemind } from '@/utils/renewal';
 import type { RenewalCopyKey } from '@/utils/renewal';
-import { redeemPromo } from '@/utils/promo';
+import { markPromoUsed, redeemPromo } from '@/utils/promo';
 import {
   EARLYBIRD_PRICE,
   formatPrice,
@@ -658,7 +658,9 @@ function MembershipPage() {
             ? 'mine.promoBadFormat'
             : res.reason === 'expired'
               ? 'mine.promoExpired'
-              : 'mine.promoUnknown'
+              : res.reason === 'used'
+                ? 'mine.promoUsed'
+                : 'mine.promoUnknown'
         )
       );
       return;
@@ -686,6 +688,8 @@ function MembershipPage() {
     await init();
     await loadOrders();
     if (ent.active) {
+      // 权益已在服务端回放成立，才把码记入本机已用账本（订单失败不白吃码）
+      markPromoUsed(code);
       Taro.showToast({ title: t('mine.promoDone', { date: ent.expiredAt || '' }), icon: 'none', duration: 3000 });
     } else {
       setPromoErr(t('mine.promoUnverified'));
