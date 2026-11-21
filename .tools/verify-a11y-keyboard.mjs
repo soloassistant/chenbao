@@ -166,7 +166,7 @@ const TOUCH = [
   ['src/pages/shopping/index.module.scss', '.backButton', 'hit', '购物返回条'],
   ['src/pages/search/index.module.scss', '.backButton', 'minpx', '搜索返回条'],
   ['src/pages/sport/index.module.scss', '.backRow', 'minpx', '运动返回条'],
-  ['src/pages/notify/index.module.scss', '.back', 'hit', '通知返回条'],
+  ['src/pages/notify/index.module.scss', '.back', 'boxpx', '通知返回条'],
 ];
 const touchBad = [];
 for (const [file, sel, mode, why] of TOUCH) {
