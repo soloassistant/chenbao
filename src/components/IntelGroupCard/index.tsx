@@ -4,8 +4,8 @@ import { splitLeadSegments } from '@/utils/intelGroups';
 import type { IntelGroup, IntelLeadSegment, IntelSourceRef } from '@/utils/intelGroups';
 import { openExternalPage } from '@/utils/externalLink';
 import SafeImage from '@/components/SafeImage';
-import styles from './index.module.scss';
 import { useT } from '@/store/language';
+import styles from './index.module.scss';
 
 const isWeapp = process.env.TARO_ENV === 'weapp';
 
