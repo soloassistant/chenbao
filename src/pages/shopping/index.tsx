@@ -145,10 +145,10 @@ function ShoppingPage() {
 
   const removeItem = (id: string) => {
     Taro.showModal({
-      title: '删掉这件商品？',
-      content: '删掉后就找不回来了，只能重新加一次。',
-      confirmText: '删掉',
-      cancelText: '留着',
+      title: t('shopping.deleteTitle'),
+      content: t('shopping.deleteBody'),
+      confirmText: t('shopping.deleteConfirm'),
+      cancelText: t('shopping.deleteCancel'),
       confirmColor: '#ee5a29',
       success: async (res) => {
         if (res.confirm) {

@@ -206,11 +206,7 @@ function SearchPage() {
         ) : webFailed ? (
           <View className={styles.hint}>
             <Text className={styles.hintIcon}>📡</Text>
-            <Text>
-              {lang === 'en'
-                ? 'Web search is unavailable right now (cloud not ready). Switch to In-app to search your schedule, to-dos and favorites.'
-                : '全网检索暂不可用（云端服务未就绪），可切回「本站」搜索你的日程、待办与收藏'}
-            </Text>
+            <Text>{t('search.webUnavailable')}</Text>
           </View>
         ) : webItems && webItems.length > 0 ? (
           <ScrollView scrollY className={styles.results}>

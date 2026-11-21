@@ -998,5 +998,28 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     brief.includes("'duplicate'") && brief.includes("'briefing.favToTodoDup'"));
 }
 
+/* M47（2026-11-22）：高压力交互点不得残留硬编码中文。
+ * M48：方案卡/习惯守护的 H5 落库不得再把「没写」兜成成功。 */
+{
+  const shop = read('src/pages/shopping/index.tsx');
+  const search = read('src/pages/search/index.tsx');
+  ok('M47a 删除确认走词典（英文模式不再弹中文）',
+    shop.includes("t('shopping.deleteTitle')") && !shop.includes("title: '删掉这件商品？'"));
+  ok('M47b 搜索失败提示走词典', search.includes("t('search.webUnavailable')"));
+  const zh = read('src/store/language.ts');
+  const en = read('src/store/language.en.ts');
+  ok('M47c 新增文案中英齐全',
+    ['shopping.deleteTitle', 'shopping.deleteBody', 'search.webUnavailable'].every(
+      (k) => zh.includes(`'${k}':`) && en.includes(`'${k}':`)
+    ));
+
+  const api = read('src/services/api.ts');
+  ok('M48a H5 方案落库直接写本地（不依赖 chat 云函数）',
+    /if \(!isWeapp\) return applyPlanLocally\(events\)/.test(api));
+  ok('M48b 云端缺 saved 时判失败，不得默认成 events.length',
+    /typeof res\.saved !== 'number'/.test(api) &&
+      !/saved\s*=\s*events\.length/.test(api));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
