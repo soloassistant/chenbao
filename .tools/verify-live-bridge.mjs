@@ -398,9 +398,14 @@ assert(
 
 /* ───────────── G. 热点数据源顺序：首屏请求预算 ───────────── */
 {
-  const iSame = cloudTs.indexOf('fetchHotspotJson(SAME_ORIGIN_HOTSPOT_URL)');
-  const iLive = cloudTs.indexOf('fetchHotspotJson(LIVE_HOTSPOT_URL)');
-  const iLocal = cloudTs.indexOf('fetchHotspotJson(LOCAL_API_HOTSPOT_URL)');
+  // 只框 loadHotspotPayload 函数体：#132 之后 refreshHotspotPayload 里也有一次同源调用，
+  // 在整文件里 indexOf 会被那一处兜住 ⇒ 把 load 里的顺序改坏也抓不到（变异实测 NOT-CAUGHT）。
+  const loadStart = cloudTs.indexOf('async function loadHotspotPayload');
+  const loadNext = cloudTs.indexOf('async function', loadStart + 10);
+  const loadBody = cloudTs.slice(loadStart, loadNext > loadStart ? loadNext : undefined);
+  const iSame = loadBody.indexOf('fetchHotspotJson(SAME_ORIGIN_HOTSPOT_URL)');
+  const iLive = loadBody.indexOf('fetchHotspotJson(LIVE_HOTSPOT_URL)');
+  const iLocal = loadBody.indexOf('fetchHotspotJson(LOCAL_API_HOTSPOT_URL)');
   assert(
     'G1 同源 ./api/hotspot.json 是第一优先（无跨域成本；实测那份必然 404 的目录路由不能再排第一）',
     iSame >= 0 && iLive >= 0 && iLocal >= 0 && iSame < iLive && iLive < iLocal,

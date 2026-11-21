@@ -13,7 +13,8 @@ import SafeImage from '@/components/SafeImage';
 import { apiGetLibrary, apiGetHotspot, apiNewsSearch, apiVideoNews } from '@/services/api';
 import { removeCollection } from '@/data/collectionStore';
 import { syncNow } from '@/services/cloudSync';
-import { getHotspotMeta, apiAiNewsFilter, apiGetAffinity, apiSaveAffinity } from '@/services/cloud';
+import { getHotspotMeta, refreshHotspotPayload, apiAiNewsFilter, apiGetAffinity, apiSaveAffinity } from '@/services/cloud';
+import { pressableProps } from '@/utils/a11y';
 import { invoke } from '@/services/dataSource';
 import { useUserStore } from '@/store/user';
 import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
@@ -209,6 +210,8 @@ function LibraryPage() {
   const [items, setItems] = useState<CollectionItem[]>([]);
   const [news, setNews] = useState<HotspotNews[]>([]);
   const [hotMeta, setHotMeta] = useState<ReturnType<typeof getHotspotMeta>>(null);
+  const [hotspotRefreshing, setHotspotRefreshing] = useState(false);
+  const refreshingRef = useRef(false);
   /** 视频精选（2026-10-25）：webSearch action=videoNews 的 B 站热榜；空数组 = 板块隐藏 */
   const [videos, setVideos] = useState<HotspotNews[]>([]);
   /** 站内文章视图（2026-10-25）：点卡片先进来读，正文 = 源 feed 自带摘要（不抓正文页） */
@@ -551,6 +554,54 @@ function LibraryPage() {
     // t 仅用于失败文案、refreshUsage 为 store 动作；语言切换无需重跑请求
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * 主动取新（2026-11-19）：GH Actions 的 30 分钟 cron 实测被排队到 8 小时一次，
+   * 惰性「35 分钟内不查远端」救不了。手动点或每 10 分钟在页面可见时静默取一次，
+   * 两份源里挑 updatedAt 更新的那份；失败保留现有列表并如实提示。
+   */
+  const handleRefreshHotspot = useCallback(
+    async (silent = false) => {
+      if (refreshingRef.current) return;
+      refreshingRef.current = true;
+      setHotspotRefreshing(true);
+      try {
+        const before = hotMeta?.updatedAt || '';
+        const payload = await refreshHotspotPayload();
+        if (!payload) {
+          if (!silent) Taro.showToast({ title: t('library.refreshFail'), icon: 'none' });
+          return;
+        }
+        setNews(filterBlocked(payload.items, blockRules));
+        const nextMeta = getHotspotMeta();
+        setHotMeta(nextMeta);
+        if (!silent) {
+          Taro.showToast({
+            title: nextMeta?.updatedAt && nextMeta.updatedAt !== before ? t('library.refreshDone') : t('library.refreshSame'),
+            icon: 'none'
+          });
+        }
+      } catch (err) {
+        console.warn('[LibraryPage] hotspot refresh failed:', err);
+        if (!silent) Taro.showToast({ title: t('library.refreshFail'), icon: 'none' });
+      } finally {
+        refreshingRef.current = false;
+        setHotspotRefreshing(false);
+      }
+    },
+    [blockRules, hotMeta?.updatedAt, t]
+  );
+
+  // 页面开着时每 10 分钟静默取新一次；切后台不请求
+  useEffect(() => {
+    if (searchMode) return undefined;
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        void handleRefreshHotspot(true);
+      }
+    }, 10 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [handleRefreshHotspot, searchMode]);
 
   useDidShow(() => {
     // 切回本页时详情还开着就补挂占位规则（必须在下面的「60s 新鲜窗口」提前 return 之前）
@@ -1393,6 +1444,14 @@ function LibraryPage() {
                   ? `${t('library.dataUpdated')} ${formatDate(hotMeta.updatedAt, true)}`
                   : t('library.dataUpdatedUnknown')}
                 {hotMeta.stale ? ` · ${t('library.dataStale')}` : ''}
+                {/* 主动刷新：cron 实测常延迟到 8 小时，给用户一个能自己取新的入口 */}
+                <Text
+                  className={styles.refreshEntry}
+                  onClick={() => void handleRefreshHotspot()}
+                  {...pressableProps(t('library.refresh'))}
+                >
+                  {hotspotRefreshing ? t('library.refreshing') : t('library.refresh')}
+                </Text>
                 {(() => {
                   const okNames = hotMeta.sources.filter((s) => s.ok).map((s) => s.name);
                   if (!okNames.length) return '';

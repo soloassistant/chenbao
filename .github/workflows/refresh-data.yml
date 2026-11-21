@@ -3,8 +3,16 @@
 name: refresh-hotspot-data
 
 on:
+  # 2026-11-19：实测 GH Actions 的 */30 cron 常被排队到 8 小时才跑一次
+  # （查 workflow_runs：01:01Z / 18:58Z / 10:28Z / 02:01Z / 19:36Z）。
+  # 改为三组错峰入口，同一节奏下分散触发点；前端另有「刷新」与 10 分钟轮询兜底。
   schedule:
-    - cron: '*/30 * * * *' # 每 30 分钟；GitHub 挂起期间可能延迟，前端有 stale 标注兜底
+    - cron: '3,33 * * * *'
+    - cron: '13,43 * * * *'
+    - cron: '23,53 * * * *'
+    # 固定早晨切点：06:00 上海（UTC+8）= 22:00 UTC。GH 仍可能排队延迟，
+    # 但这是「当天第一份」的明确触发点；打开应用时前端还会再取一次最新。
+    - cron: '0 22 * * *'
   workflow_dispatch: {} # 支持手动触发
 
 permissions:
@@ -30,14 +38,16 @@ jobs:
           path: gh-pages-out
 
       - name: Fetch real hotspot data
-        run: node .tools/fetch-data.js --out gh-pages-out/api/hotspot.json
+        # --status：把「本次到底写没写、条数、时间」落成文件，否则 gh-pages 上
+        # 只有结果没有过程，外部无法判定数据是刷新了还是沿用了旧快照。
+        run: node .tools/fetch-data.js --out gh-pages-out/api/hotspot.json --status gh-pages-out/api/hotspot.status.json
 
       - name: Commit & push
         working-directory: gh-pages-out
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add api/hotspot.json
+          git add api/hotspot.json api/hotspot.status.json
           if git diff --cached --quiet; then
             echo "no change, skip commit"
           else

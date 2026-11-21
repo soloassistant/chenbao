@@ -724,6 +724,11 @@ export const en: Record<LangKey, string> = {
 
   'library.hotTitle': "Today's Hotspot",
   'library.hotHint': 'Curated by your interests · sources labeled',
+  'library.refresh': 'Refresh',
+  'library.refreshing': 'Refreshing…',
+  'library.refreshDone': 'Updated',
+  'library.refreshSame': 'No newer data yet',
+  'library.refreshFail': 'Refresh failed, try again later',
   'library.dataUpdated': 'Data updated ',
   'library.dataUpdatedUnknown': 'Update time unknown',
   'library.dataStale': 'offline cache · live sources unavailable',

@@ -120,6 +120,13 @@
   margin: 0 $page-padding $spacing-sm;
 }
 
+.refreshEntry {
+  margin-left: $spacing-sm;
+  color: var(--brand-strong, #c7371a);
+  font-size: $font-size-xs;
+  @include hit-expand(8rpx, 14rpx);
+}
+
 .dataMetaText {
   font-size: $font-size-xs;
   color: $color-text-tertiary; // 5.02:1（原误用禁用灰 1.5:1）

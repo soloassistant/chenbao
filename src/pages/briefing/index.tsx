@@ -424,6 +424,20 @@ function BriefingPage() {
     [t, runHabitGuard]
   );
 
+  /**
+   * 突发可见性（2026-11-19）：BurstBanner 只在打开页面时评估一次，
+   * 用户停留在晨报页时突发新闻进来了也看不见。页面可见时每 10 分钟静默重取一次，
+   * force=true 跳过当日缓存；归档写入按日去重，重复调用无副作用。
+   */
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        void loadBriefing(true);
+      }
+    }, 10 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [loadBriefing]);
+
   /* ---------------- C-02 位置权限：功能触发式授权（App 启动严禁弹窗） ---------------- */
   const [locating, setLocating] = useState(false);
   const [showLocDialog, setShowLocDialog] = useState(false);

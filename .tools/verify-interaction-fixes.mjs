@@ -849,6 +849,30 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   const needed = ['inbox.parseFailed','inbox.analyzeFailed','inbox.selectFirst','inbox.collectionFull','inbox.writeFailed','inbox.ledgerFailed','inbox.shopFailed','inbox.glossCopied','inbox.copyFailed','community.empty','mine.need4Digit','mine.pinWrong','mine.minorExited','mine.pinReset','mine.privacyWechatManage','mine.privacyWechatOnly','mine.deleteFailed','shopping.added','shopping.priceFormat','shopping.priceSaved','mine.payCancel','mine.payRetry','mine.payOrderFail'];
   const missing = needed.filter((k) => !langZh.includes(`'${k}':`) || !langEn.includes(`'${k}':`));
   ok('M39b 新增提示文案中英齐全', missing.length === 0);
+/* M37（2026-11-19）：热点每日新鲜度 */
+{
+  const wf = read('.github/workflows/refresh-data.yml');
+  const cloud = read('src/services/cloud.ts');
+  const lib = read('src/pages/library/index.tsx');
+  ok('M37a 热点刷新工作流有多组错峰 cron（GH 排队实测 8h 一次）',
+    wf.split('cron:').length - 1 >= 3 && wf.includes('workflow_dispatch'));
+  ok('M37b 强制取新：只给跨域源加时间戳 + 两份取较新 + 同步元信息',
+    cloud.includes('export async function refreshHotspotPayload') &&
+    cloud.includes('LIVE_HOTSPOT_URL}?t=${Date.now()}') &&
+    cloud.includes('Date.parse(live.updatedAt) > Date.parse(same.updatedAt)') &&
+    cloud.includes('hotspotMeta = filtered.updatedAt'));
+  ok('M37f 刷新工作流写状态文件（否则无法判定是否真刷新）',
+    wf.includes('--status gh-pages-out/api/hotspot.status.json') &&
+    wf.includes('git add api/hotspot.json api/hotspot.status.json'));
+  ok('M37d 固定 06:00 上海切点（22:00 UTC）存在',
+    wf.includes("cron: '0 22 * * *'"));
+  ok('M37e 晨报页可见时每 10 分钟重取，突发横幅能随新条目出现',
+    read('src/pages/briefing/index.tsx').includes('10 * 60 * 1000') &&
+    read('src/pages/briefing/index.tsx').includes('void loadBriefing(true)') &&
+    read('src/pages/briefing/index.tsx').includes("document.visibilityState === 'visible'"));
+  ok('M37c 热点页可手动刷新，且可见时每 10 分钟静默取新',
+    lib.includes('refreshHotspotPayload()') && lib.includes("t('library.refresh')") &&
+    lib.includes('10 * 60 * 1000') && lib.includes("document.visibilityState === 'visible'"));
 }
 
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
