@@ -66,6 +66,9 @@ export default defineConfig<'webpack5'>(async (merge) => {
     // （不用 config.env 字段——Taro 4.1.9 webpack5-runner 对其处理有坑，会破坏 taro-loader entry 分析）
     defineConstants: {
       TARO_APP_CLOUD_ENV: JSON.stringify(process.env.TARO_APP_CLOUD_ENV || ''),
+      // 订阅消息模板 id（微信公众平台生成）。空 = 未开通；用完整 `process.env.X` 键，
+      // 与 H5_PAY_GATEWAY 同一口径：defineConstants 是字面量替换，裸键替换不到 process.env.*。
+      'process.env.TARO_APP_SUBSCRIBE_TEMPLATE_ID': JSON.stringify(process.env.TARO_APP_SUBSCRIBE_TEMPLATE_ID || ''),
       // H5 支付网关地址（聚合支付）：留空 = 未开通，页面如实降级到促销码。
       // 键必须写成完整的 `process.env.X`：defineConstants 做的是字面量替换，
       // 裸键 `X` 只能替换裸标识符 `X`，替换不到代码里的 `process.env.X`

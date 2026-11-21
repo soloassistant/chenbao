@@ -66,7 +66,7 @@ import type { LangKey } from '@/store/language';
 import { readPrefs } from '@/utils/prefs';
 import shareCover from '@/assets/share-cover.png';
 // 订阅模板 id 集中配置（上线三件事）：空串 = 未配置，promptSubscribe 内部 noop
-import { SUBSCRIBE_TEMPLATE_ID } from '@/config/subscribe';
+import { SUBSCRIBE_CONFIGURED, SUBSCRIBE_TEMPLATE_ID } from '@/config/subscribe';
 import styles from './index.module.scss';
 
 const isWeapp = process.env.TARO_ENV === 'weapp';
@@ -855,6 +855,10 @@ function BriefingPage() {
   /** 订阅临期提醒条点击：force=true 手动触发（与页面常驻订阅按钮同一通道）。
    *  模板 id 跟随本页既有 SUBSCRIBE_TEMPLATE_ID（TODO 占位时 promptSubscribe 内部 noop，不弹不计数）。 */
   const handleRenewSubscribe = async () => {
+    if (!SUBSCRIBE_CONFIGURED) {
+      Taro.showToast({ title: t('briefing.subscribeUnavailable'), icon: 'none' });
+      return;
+    }
     const status = await promptSubscribe(SUBSCRIBE_TEMPLATE_ID, true);
     if (status === 'accept') {
       Taro.showToast({ title: t('briefing.subscribeOk'), icon: 'success' });
@@ -867,6 +871,11 @@ function BriefingPage() {
   const handleSubscribe = async () => {
     if (!isWeapp) {
       Taro.showToast({ title: t('briefing.subscribeWeappOnly'), icon: 'none' });
+      return;
+    }
+    // 模板未配置时 promptSubscribe 会静默 noop —— 用户点了没反应等于假入口，这里如实说
+    if (!SUBSCRIBE_CONFIGURED) {
+      Taro.showToast({ title: t('briefing.subscribeUnavailable'), icon: 'none' });
       return;
     }
     // force=true：页面常驻按钮是用户主动触发，忽略「已弹过」限制

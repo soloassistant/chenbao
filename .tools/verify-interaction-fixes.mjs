@@ -873,6 +873,20 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M37c 热点页可手动刷新，且可见时每 10 分钟静默取新',
     lib.includes('refreshHotspotPayload()') && lib.includes("t('library.refresh')") &&
     lib.includes('10 * 60 * 1000') && lib.includes("document.visibilityState === 'visible'"));
+/* M38（2026-11-19）：订阅模板 id 不写死空串，未配置时 UI 如实提示 */
+{
+  const cfg = read('src/config/subscribe.ts');
+  const build = read('config/index.ts');
+  const brief = read('src/pages/briefing/index.tsx');
+  ok('M38a 模板 id 来自构建期环境变量，不在源码写死空串',
+    cfg.includes('process.env.TARO_APP_SUBSCRIBE_TEMPLATE_ID') &&
+    !/export const SUBSCRIBE_TEMPLATE_ID = ''/.test(cfg));
+  ok('M38b defineConstants 用完整 process.env.X 键（裸键替换不到）',
+    build.includes("'process.env.TARO_APP_SUBSCRIBE_TEMPLATE_ID'"));
+  ok('M38c 未配置时点击如实提示，不再静默 noop',
+    cfg.includes('SUBSCRIBE_CONFIGURED') &&
+    brief.includes("t('briefing.subscribeUnavailable')") &&
+    brief.includes('if (!SUBSCRIBE_CONFIGURED)'));
 }
 
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);

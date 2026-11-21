@@ -623,6 +623,7 @@ const zh = {
   'briefing.voiceLimitTitle': '语音额度已用完',
   'briefing.voiceLimitContent': '本月免费语音条数已用完，订阅后不限次畅聊。',
   'briefing.goSubscribe': '去订阅',
+  'briefing.subscribeUnavailable': '当前版本未开通通知，配置模板后可用',
   'briefing.subscribeWeappOnly': '微信端支持订阅消息提醒',
   'briefing.subscribeOk': '明早见！',
   'briefing.subscribeFail': '订阅失败，请稍后再试',
