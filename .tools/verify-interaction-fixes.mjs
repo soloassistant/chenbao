@@ -629,7 +629,7 @@ ok('R3 前提可复现：fromNow(undefined) 确实返回「刚刚」', dateMod.f
 ok('R4 前提可复现：fromNow(合法 ISO) 不会退化成「刚刚」',
   dateMod.fromNow(new Date(Date.now() - 3 * 3600 * 1000).toISOString()) === '3 小时前');
 
-const langSrc = stripComments(read('src/store/language.ts'));
+const langSrc = stripComments(read('src/store/language.ts') + read('src/store/language.en.ts'));
 const fullQuotes = langSrc.match(/'briefing\.quoteFull':\s*'([^']*)'/g) || [];
 ok('R5 自选满额文案中英各一处，且都用 {max} 占位符（不写死 8）',
   fullQuotes.length === 2 && fullQuotes.every((l) => l.includes('{max}')));
@@ -757,7 +757,7 @@ ok('U4 顶栏渲染失败文案与重试入口（t(trade.feedDown) + onClick={re
     /t\('trade\.feedRetry'\)/.test(tradeSrc) &&
     /onClick=\{retryFeed\}/.test(tradeSrc));
 // U5 中英同步：两个键各出现 2 次（zh + en），中文文案与需求逐字一致
-const langU = stripComments(read('src/store/language.ts'));
+const langU = stripComments(read('src/store/language.ts') + read('src/store/language.en.ts'));
 ok('U5 失败文案与重试键中英各一处', (langU.match(/'trade\.feedDown':/g) || []).length === 2 &&
   (langU.match(/'trade\.feedRetry':/g) || []).length === 2);
 ok('U5b 中文失败文案逐字包含「实时行情暂不可用，已回到参考行情」',
@@ -805,6 +805,146 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   }
   ok('U7e 3 分钟连续失败调用次数 = 5（可复算：0/10/40/100/160）',
     times.length === 5 && times.join(',') === '0,10,40,100,160');
+}
+
+/* M36（2026-11-19）：英文核心操作与 H5 付费出口 */
+{
+  const inboxSrc = read('src/pages/inbox/index.tsx');
+  const splashSrc = read('src/components/Splash/index.tsx');
+  const memberSrc = read('src/pages/membership/index.tsx');
+  ok('M36a 收件箱核心按钮/提示走 i18n，不再硬编码中文',
+    inboxSrc.includes("t('inbox.parseBtn')") &&
+    inboxSrc.includes("t('inbox.addShot')") &&
+    inboxSrc.includes("t(images.length > 0 ? 'inbox.workTextOnly' : 'inbox.workNeedContent')") &&
+    !inboxSrc.includes("'已添加截图'") && !inboxSrc.includes("'开始解析'") && !inboxSrc.includes("'添加截图'"));
+  ok('M36b 开屏文案走 i18n（英文模式不再出现中文开屏）',
+    splashSrc.includes("t('app.title')") && splashSrc.includes("t('app.slogan')") && splashSrc.includes("t('app.skip')"));
+  ok('M36c H5 无支付通道时给常驻说明并指向促销码，而不是 3 秒 toast',
+    memberSrc.includes('isH5 && !currentPayChannel ? () => setPayGuideOpen(true) : handleSubscribe') &&
+    memberSrc.includes('{payGuideOpen ? (') &&
+    memberSrc.includes('setPromoOpen(true)') &&
+    memberSrc.includes("t('mine.payGuideBody')"));
+}
+
+/* M39（2026-11-19）：英文模式不再弹中文提示 */
+{
+  const files = ['src/pages/inbox/index.tsx', 'src/pages/mine/index.tsx', 'src/pages/membership/index.tsx', 'src/pages/shopping/index.tsx', 'src/pages/learnCommunity/index.tsx', 'src/components/IntelGroupCard/index.tsx'];
+  const bad = [];
+  for (const f of files) {
+    const src = read(f);
+    for (const line of src.split('\n')) {
+      // 不用正则字面量：\\s / \\u 在不同写盘路径下容易被转义破坏，用显式判断更稳
+      const hasZh = [...line].some((ch) => {
+        const c = ch.codePointAt(0) || 0;
+        return c >= 0x4e00 && c <= 0x9fa5;
+      });
+      if (line.includes('showToast(') && line.includes("title: '") && hasZh && !line.includes("t('")) {
+        bad.push(`${f}: ${line.trim().slice(0, 60)}`);
+      }
+    }
+  }
+  ok('M39a 核心页面无硬编码中文 toast（英文模式不再露中文）', bad.length === 0);
+  const langZh = read('src/store/language.ts');
+  const langEn = read('src/store/language.en.ts');
+  const needed = ['inbox.parseFailed','inbox.analyzeFailed','inbox.selectFirst','inbox.collectionFull','inbox.writeFailed','inbox.ledgerFailed','inbox.shopFailed','inbox.glossCopied','inbox.copyFailed','community.empty','mine.need4Digit','mine.pinWrong','mine.minorExited','mine.pinReset','mine.privacyWechatManage','mine.privacyWechatOnly','mine.deleteFailed','shopping.added','shopping.priceFormat','shopping.priceSaved','mine.payCancel','mine.payRetry','mine.payOrderFail'];
+  const missing = needed.filter((k) => !langZh.includes(`'${k}':`) || !langEn.includes(`'${k}':`));
+  ok('M39b 新增提示文案中英齐全', missing.length === 0);
+}
+
+/* M37（2026-11-19）：热点每日新鲜度 */
+{
+  const wf = read('.github/workflows/refresh-data.yml');
+  const cloud = read('src/services/cloud.ts');
+  const lib = read('src/pages/library/index.tsx');
+  ok('M37a 热点刷新工作流有多组错峰 cron（GH 排队实测 8h 一次）',
+    wf.split('cron:').length - 1 >= 3 && wf.includes('workflow_dispatch'));
+  ok('M37b 强制取新：只给跨域源加时间戳 + 两份取较新 + 同步元信息',
+    cloud.includes('export async function refreshHotspotPayload') &&
+    cloud.includes('LIVE_HOTSPOT_URL}?t=${Date.now()}') &&
+    cloud.includes('Date.parse(live.updatedAt) > Date.parse(same.updatedAt)') &&
+    cloud.includes('hotspotMeta = filtered.updatedAt'));
+  ok('M37f 刷新工作流写状态文件（否则无法判定是否真刷新）',
+    wf.includes('--status gh-pages-out/api/hotspot.status.json') &&
+    wf.includes('git add api/hotspot.json api/hotspot.status.json'));
+  ok('M37d 固定 06:00 上海切点（22:00 UTC）存在',
+    wf.includes("cron: '0 22 * * *'"));
+  ok('M37e 晨报页可见时每 10 分钟重取，突发横幅能随新条目出现',
+    read('src/pages/briefing/index.tsx').includes('10 * 60 * 1000') &&
+    read('src/pages/briefing/index.tsx').includes('void loadBriefing(true)') &&
+    read('src/pages/briefing/index.tsx').includes("document.visibilityState === 'visible'"));
+  ok('M37c 热点页可手动刷新，且可见时每 10 分钟静默取新',
+    lib.includes('refreshHotspotPayload()') && lib.includes("t('library.refresh')") &&
+    lib.includes('10 * 60 * 1000') && lib.includes("document.visibilityState === 'visible'"));
+}
+/* M38（2026-11-19）：订阅模板 id 不写死空串，未配置时 UI 如实提示 */
+{
+  const cfg = read('src/config/subscribe.ts');
+  const build = read('config/index.ts');
+  const brief = read('src/pages/briefing/index.tsx');
+  ok('M38a 模板 id 来自构建期环境变量，不在源码写死空串',
+    cfg.includes('process.env.TARO_APP_SUBSCRIBE_TEMPLATE_ID') &&
+    !/export const SUBSCRIBE_TEMPLATE_ID = ''/.test(cfg));
+  ok('M38b defineConstants 用完整 process.env.X 键（裸键替换不到）',
+    build.includes("'process.env.TARO_APP_SUBSCRIBE_TEMPLATE_ID'"));
+  ok('M38c 未配置时点击如实提示，不再静默 noop',
+    cfg.includes('SUBSCRIBE_CONFIGURED') &&
+    brief.includes("t('briefing.subscribeUnavailable')") &&
+    brief.includes('if (!SUBSCRIBE_CONFIGURED)'));
+}
+
+/* M40（2026-11-21）：收藏 → 待办（F92）。
+ * 守三件事：真的写 dailyPlanStore.todos、写后回读校验、失败不得报成功。 */
+{
+  const src = read('src/pages/briefing/index.tsx');
+  ok('M40a 收藏精选有「转为待办」出口且写入 dailyPlanStore',
+    src.includes('addDigestAsTodo') &&
+      src.includes('readPlan()') && src.includes('writePlan(plan)') &&
+      src.includes("t('briefing.favToTodo')"));
+  ok('M40b 写入后回读校验（writePlan 吞异常，不能只凭返回值报成功）',
+    /readPlan\(\)\.todos\.some\(/.test(src));
+  ok('M40c 成功/失败文案分开，失败不报「已加入」',
+    src.includes("t(ok ? 'briefing.favToTodoDone' : 'briefing.favToTodoFail')"));
+  const zh = read('src/store/language.ts');
+  const en = read('src/store/language.en.ts');
+  ok('M40d 三条文案中英齐全',
+    ['favToTodo', 'favToTodoDone', 'favToTodoFail'].every(
+      (k) => zh.includes(`'briefing.${k}':`) && en.includes(`'briefing.${k}':`)
+    ));
+}
+
+/* M41（2026-11-21）：促销码防叠加 + 同步冲突批量裁决。
+ * 促销码是 H5 唯一开 PRO 的通道，必须防「一个码无限续期」；
+ * 冲突 45 键在换设备时可能一次冒出十几条，必须给一键出口。 */
+{
+  const promo = read('src/utils/promo.ts');
+  const member = read('src/pages/membership/index.tsx');
+  ok('M41a 促销码同码同用户只算一次（本机账本）',
+    promo.includes("PROMO_USED_KEY = 'promo-redeemed'") &&
+      promo.includes("reason: 'used'") &&
+      promo.includes('markPromoUsed'));
+  ok('M41b 已用记录在「服务端权益成立」之后才写（订单失败不白吃码）',
+    member.includes('if (ent.active) {') && member.includes('markPromoUsed(code)'));
+  ok('M41c 兑换失败有 used 的独立文案，不落到「未知错误」',
+    member.includes("res.reason === 'used'") && member.includes("'mine.promoUsed'"));
+
+  const hint = read('src/components/SyncConflictHint/index.tsx');
+  ok('M41d 冲突裁决提供「全部以较新者为准」，逐条比时间戳而非一刀切',
+    hint.includes('handleResolveAll') &&
+      hint.includes('c.remoteTs >= c.localTs') &&
+      hint.includes("t('syncConflict.resolveAll')"));
+}
+
+/* M42（2026-11-21）：H5 内容护栏词库不得静默清空/漂移。
+ * 只看行为不够——词库被删一半，正常输入仍然全过。这里锁「结构 + 样本」。 */
+{
+  const src = read('src/utils/contentSafety.ts');
+  const rules = (src.match(/\{ category: '/g) || []).length;
+  ok('M42a 护栏词库至少 6 类且非空', rules >= 6, `rules=${rules}`);
+  const categories = ['explosive', 'drugs', 'minor', 'self-harm', 'fraud', 'cheat'];
+  ok('M42b 六类红线齐全（删任一类即红）',
+    categories.every((c) => src.includes(`category: '${c}'`)));
+  ok('M42c 归一化在匹配前执行（全角/零宽/空格绕不过）',
+    src.includes('function normalize') && /screenContent[\s\S]*normalize\(text\)/.test(src));
 }
 
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);

@@ -820,7 +820,7 @@ function MinePage() {
     if (!overlay) return;
     const pin = pinInput.trim();
     if (!/^\d{4}$/.test(pin)) {
-      Taro.showToast({ title: '请输入 4 位数字密码', icon: 'none' });
+      Taro.showToast({ title: t('mine.need4Digit'), icon: 'none' });
       return;
     }
     if (overlay.mode === 'set') {
@@ -830,12 +830,12 @@ function MinePage() {
       closePinOverlay();
     } else {
       if (pin !== appPrefs.parentPin) {
-        Taro.showToast({ title: '密码不正确，请重试', icon: 'none' });
+        Taro.showToast({ title: t('mine.pinWrong'), icon: 'none' });
         setPinInput('');
         return;
       }
       commitPrefs({ minorMode: false });
-      Taro.showToast({ title: '已退出未成年人模式', icon: 'none' });
+      Taro.showToast({ title: t('mine.minorExited'), icon: 'none' });
       closePinOverlay();
     }
   };
@@ -859,7 +859,7 @@ function MinePage() {
           success: (res2) => {
             if (!res2.confirm) return;
             commitPrefs({ parentPin: '', minorMode: false });
-            Taro.showToast({ title: '已重置', icon: 'none' });
+            Taro.showToast({ title: t('mine.pinReset'), icon: 'none' });
           }
         });
       }
@@ -872,9 +872,9 @@ function MinePage() {
     if (isWeapp && typeof openPrivacyContract === 'function') {
       openPrivacyContract
         .call(Taro, {})
-        .catch(() => Taro.showToast({ title: '请在微信「设置-隐私」中管理授权', icon: 'none' }));
+        .catch(() => Taro.showToast({ title: t('mine.privacyWechatManage'), icon: 'none' }));
     } else {
-      Taro.showToast({ title: '微信端可管理隐私授权', icon: 'none' });
+      Taro.showToast({ title: t('mine.privacyWechatOnly'), icon: 'none' });
     }
   };
 
@@ -1117,7 +1117,7 @@ function MinePage() {
         .then(() => finishDelete())
         .catch((err) => {
           console.error('[MinePage] deleteAccount failed:', err);
-          Taro.showToast({ title: '账号没注销成功，数据还在。检查网络后再试一次', icon: 'none', duration: 3000 });
+          Taro.showToast({ title: t('mine.deleteFailed'), icon: 'none', duration: 3000 });
         });
     }
   };

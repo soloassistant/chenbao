@@ -128,7 +128,7 @@ function LearnCommunityPage() {
   const submitPost = () => {
     const text = draft.trim();
     if (!text) {
-      Taro.showToast({ title: '说点什么再发布吧', icon: 'none' });
+      Taro.showToast({ title: t('community.empty'), icon: 'none' });
       return;
     }
     const post: Post = {

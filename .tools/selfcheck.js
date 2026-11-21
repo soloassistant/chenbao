@@ -72,10 +72,9 @@ check('Q-01 DrillShared 被三个练习组件共同引用', 'Q-01', () => {
 /* ---------- 5. L3-08 learn.* 30+2 键 zh/en 双语齐备 ---------- */
 check('L3-08 learn 键 zh/en 双语齐备（30+1）', 'L3-08', () => {
   const lang = read('src/store/language.ts');
-  if (!lang) return { pass: false, detail: 'language.ts 不存在' };
-  const enStart = lang.indexOf("const en:");
-  if (enStart < 0) return { pass: false, detail: '找不到 en 字典' };
-  const zhRegion = lang.slice(0, enStart), enRegion = lang.slice(enStart);
+  const langEn = read('src/store/language.en.ts');
+  if (!lang || !langEn) return { pass: false, detail: 'language.ts / language.en.ts 不存在' };
+  const zhRegion = lang, enRegion = langEn;
   const keys = ['tabWords', 'tabGrammar', 'tabListening', 'tabSpeaking', 'grammarFillHint', 'next',
     'finish', 'grammarDone', 'correctCount', 'bestScore', 'retry', 'listenHint', 'listenPlay',
     'listenSlow', 'listenDone', 'ttsUnsupportedTitle', 'ttsUnsupported', 'speakHint', 'speakPlay',
@@ -127,8 +126,8 @@ check('C3-01 音频 AI 标识（learning 除外默认开）', 'C3-01', () => {
   const lang = read('src/store/language.ts');
   if (!aiLabel) return { pass: false, detail: 'aiLabel.ts 不存在' };
   const sceneGate = /learning/.test(aiLabel) && /!==\s*['"]learning['"]|===\s*['"]learning['"]/.test(aiLabel);
-  const enStart = lang ? lang.indexOf('const en:') : -1;
-  const introBoth = enStart > 0 && /'ai\.audioIntro'\s*:/.test(lang.slice(0, enStart)) && /'ai\.audioIntro'\s*:/.test(lang.slice(enStart));
+  const langEn3 = read('src/store/language.en.ts');
+  const introBoth = !!lang && !!langEn3 && /'ai\.audioIntro'\s*:/.test(lang) && /'ai\.audioIntro'\s*:/.test(langEn3);
   return sceneGate && introBoth
     ? { pass: true, detail: '场景门控 + audioIntro 双语键均在' }
     : { pass: false, detail: 'sceneGate=' + sceneGate + ' introBoth=' + introBoth };
@@ -239,9 +238,9 @@ check('E 记忆溯源 memoryCount + ai.memoryUsed 双语', '战役E', () => {
   if (!ui) return { pass: false, detail: 'AiAssistant/index.tsx 不存在' };
   if (!lang) return { pass: false, detail: 'language.ts 不存在' };
   const uiOk = /memoryCount/.test(ui);
-  const enStart = lang.indexOf('const en:');
-  if (enStart < 0) return { pass: false, detail: '找不到 en 字典' };
-  const both = /'ai\.memoryUsed'\s*:/.test(lang.slice(0, enStart)) && /'ai\.memoryUsed'\s*:/.test(lang.slice(enStart));
+  const langEn2 = read('src/store/language.en.ts');
+  if (!langEn2) return { pass: false, detail: '找不到英文词典（language.en.ts）' };
+  const both = /'ai\.memoryUsed'\s*:/.test(lang) && /'ai\.memoryUsed'\s*:/.test(langEn2);
   return uiOk && both
     ? { pass: true, detail: 'memoryCount 在 UI，ai.memoryUsed zh/en 双侧齐备' }
     : { pass: false, detail: 'uiOk=' + uiOk + ' both=' + both };

@@ -20,6 +20,7 @@ import { buildMockExam, saveMockExamSession, type MockExamPlan } from '@/data/mo
 import type { ExamSystem, Question } from '@/types/questionBank';
 import type { UserResponse } from '@/utils/questionBankGrading';
 import { pressableProps } from '@/utils/a11y';
+import { openExternalPage } from '@/utils/externalLink';
 import styles from '@/pages/questionBank/shared.module.scss';
 
 function readParams(): Record<string, string> {
@@ -192,7 +193,7 @@ export default function MockExamPage() {
       setGenState('fail');
       setGenMsg(t('mock.genFailed'));
     }
-  }, [genState, title, subject, tags, t]);
+  }, [genState, title, subject, tags, examSystem, t]);
 
   const back = useCallback(() => {
     Taro.navigateBack().catch(() => Taro.reLaunch({ url: '/pages/questionBank/index' }));
@@ -216,14 +217,15 @@ export default function MockExamPage() {
         Taro.showToast({ title: t('mock.paperNoLink'), icon: 'none' });
         return;
       }
-      // H5 用新窗口；小程序没有 open 外链的能力，退回复制链接（不能让按钮点了没反应）
-      if (process.env.TARO_ENV === 'h5') {
-        window.open(url, '_blank');
-      } else {
-        Taro.setClipboardData({ data: url })
-          .then(() => Taro.showToast({ title: t('mock.paperCopied'), icon: 'none' }))
-          .catch(() => Taro.showToast({ title: t('mock.paperCopyFailed'), icon: 'none' }));
-      }
+      // 复用公共外链工具：协议白名单 + noopener/noreferrer + 小程序复制链接降级。
+      // 路由参数可以被构造成任意地址，绝不能自己直接 window.open（2026-11-19）。
+      void openExternalPage(url).then((r) => {
+        if (r === 'opened') return;
+        Taro.showToast({
+          title: r === 'copied' ? t('mock.paperCopied') : t('mock.paperCopyFailed'),
+          icon: 'none'
+        });
+      });
     };
     return (
       <View className={styles.page} style={brandVars(theme)}>

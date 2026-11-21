@@ -131,11 +131,51 @@ export interface HotspotPayload {
 /** 内存缓存 + in-flight 去重：并发调用共用同一个请求；完成后按 TTL 复用。 */
 let hotspotCache: { at: number; payload: HotspotPayload | null } | null = null
 let hotspotInFlight: Promise<HotspotPayload | null> | null = null
+/** 热点载荷「代次」：每次强制刷新 +1。先发出的请求晚到时不得把新数据覆盖回旧的。 */
+let hotspotGeneration = 0
 
 /** 取热点载荷（带缓存与 in-flight 去重）。**并发调用只发一轮请求。 */
 /** 清热点缓存：用户改了「资讯来源」开关后必须调，否则 5 分钟内仍拿旧过滤结果。 */
 export function resetHotspotCache(): void {
   hotspotCache = null
+}
+
+/**
+ * 强制取新（2026-11-19）：GH Actions 的 30 分钟 cron 实测常被排队到 8 小时一次，
+ * 只靠「同源副本 35 分钟内不查远端」的惰性逻辑，用户一整天看到的都是同一份。
+ * 手动刷新/定时轮询走这里：清内存缓存 + 给跨域源加时间戳绕开 HTTP 缓存，
+ * 两份里取 updatedAt 更新的那份；都失败返回 null，保留现有列表（不清空、不误导）。
+ */
+export async function refreshHotspotPayload(): Promise<HotspotPayload | null> {
+  const gen = ++hotspotGeneration
+  hotspotCache = null
+  hotspotInFlight = null
+  // 只给跨域实时源加时间戳：同源静态文件带 query 在部分托管上会 404 / 回落 index.html，
+  // 而它本来只在重新发布时才会变，绕缓存对它没有意义。
+  const [same, live] = await Promise.all([
+    fetchHotspotJson(SAME_ORIGIN_HOTSPOT_URL),
+    fetchHotspotJson(`${LIVE_HOTSPOT_URL}?t=${Date.now()}`)
+  ])
+  const picked = !same
+    ? live
+    : !live
+      ? same
+      : !same.updatedAt || !live.updatedAt
+        ? live
+        : Date.parse(live.updatedAt) > Date.parse(same.updatedAt)
+          ? live
+          : same
+  if (!picked) return null
+  const filtered = applySourcePrefs(picked)
+  if (!filtered) return null
+  // 期间又点了一次刷新：这一份已经是旧的，不写缓存（否则旧数据会盖掉新数据）
+  if (gen !== hotspotGeneration) return null
+  hotspotCache = { at: Date.now(), payload: filtered }
+  // 元信息也必须在这一条路径里更新，否则用户点了刷新、列表换了、顶部「更新于」还是旧时间
+  hotspotMeta = filtered.updatedAt
+    ? { updatedAt: filtered.updatedAt, stale: !!filtered.stale, sources: filtered.sources }
+    : null
+  return filtered
 }
 
 /** 来源开关的**唯一收口点**（2026-11-02）。放在缓存写入之前，这样：
@@ -165,6 +205,7 @@ export function getHotspotPayload(): Promise<HotspotPayload | null> {
     return Promise.resolve(hotspotCache.payload)
   }
   if (!hotspotInFlight) {
+    const gen = hotspotGeneration
     hotspotInFlight = loadHotspotPayload().then(
       (payload) => {
         // U-05：失败（payload=null）不能进缓存，否则用户点「重试」拿到的还是那份失败结果，
@@ -174,7 +215,8 @@ export function getHotspotPayload(): Promise<HotspotPayload | null> {
           return null
         }
         const filtered = applySourcePrefs(payload)
-        hotspotCache = { at: Date.now(), payload: filtered }
+        // 加载途中用户点了刷新：这份是旧代次，不能回写缓存
+        if (gen === hotspotGeneration) hotspotCache = { at: Date.now(), payload: filtered }
         hotspotInFlight = null
         return filtered
       },

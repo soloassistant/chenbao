@@ -65,6 +65,21 @@ function SyncConflictHint() {
     }
   };
 
+  const handleResolveAll = async () => {
+    // 45 个键换设备时可能一次冒出十几条；逐条点不现实。
+    // 「较新者为准」= 每条各自比 remoteTs/localTs，而不是一刀切用云端。
+    const remoteKeys = conflicts.filter((c) => c.remoteTs >= c.localTs).map((c) => c.key);
+    const localKeys = conflicts.filter((c) => c.remoteTs < c.localTs).map((c) => c.key);
+    try {
+      if (remoteKeys.length) await resolveSyncConflicts('remote', remoteKeys);
+      if (localKeys.length) await resolveSyncConflicts('local', localKeys);
+      Taro.showToast({ title: t('syncConflict.toastAll'), icon: 'none' });
+    } catch (err) {
+      console.error('[SyncConflictHint] resolve all failed:', err);
+      Taro.showToast({ title: t('syncConflict.failed'), icon: 'none' });
+    }
+  };
+
   return (
     <View className={styles.hint}>
       {ownerNotice && (
@@ -107,6 +122,9 @@ function SyncConflictHint() {
         <>
           <Text className={styles.title}>{t('syncConflict.title')}</Text>
           <Text className={styles.desc}>{t('syncConflict.desc')}</Text>
+          <Text className={styles.action} onClick={() => void handleResolveAll()}>
+            {t('syncConflict.resolveAll')}
+          </Text>
         </>
       )}
       {conflicts.map((c) => (

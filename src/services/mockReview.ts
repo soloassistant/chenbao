@@ -15,12 +15,36 @@
  */
 import type { Question } from '@/types/questionBank';
 import type { UserResponse } from '@/utils/questionBankGrading';
+import { appStorage } from '@/utils/appStorage';
 import { cloudLlmChat } from './cloudLlm';
-import { llmEventInsert } from './cloudDb';
+import { finishAiEntry, guardAiEntry } from './aiEntryGuard';
 
 export interface ReviewItem {
   question: Question;
   response: UserResponse;
+}
+
+/** 讲解结果按**场次**存：同一张卷再进结果页直接复用，不重复调用模型（2026-11-19）。 */
+const REVIEW_KEY_PREFIX = 'mock-ai-review:';
+
+export function loadStoredReview(sessionId: string): ReviewResult | null {
+  try {
+    const v = appStorage().getStorageSync(REVIEW_KEY_PREFIX + sessionId);
+    if (!v || typeof v !== 'object') return null;
+    const o = v as ReviewResult;
+    if (!o.byId || typeof o.byId !== 'object' || typeof o.count !== 'number') return null;
+    return o;
+  } catch {
+    return null;
+  }
+}
+
+export function saveStoredReview(sessionId: string, result: ReviewResult): void {
+  try {
+    appStorage().setStorageSync(REVIEW_KEY_PREFIX + sessionId, result);
+  } catch (err) {
+    console.error('[mockReview] persist result failed:', err);
+  }
 }
 
 export interface ReviewResult {
@@ -92,20 +116,16 @@ export async function reviewWrongAnswers(items: ReviewItem[]): Promise<ReviewOut
     '4. 不要 markdown 代码块，不要任何多余文字。'
   ].join('\n');
 
+  // 讲解与新出题走同一道闸：内容 + 额度检查在调用前，成功后只补本地镜像（2026-11-19）
+  const guard = await guardAiEntry(userContent);
+  if (!guard.ok) return { ok: false, reason: guard.reason };
   const raw = await cloudLlmChat({
     system: '你是严谨的国际课程老师，擅长把学生的错因说透。只输出 JSON 对象，不要解释文字。',
     userContent
   });
   if (!raw) return { ok: false, reason: 'ai-unavailable' };
-
-  // 记账：与 AI 助手同口径（kind=chat），token 仍按字符数估算（见 cloudDb.llmEventInsert）
-  void llmEventInsert('chat', {
-    model: 'auto',
-    promptChars: userContent.length,
-    completionChars: raw.length
-  }).catch((err) => {
-    console.error('[mockReview] usage insert failed:', err);
-  });
+  const after = finishAiEntry(raw);
+  if (!after.ok) return { ok: false, reason: after.reason };
 
   let obj: Record<string, unknown>;
   try {

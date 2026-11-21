@@ -33,7 +33,7 @@ import urllib.error
 import urllib.request
 
 OWNER = "soloassistant"
-REPO = "9-8"
+REPO = "chenbao"
 API = "https://api.github.com"
 REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

@@ -11,7 +11,7 @@ import type { HotkeyId } from '@/utils/hotkeys';
 import { needsAuthGate, getSession, markGateRedirect, getCloudUserId, hasStoredSession } from '@/services/cloudAuth';
 // 只依赖「同意读写」小模块：三份法务正文（~11 KB gzip）不该为这一个布尔值进首屏包
 import { hasAgreedConsent } from '@/data/legal-consent';
-import { useLanguageStore, dict, STORAGE_KEY as LANG_KEY } from '@/store/language';
+import { useLanguageStore, dict, isEnDictLoaded, loadEnDict, STORAGE_KEY as LANG_KEY } from '@/store/language';
 import { useThemeStore, useTabBarTheme, STORAGE_KEY as THEME_KEY } from '@/store/theme';
 import { useUiScaleStore, STORAGE_KEY as UI_SCALE_KEY } from '@/store/uiScale';
 import { initCloudSync, subscribeSyncApplied } from '@/services/cloudSync';
@@ -399,6 +399,24 @@ function App(props: PropsWithChildren) {
     };
   }, []);
 
+  /**
+   * 英文词典是动态 chunk（2026-11-19 首屏字节）：英文用户首帧前必须等它，
+   * 否则会先渲染一屏中文、chunk 到了再跳成英文。中文用户 langReady 初始就是 true。
+   */
+  const [langReady, setLangReady] = useState<boolean>(
+    () => !(useLanguageStore.getState().lang === 'en' && !isEnDictLoaded())
+  );
+  useEffect(() => {
+    if (langReady) return;
+    let alive = true;
+    void loadEnDict().then(() => {
+      if (alive) setLangReady(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [langReady]);
+
   // 首屏骨架退场（2026-10-29）：骨架写在 src/index.html，是 app 挂载前的唯一可见内容。
   // 这里等两帧（挂载完成 → 真正上屏）再淡出，避免「骨架撤了、界面还没画」的白闪。
   // app 自己的开屏（splash）在这一帧已经渲染，所以用户看到的是 骨架 → 开屏 → 内容，中间不断档。
@@ -553,7 +571,7 @@ function App(props: PropsWithChildren) {
           <DesktopNav />
         </Suspense>
       ) : null}
-      {props.children}
+      {langReady ? props.children : null}
       {/* 应用外壳一律不进登录页：未登录时它既无用又泄漏"应用已就绪"的错觉 */}
       {isLoginPage ? null : (
         <React.Fragment>

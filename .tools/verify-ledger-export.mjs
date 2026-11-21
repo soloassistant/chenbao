@@ -357,7 +357,7 @@ t('buildExportFilename：用本地时间（不用 UTC）', () => {
 const apiSrc = readFileSync(path.join(ROOT, 'src', 'services', 'api.ts'), 'utf8');
 const pageSrc = readFileSync(path.join(ROOT, 'src', 'pages', 'ledger', 'index.tsx'), 'utf8');
 const dataSrc = readFileSync(path.join(ROOT, 'src', 'data', 'ledger.ts'), 'utf8');
-const langSrc = readFileSync(path.join(ROOT, 'src', 'store', 'language.ts'), 'utf8');
+const langSrc = readFileSync(path.join(ROOT, 'src', 'store', 'language.ts'), 'utf8') + readFileSync(path.join(ROOT, 'src', 'store', 'language.en.ts'), 'utf8');
 
 t('接线：api.ts 有 apiLedgerExport 薄包装（且转调 exportLedgerData）', () => {
   return /export function apiLedgerExport\(/.test(apiSrc) && /ledgerExportData\(format\)/.test(apiSrc)

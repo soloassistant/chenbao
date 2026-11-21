@@ -17,7 +17,7 @@ import { disabledAttr } from '@/utils/buttonDisabled';
 import { dayKey } from '@/utils/date';
 import { copyKeyOf, resolveRenewal, shouldRemind } from '@/utils/renewal';
 import type { RenewalCopyKey } from '@/utils/renewal';
-import { redeemPromo } from '@/utils/promo';
+import { markPromoUsed, redeemPromo } from '@/utils/promo';
 import {
   EARLYBIRD_PRICE,
   formatPrice,
@@ -175,6 +175,9 @@ function MembershipPage() {
   const [readStreak, setReadStreak] = useState(0);
   const [readFreezeCards, setReadFreezeCards] = useState(0);
   const [promoOpen, setPromoOpen] = useState(false);
+  /** H5 无支付通道时，点「立即订阅」不能只弹 3 秒 toast（一闪就没，等于没有转化路径）。
+   *  改成常驻说明 + 直接指向已存在的促销码兑换入口——这是当前唯一真实可开通的方式。 */
+  const [payGuideOpen, setPayGuideOpen] = useState(false);
   /** 支付已到账但权益没开成（函数未部署/凭证不属于本账号）—— 要显式告诉用户怎么兜底 */
   const [h5ClaimIssue, setH5ClaimIssue] = useState<string | null>(null);
   /** U-11：支付前可读的条款/隐私弹层 */
@@ -561,7 +564,7 @@ function MembershipPage() {
           // 用户取消支付 / 支付失败同样会写入 active 锁价，getEffectivePrice 此后
           // 一直返回这个未成交价，UI 常驻「锁价 ¥6.9」——把没成交的单子当成成交价展示。
           setLocked(lockPrice(result.planId, result.price));
-          Taro.showToast({ title: '支付成功', icon: 'success' });
+          Taro.showToast({ title: t('mine.h5paySuccess'), icon: 'success' });
           const paidOrderId = result.orderId;
           payReconcileTimerRef.current = setTimeout(() => {
             // 主动查单 + 失败可见化（X7）；不再把 { result } 误当业务对象
@@ -573,15 +576,15 @@ function MembershipPage() {
         // 用户主动取消（微信：cancel；支付宝/douyin：canceled、用户取消）不算失败
         if (/cancel|取消/i.test(msg)) {
           console.info('[MembershipPage] user cancelled payment');
-          Taro.showToast({ title: '已取消', icon: 'none' });
+          Taro.showToast({ title: t('mine.payCancel'), icon: 'none' });
         } else {
           console.error('[MembershipPage] invokePayment failed:', payErr);
-          Taro.showToast({ title: '这次没付成，可以再试一次', icon: 'none' });
+          Taro.showToast({ title: t('mine.payRetry'), icon: 'none' });
         }
       }
     } catch (err) {
       console.error('[MembershipPage] createOrder failed:', err);
-      Taro.showToast({ title: '没能下单，网络或服务暂时不通，稍后再试', icon: 'none' });
+      Taro.showToast({ title: t('mine.payOrderFail'), icon: 'none' });
     } finally {
       setPaying(false);
     }
@@ -655,7 +658,9 @@ function MembershipPage() {
             ? 'mine.promoBadFormat'
             : res.reason === 'expired'
               ? 'mine.promoExpired'
-              : 'mine.promoUnknown'
+              : res.reason === 'used'
+                ? 'mine.promoUsed'
+                : 'mine.promoUnknown'
         )
       );
       return;
@@ -683,6 +688,8 @@ function MembershipPage() {
     await init();
     await loadOrders();
     if (ent.active) {
+      // 权益已在服务端回放成立，才把码记入本机已用账本（订单失败不白吃码）
+      markPromoUsed(code);
       Taro.showToast({ title: t('mine.promoDone', { date: ent.expiredAt || '' }), icon: 'none', duration: 3000 });
     } else {
       setPromoErr(t('mine.promoUnverified'));
@@ -797,7 +804,7 @@ function MembershipPage() {
         {/* 支付成功但权益未确认（X7）：可见卡片 + 订单号 + 重新核对，不静默 */}
         {reconcileIssue ? (
           <View className={styles.reconcileCard}>
-            <Text className={styles.reconcileTitle}>支付结果待核对</Text>
+            <Text className={styles.reconcileTitle}>{t('mine.reconcileTitle')}</Text>
             <Text className={styles.reconcileText}>{reconcileIssue.text}</Text>
             <View className={styles.reconcileActions}>
               <Text
@@ -891,11 +898,17 @@ function MembershipPage() {
           <View className={styles.subButtonGroup}>
             <Button
               className={styles.subButton}
-              onClick={handleSubscribe}
+              onClick={isH5 && !currentPayChannel ? () => setPayGuideOpen(true) : handleSubscribe}
               loading={paying}
               disabled={disabledAttr(paying)}
             >
-              {paying ? t('mine.subscribing') : profile?.subscribed ? t('mine.renew') : t('mine.subscribe')}
+              {paying
+                ? t('mine.subscribing')
+                : isH5 && !currentPayChannel
+                  ? t('mine.payGuideBtn')
+                  : profile?.subscribed
+                    ? t('mine.renew')
+                    : t('mine.subscribe')}
             </Button>
             {currentPayChannel ? (
               <View className={styles.channelTag}>
@@ -1110,6 +1123,30 @@ function MembershipPage() {
       </View>
 
       {/* 促销码兑换弹层（与反馈/城市共用半屏语言与控件样式，不引入第三套观感） */}
+      {/* H5 无支付通道时的说明层：把「去哪开通」讲清楚，并给出唯一真实入口（促销码）。
+          小程序线已停，这里绝不能把人往不存在的地方指。 */}
+      {payGuideOpen ? (
+        <View className={styles.docMask} onClick={() => setPayGuideOpen(false)}>
+          <View className={styles.docCard} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.docTitle}>{t('mine.payGuideTitle')}</Text>
+            <Text className={styles.docBody}>{t('mine.payGuideBody')}</Text>
+            <View className={styles.fbRow}>
+              <Button className={styles.fbCancel} onClick={() => setPayGuideOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                className={styles.fbSubmit}
+                onClick={() => {
+                  setPayGuideOpen(false);
+                  setPromoOpen(true);
+                }}
+              >
+                {t('mine.payGuideAction')}
+              </Button>
+            </View>
+          </View>
+        </View>
+      ) : null}
       {promoOpen ? (
         <View className={styles.docMask} onClick={() => setPromoOpen(false)}>
           <View className={classnames(styles.docPanel, styles.fbPanel)} onClick={(e) => e.stopPropagation()}>

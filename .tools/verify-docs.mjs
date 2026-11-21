@@ -118,10 +118,6 @@ const norm = (p) => p.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
 //       （有 src/app.scss，git remote 指向本仓），输出里写明是降级口径，不静默通过。
 const claimIsAbsolute = /^([a-zA-Z]:[\\/]|\/)/.test(claimedRoot);
 const claimExistsHere = claimRoot !== null && fs.existsSync(claimedRoot);
-let sameRepoIdentity = false;
-try {
-  sameRepoIdentity = /soloassistant\/9-8/i.test(fs.readFileSync(path.join(realRoot, '.git', 'config'), 'utf8'));
-} catch { sameRepoIdentity = false; }
 // 「当前目录确实是本项目」的判据：有 src/app.scss 且 package.json 是 morning-brief。
 // 不用 git remote 认身份：本机 clone 的 origin 可能是本地路径（我实测过），CI 里才是 https。
 const hasProjectTree =
@@ -273,6 +269,54 @@ ok(
   /gh-pages 现在只适合当\*\*静态外壳 \+ 热点数据镜像\*\*，不是产品入口/.test(text['AGENTS.md'] || ''),
   'D2 AGENTS.md §4 仍保有「gh-pages 不是产品入口」的结论句（单一事实来源）'
 );
+
+/* B2（2026-11-21）：仓库改名后，.tools 里任何「可执行」的旧名都必须清掉。
+ * ①②（deploy 自救地址 / verify-docs 死变量）都是同一类残留；只查注释不算，
+ * 只盯两种会真发请求/真推仓库的写法。 */
+{
+  const offenders = [];
+  const walk = (dir) => {
+    for (const name of fs.readdirSync(dir)) {
+      const full = path.join(dir, name);
+      const st = fs.statSync(full);
+      if (st.isDirectory()) { walk(full); continue; }
+      if (!/\.(mjs|js|py|cjs)$/.test(name)) continue;
+      const src = fs.readFileSync(full, 'utf8');
+      if (/REPO\s*=\s*["']9-8["']/.test(src) || /github\.io\/9-8/.test(src)) {
+        offenders.push(path.relative(ROOT, full));
+      }
+    }
+  };
+  walk(path.join(ROOT, '.tools'));
+  ok(offenders.length === 0, 'B4 .tools 里没有会真发请求的旧仓库名（9-8）', offenders.join(', '));
+}
+
+/* B5（2026-11-21）：文档里的同步键数量必须等于代码实际值。
+ * 漂移过两次（18 / 45 都写过），靠人眼对不齐，直接比数组长度。 */
+{
+  const claim = (text['AGENTS.md'] || '').match(/(\d+) 个 `SYNC_KEYS`/);
+  const src = fs.readFileSync(path.join(ROOT, 'src/services/cloudSync.ts'), 'utf8');
+  const start = src.indexOf('export const SYNC_KEYS = [');
+  let depth = 0;
+  let end = -1;
+  for (let i = src.indexOf('[', start); i < src.length; i += 1) {
+    if (src[i] === '[') depth += 1;
+    else if (src[i] === ']') {
+      depth -= 1;
+      if (depth === 0) { end = i; break; }
+    }
+  }
+  const keys = src
+    .slice(src.indexOf('[', start) + 1, end)
+    .split('\n')
+    .map((line) => line.split('//')[0].trim())
+    .filter((line) => /^'[^']+',?$/.test(line)).length;
+  ok(
+    claim !== null && Number(claim[1]) === keys,
+    `B6 AGENTS.md 的 SYNC_KEYS 数量等于实际数组长度（实际 ${keys}）`,
+    claim ? `文档写 ${claim[1]}` : '文档未声明'
+  );
+}
 
 console.log('\n' + '─'.repeat(58));
 console.log(`PASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);

@@ -94,8 +94,9 @@ function extractDict(src, name) {
 }
 
 const langSrc = fs.readFileSync(path.join(SRC, 'store/language.ts'), 'utf8');
+const langEnSrc = fs.readFileSync(path.join(SRC, 'store/language.en.ts'), 'utf8');
 const zh = extractDict(langSrc, 'zh');
-const en = extractDict(langSrc, 'en');
+const en = extractDict(langEnSrc, 'en');
 if (!zh || !en) {
   console.log('FAIL 无法从 src/store/language.ts 解析 zh / en 字典');
   process.exit(1);

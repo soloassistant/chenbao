@@ -352,7 +352,7 @@ function verifyRemote(expectedCommit) {
   if (!fs.existsSync(HOTSPOT)) {
     die(
       'dist/api/hotspot.json 缺失，拒绝发布（发布后前端情报兜底链会断）。\n' +
-        '  补一份再发：curl.exe -sS https://soloassistant.github.io/9-8/api/hotspot.json -o "dist/api/hotspot.json"\n' +
+        '  补一份再发：curl.exe -sS https://soloassistant.github.io/chenbao/api/hotspot.json -o "dist/api/hotspot.json"\n' +
         '  或先跑：node .tools/fetch-data.js --out dist/api/hotspot.json'
     );
   }

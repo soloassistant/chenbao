@@ -10,6 +10,7 @@ import IntelGroupCard, { IntelItemRow } from '@/components/IntelGroupCard';
 import SafeImage from '@/components/SafeImage';
 import HabitGuardBar from '@/components/HabitGuardBar';
 import PlanProposalCard from '@/components/PlanProposalCard';
+import { nextId, readPlan, writePlan } from '@/data/dailyPlan';
 import { BriefingSkeleton } from '@/components/Skeleton';
 import BurstBanner from '@/components/BurstBanner';
 import { NAV_MAIN, NAV_MORE, type Item as NavItem } from '@/components/DesktopNav';
@@ -66,7 +67,7 @@ import type { LangKey } from '@/store/language';
 import { readPrefs } from '@/utils/prefs';
 import shareCover from '@/assets/share-cover.png';
 // 订阅模板 id 集中配置（上线三件事）：空串 = 未配置，promptSubscribe 内部 noop
-import { SUBSCRIBE_TEMPLATE_ID } from '@/config/subscribe';
+import { SUBSCRIBE_CONFIGURED, SUBSCRIBE_TEMPLATE_ID } from '@/config/subscribe';
 import styles from './index.module.scss';
 
 const isWeapp = process.env.TARO_ENV === 'weapp';
@@ -93,6 +94,28 @@ const r2r = (n: number): string => `${(n / DESIGN_PX_PER_REM).toFixed(5)}rem`;
 const BRIEFING_CACHE_KEY = 'briefingDailyCache';
 /** X8 连读徽章 storage key：{ last: 'YYYY-MM-DD', count: n }，进页即记当天 */
 const BRIEF_STREAK_KEY = 'mb-brief-streak';
+
+/**
+ * F92：收藏 → 待办（2026-11-21）。
+ * 晨报的「收藏精选」此前只展示，看完即止；这里给它一个出口。
+ * 与其他写路径一致：writePlan 会吞掉 storage 异常，必须**回读**确认真的落盘，
+ * 否则「已加入待办」就是假的。
+ */
+function addDigestAsTodo(text: string): boolean {
+  const title = text.trim().slice(0, 60);
+  if (!title) return false;
+  const plan = readPlan();
+  const todo = {
+    id: nextId('todo'),
+    title,
+    status: 'confirmed' as const,
+    source: '晨报收藏',
+    createTime: new Date().toISOString()
+  };
+  plan.todos.push(todo);
+  writePlan(plan);
+  return readPlan().todos.some((item) => item.id === todo.id);
+}
 
 /** 读当日晨报缓存：跨日或损坏时视为未命中 */
 function readBriefingCache(): Briefing | null {
@@ -423,6 +446,20 @@ function BriefingPage() {
     },
     [t, runHabitGuard]
   );
+
+  /**
+   * 突发可见性（2026-11-19）：BurstBanner 只在打开页面时评估一次，
+   * 用户停留在晨报页时突发新闻进来了也看不见。页面可见时每 10 分钟静默重取一次，
+   * force=true 跳过当日缓存；归档写入按日去重，重复调用无副作用。
+   */
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        void loadBriefing(true);
+      }
+    }, 10 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [loadBriefing]);
 
   /* ---------------- C-02 位置权限：功能触发式授权（App 启动严禁弹窗） ---------------- */
   const [locating, setLocating] = useState(false);
@@ -841,6 +878,10 @@ function BriefingPage() {
   /** 订阅临期提醒条点击：force=true 手动触发（与页面常驻订阅按钮同一通道）。
    *  模板 id 跟随本页既有 SUBSCRIBE_TEMPLATE_ID（TODO 占位时 promptSubscribe 内部 noop，不弹不计数）。 */
   const handleRenewSubscribe = async () => {
+    if (!SUBSCRIBE_CONFIGURED) {
+      Taro.showToast({ title: t('briefing.subscribeUnavailable'), icon: 'none' });
+      return;
+    }
     const status = await promptSubscribe(SUBSCRIBE_TEMPLATE_ID, true);
     if (status === 'accept') {
       Taro.showToast({ title: t('briefing.subscribeOk'), icon: 'success' });
@@ -853,6 +894,11 @@ function BriefingPage() {
   const handleSubscribe = async () => {
     if (!isWeapp) {
       Taro.showToast({ title: t('briefing.subscribeWeappOnly'), icon: 'none' });
+      return;
+    }
+    // 模板未配置时 promptSubscribe 会静默 noop —— 用户点了没反应等于假入口，这里如实说
+    if (!SUBSCRIBE_CONFIGURED) {
+      Taro.showToast({ title: t('briefing.subscribeUnavailable'), icon: 'none' });
       return;
     }
     // force=true：页面常驻按钮是用户主动触发，忽略「已弹过」限制
@@ -1603,6 +1649,19 @@ function BriefingPage() {
               {(briefing.digest || []).map((text, i) => (
                 <View key={i} className={styles.digestItem}>
                   <Text className={styles.digestText}>{text}</Text>
+                  <Text
+                    className={styles.digestAdd}
+                    {...pressableProps(t('briefing.favToTodo'))}
+                    onClick={() => {
+                      const ok = addDigestAsTodo(text);
+                      Taro.showToast({
+                        title: t(ok ? 'briefing.favToTodoDone' : 'briefing.favToTodoFail'),
+                        icon: ok ? 'success' : 'none'
+                      });
+                    }}
+                  >
+                    {t('briefing.favToTodo')}
+                  </Text>
                 </View>
               ))}
             </View>

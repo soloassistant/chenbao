@@ -115,7 +115,11 @@ const DEVICE_ONLY_KEYS = {
   //    到期处置必须显式做，二选一：① 删掉这两条并挪进 CROSS_DEVICE_KEYS；
   //    ② 复核后确认仍属本机语义，则在 EXPIRING_DEVICE_ONLY 里显式续期并写明理由。
   'mb-last-delete-at': '本机专用键，云端同步反而错（注销完成时间只对本机有意义，同步会把「已注销」带到别的设备）',
-  'mb-support-tickets': '本机专用键，云端同步反而错（注销工单留档供本机补提/查询，跨设备同步会泄露注销意图）'
+  'mb-support-tickets': '本机专用键，云端同步反而错（注销工单留档供本机补提/查询，跨设备同步会泄露注销意图）',
+  // 2026-11-19：AI 错题讲解结果按场次缓存，与 mock-exam-session 同口径。
+  // ⏳ **到期条件**：题库接入 cloudSync / SYNC_KEYS 的那一笔 PR 必须同时删除本条目并挪进
+  //    CROSS_DEVICE_KEYS，否则讲解结果会永久跳过「换设备是否失忆」的检查。
+  'mock-ai-review:': '模拟考 AI 错题讲解结果（按场次缓存，设备级；到期条件见上方注释）'
 };
 
 /**

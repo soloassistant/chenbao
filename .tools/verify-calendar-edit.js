@@ -111,10 +111,40 @@ const bad = updateEvent('evt-1', { title: '写不进去' });
 ok('storage 写失败时返回 ok:false（不静默）', bad.ok === false && bad.reason === 'not_persisted');
 failWrites = false;
 
+/* ================= 3b. 排班方案本机落库（H5 假成功回归） ================= */
+console.log('\n── 3b. applyPlanLocally 真落库 ──');
+const { applyPlanLocally } = require(modFile);
+
+mem.raw = JSON.stringify({ events: [], todos: [] });
+const add2 = applyPlanLocally([
+  { title: '晨会', startTime: '2026-11-20 09:00' },
+  { title: '写周报', startTime: '2026-11-20 16:00', endTime: '2026-11-20 17:00' }
+]);
+ok('新增 2 条返回 ok + saved=2', add2.ok === true && add2.saved === 2);
+ok('重载后确实有 2 条（不是内存态）', readPlan().events.length === 2);
+ok('新增条目状态是 confirmed', readPlan().events.every((e) => e.status === 'confirmed'));
+
+const firstId = add2.ids[0];
+const upd = applyPlanLocally([{ eventId: firstId, title: '晨会（改）', startTime: '2026-11-20 09:30' }]);
+ok('按 eventId 改期返回 ok', upd.ok === true && upd.saved === 1);
+ok('改期不新增条目，标题已更新',
+  readPlan().events.length === 2 && readPlan().events.some((e) => e.id === firstId && e.title === '晨会（改）'));
+
+ok('空载荷返回 ok:false（不许拿空写冒充成功）', applyPlanLocally([]).ok === false);
+ok('缺 title 的条目被过滤 → ok:false', applyPlanLocally([{ title: '', startTime: '2026-11-20 10:00' }]).ok === false);
+
+failWrites = true;
+const lost = applyPlanLocally([{ title: '写不进去', startTime: '2026-11-20 11:00' }]);
+ok('storage 写失败时 ok:false + saved=0', lost.ok === false && lost.saved === 0);
+failWrites = false;
+
 /* ================= 4. 路由与页面接线（源码断言） ================= */
 console.log('\n── 4. 路由/页面/云函数接线 ──');
 const api = read('src/services/api.ts');
 ok('H5 编辑走 dailyPlan.updateEvent', /if\s*\(!isWeapp\)\s*\{\s*return updateEvent\(/.test(api));
+ok('H5 排班走 applyPlanLocally（不再落到 mock 后假成功）', /if\s*\(!isWeapp\)\s*return applyPlanLocally\(events\)/.test(api));
+ok('云函数未返回 saved 时不得默认成 events.length',
+  !/typeof res\.saved === 'number' \? res\.saved : events\.length/.test(api) && /cloud returned no saved count/.test(api));
 ok('小程序编辑走 chat.applyPlan（不新开旁路存储）', /action:\s*'applyPlan'/.test(api) && /eventId:\s*payload\.id/.test(api));
 ok('briefing._id 归一成 id（小程序编辑才能命中条目）', /normalizeBriefingIds/.test(api) && /row\._id/.test(api));
 
