@@ -15,7 +15,7 @@ import { View, Text, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import classnames from 'classnames';
 import { useT } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import { PAPER_BOARDS, PAPERS_SOURCE, groupUnits, totalPapers, type SessionRow } from '@/data/papers';
 import { bindingForSubject, bindingForUnit, type PaperExamBinding } from '@/data/paperExamMap';
 import { openExternalPage } from '@/utils/externalLink';
@@ -56,6 +56,7 @@ export interface PaperLibraryProps {
 export default function PaperLibrary({ showHeader = true, onStartMock, onStartPaper }: PaperLibraryProps) {
   const t = useT();
   const { theme } = useThemeStore();
+  const { resolved } = useThemeMode();
 
   const [boardId, setBoardId] = useState(PAPER_BOARDS[0].id);
   const board = PAPER_BOARDS.find((b) => b.id === boardId) || PAPER_BOARDS[0];
@@ -136,7 +137,7 @@ export default function PaperLibrary({ showHeader = true, onStartMock, onStartPa
   };
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       {showHeader ? (
         <View className={styles.header}>
           <View className={styles.back} onClick={back} {...pressableProps(t('common.back'))}>

@@ -302,3 +302,41 @@ $paper-active-ink: #a82c13;
   font-size: $font-size-sm;
   color: $color-primary-strong;
 }
+
+// 深色（2026-11-21）：本页共用样式的其余颜色都走全局 token，以下是「白底/浅底专用」取值。
+.page:global(.theme-dark) {
+  // 选中考试局：--brand-strong 在深色下是 onDark 浅橙，白字压它只有 1.7:1；
+  // 同色描边还会以 1:1 计入边界，一并收掉（背景在 border-box 下铺满）
+  .tabActive {
+    background: var(--dm-brand-solid, $color-primary-strong);
+    border-color: transparent;
+  }
+
+  // 选中科目：边框本来就靠 --brand-strong 识别，深色下仍是高对比浅橙，保留
+  .tabSmTextActive {
+    color: var(--brand-strong, $color-primary-strong);
+  }
+
+  // 选中单元：底是 8% 深红的浅色写法，字是照浅底加深的 #a82c13，深色下 1.5:1
+  .unitChipActive {
+    border-color: var(--brand-strong, $color-primary-strong);
+    background: rgba(255, 122, 69, 0.14);
+  }
+
+  .unitCodeActive,
+  .unitNameActive {
+    color: var(--brand-strong, $paper-active-ink);
+  }
+
+  // 白字实心按钮（开考）：换成深色实心变体
+  .action {
+    background: var(--dm-brand-solid, $color-primary-strong);
+  }
+
+  // 幽灵按钮原本是「白卡 + 发丝边」，落在深色行的卡片底上整块消失；
+  // 用卡片底 + 3:1 描边（描边压在行底与自身底上都是 3.04），只靠边界成形
+  .actionGhost {
+    background: var(--dm-bg-card);
+    border-color: var(--dm-border);
+  }
+}
