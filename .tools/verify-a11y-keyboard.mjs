@@ -162,7 +162,7 @@ const TOUCH = [
   ['src/pages/learn/index.module.scss', '.backButton', 'hit', '学习返回条'],
   ['src/pages/sxm/index.module.scss', '.tab', 'minpx', '省心买页签'],
   ['src/pages/mine/index.module.scss', '.avatarEdit', 'hit', '头像编辑'],
-  ['src/pages/ledger/index.module.scss', '.backButton', 'hit', '记账返回条'],
+  ['src/pages/ledger/index.module.scss', '.backButton', 'minpx', '记账返回条'],
   ['src/pages/shopping/index.module.scss', '.backButton', 'hit', '购物返回条'],
   ['src/pages/search/index.module.scss', '.backButton', 'minpx', '搜索返回条'],
   ['src/pages/sport/index.module.scss', '.backRow', 'hit', '运动返回条'],

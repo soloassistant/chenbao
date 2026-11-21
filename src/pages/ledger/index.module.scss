@@ -2,15 +2,13 @@
 
 /* 二级页返回键（2026-10-23 补）：H5 的 TabRouter 不渲染原生导航栏，
    页内没有返回控件时用户会走进死路。
-   ⚠️ 高度必须用 rpx（$button-height-md = 80rpx）：h5 的 pxtransform baseFontSize=37.5，
-      写 px 会被当设计像素换算，点击区凭空小一半且肉眼看不出来。 */
+   ⚠️ 小写 px 会被 pxtransform 换算成设计像素；要实尺寸请写大写 PX（跳过换算）。 */
 .backButton {
-  // 2026-11-04：80rpx（375 下 40px）差 4px；视觉不变，上下各外扩 4rpx
-  @include hit-expand(0, 4rpx);
+  // 2026-11-21：不再透明外扩；320 下 80rpx 只有 34px，改实尺寸 44PX
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  min-height: $button-height-md;
+  min-height: 44PX;
   margin-bottom: $spacing-xs;
   color: $color-text-secondary;
   cursor: pointer;
@@ -312,7 +310,9 @@
 
 .entryInput {
   flex: 1;
-  height: 88rpx;
+  /* 2026-11-21：320 下 88rpx 只有 37.5px，改实尺寸 44PX */
+  height: 44PX;
+  min-height: 44PX;
   padding: 0 $spacing-sm;
   border-radius: $radius-button;
   background: $color-bg-card;
@@ -321,10 +321,18 @@
   box-sizing: border-box;
 }
 
+/* Taro Input 真正可点的是内部 input.weui-input */
+.entryInput :global(.weui-input) {
+  height: 44PX;
+  min-height: 44PX;
+}
+
 .entryCatBtn {
   @include button-reset;
   width: auto; //覆盖 taro-button-core 默认 width:100%，否则挤掉输入框
-  height: 88rpx;
+  /* 2026-11-21：320 下 88rpx 只有 38px，改实尺寸 44PX */
+  height: 44PX;
+  min-height: 44PX;
   padding: 0 $spacing-lg;
   border-radius: $radius-button;
   /* 浅橙底 #fff1e9 + 品牌深色文字 = 4.69:1（--brand-soft 的 #ffa06b 只有 2.6:1）。 */
