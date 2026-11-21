@@ -1535,7 +1535,6 @@ const zh = {
   'sync.key.user-city': '所在城市',
   'sync.key.collectionStore': '收藏库',
   'sync.key.usage-voice': '语音用量',
-  'sync.key.briefingChatLog': '晨报对话',
   'sync.key.aiAssistantLog': '助手对话',
   'sync.key.brand-theme': '主题',
   'sync.key.app-lang': '语言',

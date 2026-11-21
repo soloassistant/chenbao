@@ -50,7 +50,6 @@ export const SYNC_KEYS = [
   'collectionStore',  // 收藏库（收件箱确认入库）
   'usage-voice',      // 语音用量月度计数
   'feature-usage',    // 功能记账：按天聚合的各功能真实调用次数（2026-10-24）
-  'briefingChatLog',  // 晨报 AI 对话（限长 60）
   'aiAssistantLog',   // 悬浮球 AI 对话（限长 60）
   'brand-theme',      // 主题
   'app-lang',         // 语言
@@ -136,7 +135,6 @@ const REMOVE_PLACEHOLDER: Record<string, unknown> = {
   learnStore: [],
   'ai-memory': [],
   collectionStore: [],
-  briefingChatLog: [],
   aiAssistantLog: [],
   sportRuns: [],
   'mb_news_blocklist': [],

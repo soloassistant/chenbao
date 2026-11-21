@@ -1463,7 +1463,6 @@ export const en: Record<LangKey, string> = {
   'sync.key.user-city': 'City',
   'sync.key.collectionStore': 'Collections',
   'sync.key.usage-voice': 'Voice usage',
-  'sync.key.briefingChatLog': 'Briefing chat',
   'sync.key.aiAssistantLog': 'Assistant chat',
   'sync.key.brand-theme': 'Theme',
   'sync.key.app-lang': 'Language',

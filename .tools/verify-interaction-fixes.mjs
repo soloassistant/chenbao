@@ -963,5 +963,15 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     mine.includes("t('mine.feedback')") && mine.includes('setFbOpen(true)'));
 }
 
+/* M44（2026-11-22）：同步键不得留死键。
+ * `briefingChatLog` 曾只存在于声明+默认值+文案，全仓零读写，每次同步白传空数组。 */
+{
+  const sync = read('src/services/cloudSync.ts');
+  ok('M44a 死同步键 briefingChatLog 已删除', !sync.includes('briefingChatLog'));
+  const all = ['src/store/language.ts', 'src/store/language.en.ts', 'src/pages/briefing/index.tsx']
+    .map((f) => read(f)).join('\n');
+  ok('M44b 死键文案与读写点也清干净', !all.includes('briefingChatLog'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
