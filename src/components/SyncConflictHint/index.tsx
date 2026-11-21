@@ -33,6 +33,17 @@ import styles from './index.module.scss';
  * 无障碍：只渲染文本、不写 role/aria-*（Taro 的 View/Text 不透传未知属性，
  * 详见 components/Splash 的 nativeProps 说明），读屏可直接获取文本。
  */
+/** 冲突按模块归类：45 个键平铺时用户不知道从哪下手，先按功能分组。
+ *  映射只影响展示，不影响裁决语义（裁决仍是 per-key）。 */
+function moduleOf(key: string): 'plan' | 'ledger' | 'shopping' | 'library' | 'learn' | 'settings' {
+  if (/^(dailyPlanStore|calendar)/.test(key)) return 'plan';
+  if (/^ledger/.test(key)) return 'ledger';
+  if (/^shopping/.test(key)) return 'shopping';
+  if (/^(collectionStore|browseHistory|news|hotspot)/.test(key)) return 'library';
+  if (/^(learn|question|mock|paper)/.test(key)) return 'learn';
+  return 'settings';
+}
+
 function SyncConflictHint() {
   const t = useT();
   const [conflicts, setConflicts] = useState<SyncConflict[]>(() => getSyncConflicts());
@@ -64,6 +75,12 @@ function SyncConflictHint() {
       Taro.showToast({ title: t('syncConflict.failed'), icon: 'none' });
     }
   };
+
+  const grouped = conflicts.reduce<Record<string, SyncConflict[]>>((acc, c) => {
+    const g = moduleOf(c.key);
+    (acc[g] = acc[g] || []).push(c);
+    return acc;
+  }, {});
 
   const handleResolveAll = async () => {
     // 45 个键换设备时可能一次冒出十几条；逐条点不现实。
@@ -127,7 +144,10 @@ function SyncConflictHint() {
           </Text>
         </>
       )}
-      {conflicts.map((c) => (
+      {Object.entries(grouped).map(([group, list]) => (
+        <View key={group}>
+          <Text className={styles.group}>{t(`syncConflict.group.${group}` as LangKey)} · {list.length}</Text>
+          {list.map((c) => (
         <View className={styles.item} key={c.key}>
           <Text className={styles.itemLabel}>{t(`sync.key.${c.key}` as LangKey)}</Text>
           <View className={styles.itemActions}>
@@ -140,6 +160,8 @@ function SyncConflictHint() {
               {t('syncConflict.takeRemote')}
             </Text>
           </View>
+        </View>
+          ))}
         </View>
       ))}
     </View>

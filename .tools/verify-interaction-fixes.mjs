@@ -947,5 +947,21 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     src.includes('function normalize') && /screenContent[\s\S]*normalize\(text\)/.test(src));
 }
 
+/* M43（2026-11-22）：冲突按模块聚合 + 反馈入口确有出口。
+ * 聚合只影响展示，裁决仍 per-key；反馈入口曾经被误判为「不存在」，这里锁死。 */
+{
+  const hint = read('src/components/SyncConflictHint/index.tsx');
+  ok('M43a 冲突按模块分组渲染（平铺 45 键用户无从下手）',
+    hint.includes('function moduleOf') && hint.includes('Object.entries(grouped)'));
+  const zh = read('src/store/language.ts');
+  ok('M43b 六个模块分组文案中英齐全',
+    ['plan', 'ledger', 'shopping', 'library', 'learn', 'settings'].every(
+      (g) => zh.includes(`'syncConflict.group.${g}':`)
+    ));
+  const mine = read('src/pages/mine/index.tsx');
+  ok('M43c 「我的」页反馈入口可达（打开弹层，不是死链）',
+    mine.includes("t('mine.feedback')") && mine.includes('setFbOpen(true)'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

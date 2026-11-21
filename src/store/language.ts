@@ -1493,6 +1493,12 @@ const zh = {
   /* ---- 同步冲突（cloudSync「新者赢」不再静默覆盖，2026-10-19）---- */
   'syncConflict.title': '数据同步冲突',
   'syncConflict.desc': '另一台设备也修改过以下数据，本机有尚未上传的修改。请逐条选择保留哪一份；未选择前两端数据都不会被覆盖，该条目的同步会暂停。',
+  'syncConflict.group.plan': '日程与待办',
+  'syncConflict.group.ledger': '记账',
+  'syncConflict.group.shopping': '购物清单',
+  'syncConflict.group.library': '收藏与资讯',
+  'syncConflict.group.learn': '学习与题库',
+  'syncConflict.group.settings': '设置与偏好',
   'syncConflict.resolveAll': '全部以较新者为准',
   'syncConflict.toastAll': '已按较新版本处理',
   'syncConflict.keepLocal': '保留本机',

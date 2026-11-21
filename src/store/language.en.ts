@@ -1421,6 +1421,12 @@ export const en: Record<LangKey, string> = {
   /* ---- Sync conflicts (cloudSync "newest wins" no longer overwrites silently, 2026-10-19) ---- */
   'syncConflict.title': 'Data sync conflict',
   'syncConflict.desc': 'Another device also modified the data below, and this device has changes not yet uploaded. Choose which copy to keep for each item; until you choose, neither copy is overwritten and that item pauses syncing.',
+  'syncConflict.group.plan': 'Schedule & to-dos',
+  'syncConflict.group.ledger': 'Ledger',
+  'syncConflict.group.shopping': 'Shopping',
+  'syncConflict.group.library': 'Saved & news',
+  'syncConflict.group.learn': 'Learning',
+  'syncConflict.group.settings': 'Settings',
   'syncConflict.resolveAll': 'Use the newer for all',
   'syncConflict.toastAll': 'Resolved with newer versions',
   'syncConflict.keepLocal': 'Keep this device',
