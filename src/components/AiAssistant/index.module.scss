@@ -281,8 +281,9 @@
 
 .input {
   flex: 1;
-  /* 2026-11-03：与 44px 触控下限对齐（80rpx=41.6px 会裁掉 44px 的内层 input）。 */
-  height: 88rpx;
+  /* 2026-11-21：320 下 88rpx 只有 37.5px，改实尺寸 44PX */
+  height: 44PX;
+  min-height: 44PX;
   background: $color-bg-page;
   border-radius: $radius-button;
   padding: 0 $spacing-lg;
@@ -294,10 +295,18 @@
   }
 }
 
+/* Taro Input 真正可点的是内部 input.weui-input */
+.input :global(.weui-input) {
+  height: 44PX;
+  min-height: 44PX;
+}
+
 .sendBtn {
   flex-shrink: 0;
   width: 140rpx;
-  height: 88rpx;
+  /* 2026-11-21：320 下 88rpx 只有 38px，改实尺寸 44PX */
+  height: 44PX;
+  min-height: 44PX;
   display: flex;
   align-items: center;
   justify-content: center;
