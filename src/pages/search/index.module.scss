@@ -163,3 +163,27 @@
     background: $color-bg-hover;
   }
 }
+
+// 深色（2026-11-21）：其余颜色都走全局 token，这里只补三处浅色专用的实体控件外观。
+.page:global(.theme-dark) {
+  // 搜索框原来是白卡底、无描边；深色下会与页面底糊成一片，且输入值是浏览器默认黑字
+  .searchInput {
+    background: var(--dm-input-bg);
+    border: 1rpx solid var(--dm-input-border);
+    color: var(--dm-text-primary);
+  }
+
+  // Taro H5 的真实输入元素在内部，颜色不会从 wrapper 一定继承下来
+  .searchInput :global(.weui-input) {
+    color: var(--dm-text-primary);
+  }
+
+  // 范围切换是分段控件：浅色靠白卡区分，深色卡片与页底只差 1.3，需要一条 3:1 的边
+  .scopeTab {
+    border: 1rpx solid var(--dm-border);
+  }
+
+  .scopeTabActive {
+    border-color: var(--brand-strong);
+  }
+}
