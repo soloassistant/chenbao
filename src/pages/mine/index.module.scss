@@ -43,6 +43,11 @@
   flex-shrink: 0;
 }
 
+// 深色模式下 H5 按钮默认浅灰底会让「换头像」像一块白贴片
+.page:global(.theme-dark) .avatarBtn {
+  background: transparent;
+}
+
 .avatarImg {
   width: 96rpx;
   height: 96rpx;
@@ -135,7 +140,7 @@
   // 最亮档只有 **2.07:1**，卡片里 14 处文字（标题/权益说明/价格/锁价提示）全在 1.1–2.6 之间 ——
   // 这是付费转化卡片，等于把「值多少钱」写得看不清。改成品牌深色后白字 5.26:1（四套主题均 ≥5.1）。
   // 渐变改平色：现有主题变量里没有比 strong 更深的一档，硬拼第二个停靠色会在非暖色主题下串色。
-  background: var(--brand-strong, #{$color-primary-strong});
+  background: var(--dm-brand-solid, var(--brand-strong, #{$color-primary-strong}));
   border-radius: $radius-lg;
   padding: $spacing-lg;
   margin-bottom: $spacing-md;
@@ -284,8 +289,10 @@
 
 .subButton {
   @include button-reset;
-  // 2026-11-19：实测 104×40，差 4px；视觉不变，上下各外扩 4rpx
-  @include hit-expand(0, 4rpx);
+  // 2026-11-19：实测 104×40（375）/ 89×34（320）；视觉不变，纵向补到 44px
+  @include hit-expand-min(44PX);
+  // Taro 默认 taro-button-core{overflow:hidden} 会把外扩的 ::before 裁掉 —— 必须放开
+  overflow: visible;
   width: auto; // 覆盖 taro-button-core 默认 width:100%
   height: $button-height-md;
   padding: 0 $spacing-xl;
@@ -562,7 +569,7 @@
   font-size: $font-size-md;
   // 5.24:1（原 #E5484D = 3.91:1，白底不达标）。这是「清空全部记忆 / 删除全部数据」的
   // 破坏性操作文案，**因而不许用浅红**；但仍要一眼看出是危险动作，所以压深不换色系。
-  color: #cc2e34;
+  color: var(--dm-danger-text, #cc2e34);
 }
 
 .arrow {
@@ -1418,7 +1425,7 @@
   width: auto; // 覆盖 taro-button-core 默认 width:100%
   padding: $spacing-xs $spacing-lg;
   border-radius: $radius-round;
-  background: var(--brand-strong, #{$color-primary-strong}); // 白字 5.26:1
+  background: var(--dm-brand-solid, var(--brand-strong, #{$color-primary-strong})); // 白字 5.26:1
   color: $color-text-white;
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
@@ -1504,7 +1511,7 @@
    同属「必须看清的警示文字」，不许用浅红。 */
 .fbError {
   font-size: $font-size-sm;
-  color: #cc2e34;
+  color: var(--dm-danger-text, #cc2e34);
 }
 
 /* ===== 功能宫格（2026-10-25）：高频功能一等入口 =====
@@ -1587,9 +1594,9 @@
    深底上 5.9:1（该色值已由 D4 计算验证）。 */
 .promoEntry {
   display: block;
-  // 2026-11-19：实测一行 19px 高，远低于 44px；视觉不变，上下各外扩 25rpx（≈12.5px）
+  // 2026-11-19：实测一行 19px（375）/ 16px（320）；视觉不变，纵向补到 44px
   // 上文是说明文字（非交互），纵向扩展不会抢别的控件
-  @include hit-expand(0, 25rpx);
+  @include hit-expand-min(44PX);
   margin-top: $spacing-sm;
   font-size: $font-size-sm;
   color: rgba(255, 255, 255, 0.92);

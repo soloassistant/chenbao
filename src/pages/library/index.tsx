@@ -17,7 +17,7 @@ import { getHotspotMeta, refreshHotspotPayload, apiAiNewsFilter, apiGetAffinity,
 import { pressableProps } from '@/utils/a11y';
 import { invoke } from '@/services/dataSource';
 import { useUserStore } from '@/store/user';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { formatDate, fromNow } from '@/utils/date';
 import { openExternalPage } from '@/utils/externalLink';
 import { logActivity } from '@/utils/activityLog';
@@ -206,6 +206,7 @@ function LibraryPage() {
   const t = useT();
   const { lang } = useLanguageStore();
   const theme = useThemeStore((s) => s.theme);
+  const { resolved } = useThemeMode();
   const [items, setItems] = useState<CollectionItem[]>([]);
   const [news, setNews] = useState<HotspotNews[]>([]);
   const [hotMeta, setHotMeta] = useState<ReturnType<typeof getHotspotMeta>>(null);
@@ -1364,7 +1365,7 @@ function LibraryPage() {
   );
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={`${styles.page} ${themeModeClass(resolved)}`} style={brandVars(theme, resolved)}>
       {/* 云端不可用、已回退本地/演示实现时如实提示（诚实性，来源 briefing.degraded）
           页面粒度：只关心本页的 webSearch（视频/搜索/AI 精选）与 getHotspot ——
           别的页面的降级不该串到这里（2026-10-30 实测串过一次，把 412 条真实 RSS 说成演示数据） */}
@@ -1381,6 +1382,7 @@ function LibraryPage() {
           className={styles.searchInput}
           value={keyword}
           placeholder={t('library.searchPlaceholder')}
+          placeholderStyle={resolved === 'dark' ? 'color: #9a8f82' : undefined}
           confirmType='search'
           // 2026-11-03：H5 键盘语义 —— 搜索键 + 搜索图标（小程序忽略 nativeProps）
           nativeProps={{ inputMode: 'search', enterKeyHint: 'search' }}
@@ -1519,6 +1521,7 @@ function LibraryPage() {
                     className={styles.aiCustomInput}
                     value={aiCustom}
                     placeholder={t('library.aiCustomPlaceholder')}
+                    placeholderStyle={resolved === 'dark' ? 'color: #9a8f82' : undefined}
                     onInput={(e) => setAiCustom(e.detail.value)}
                   />
                   <Text className={styles.aiSaveBtn} onClick={saveInterests}>

@@ -228,13 +228,17 @@ export function getHotspotVideos(): HotspotNews[] {
   return (hotspotCache && hotspotCache.payload && hotspotCache.payload.videos) || []
 }
 
-/** 拉一份热点 JSON 并归一。失败/结构不对返回 null（调用方换下一个源）。 */
+/** 拉一份热点 JSON 并归一。网络/结构失败返回 null；**成功但空列表返回 items:[]**。
+ *
+ *  2026-11-20：以前 `items.length === 0` 也返回 null，于是「源正常但没有内容」与
+ *  「源全挂了」在下游无法区分 —— 热点页会把空列表当成云端故障，亮出
+ *  「云端功能暂不可用，当前为本地演示数据」并塞入 mock。空与失败必须是两种状态。 */
 async function fetchHotspotJson(url: string): Promise<HotspotPayload | null> {
   try {
     const res = await fetch(url)
     if (!res.ok) return null
     const payload = await res.json()
-    if (!Array.isArray(payload.items) || payload.items.length === 0) return null
+    if (!Array.isArray(payload.items)) return null
     // 信任边界：服务端聚合 JSON 未逐字段校验，在此收口为 HotspotNews。
     // ⚠️ 必须逐条归一 tags/summary（2026-10-24 审计）：资讯库页直接
     // `item.tags.some(...)` / `item.tags.forEach(...)`，任一条目缺 tags 就是
@@ -275,7 +279,7 @@ async function fetchHotspotJson(url: string): Promise<HotspotPayload | null> {
  * 只有烘焙副本过期（发布后未再构建）才付第 2 个（远端跨域）。 */
 async function loadHotspotPayload(): Promise<HotspotPayload | null> {
   const same = await fetchHotspotJson(SAME_ORIGIN_HOTSPOT_URL)
-  if (same) {
+  if (same && same.items.length) {
     const ts = same.updatedAt ? Date.parse(same.updatedAt) : NaN
     if (!Number.isFinite(ts) || Date.now() - ts < HOTSPOT_FRESH_MS) {
       // 同源这份够新鲜（或没有时间戳可判）⇒ 不用再问远端
@@ -283,12 +287,14 @@ async function loadHotspotPayload(): Promise<HotspotPayload | null> {
     }
   }
   const live = await fetchHotspotJson(LIVE_HOTSPOT_URL)
-  if (live) {
-    // 两份都有时间戳时取新的；同源无时间戳但内容可用时，优先同源（省跨域依赖）
-    if (!same || !same.updatedAt || !live.updatedAt) return live.updatedAt ? live : same
+  if (live && live.items.length) {
+    // 同源为空时直接被 live 取代；两份都有内容再比时间戳
+    if (!same || !same.items.length) return live
+    if (!same.updatedAt || !live.updatedAt) return live.updatedAt ? live : same
     return Date.parse(live.updatedAt) > Date.parse(same.updatedAt) ? live : same
   }
   if (same) return same
+  if (live) return live
   return fetchHotspotJson(LOCAL_API_HOTSPOT_URL)
 }
 

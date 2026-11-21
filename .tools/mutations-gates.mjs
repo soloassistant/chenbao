@@ -153,7 +153,7 @@ export default [
     label: '付费卡底色改回浅橙渐变（卡内 14 处文字掉到 1.1–2.6）',
     file: 'src/pages/mine/index.module.scss',
     // 锚点必须带下一行 border-radius：只写 background 那行会同时命中 .fbSubmit（本轮新增的反馈提交按钮）
-    from: '  background: var(--brand-strong, #{$color-primary-strong});\n  border-radius: $radius-lg;',
+    from: '  background: var(--dm-brand-solid, var(--brand-strong, #{$color-primary-strong}));\n  border-radius: $radius-lg;',
     to: '  background: $color-sub-gradient;\n  border-radius: $radius-lg;',
     cmd: 'node .tools/verify-contrast-strong.mjs'
   },
@@ -225,7 +225,7 @@ export default [
     // 哪条变红：J19 .dangerText 白底 ≥4.5。
     label: '删除类文案改回 #E5484D（白底 3.91）',
     file: 'src/pages/mine/index.module.scss',
-    from: '所以压深不换色系。\n  color: #cc2e34;',
+    from: '所以压深不换色系。\n  color: var(--dm-danger-text, #cc2e34);',
     to: '所以压深不换色系。\n  color: #E5484D;',
     cmd: 'node .tools/verify-contrast-strong.mjs'
   },

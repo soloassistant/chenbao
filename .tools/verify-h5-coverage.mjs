@@ -68,6 +68,9 @@ const DEVICE_ONLY_KEYS = {
   'sxm-privacy-consent': '合规同意（设备级）',
   'location-cross-border-consent': '出境定位同意（合规，设备级）',
   'onboarded-v2': '新手引导状态（设备级）',
+  // 2026-11-20：外观显示模式（跟随系统/浅色/深色）是设备级偏好 ——
+  //   同一账号在手机与桌面可能想要不同明暗；换设备时按本机系统重新解析更合理。
+  'theme-mode': '外观显示模式（设备级偏好，跟随本机系统；跨设备同步会覆盖各端环境差异）',
   'burst-banner-dismissed': '弹窗关闭状态（设备级）',
   'sxm-phone-bind-done': '绑定引导状态（设备级）',
   'sxm-phone-bind-dismissed': '绑定引导状态（设备级）',

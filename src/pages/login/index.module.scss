@@ -95,9 +95,9 @@
 }
 
 .tab {
-  // 2026-11-19：实测 56×32（375），低于 44px 下限；视觉不变，上下各外扩 12rpx
-  // 纵向扩，不与同一行的相邻 tab 重叠
-  @include hit-expand(0, 12rpx);
+  // 2026-11-19：实测 56×32（375）/ 72×39（320），低于 44px 下限；视觉不变，纵向补到 44
+  // （rpx 会随视口缩水，320 下 12rpx 只剩 5.1px，故改用固定像素下限）
+  @include hit-expand-min(44PX);
   padding: $spacing-sm $spacing-md;
   border-radius: $radius-button;
   transition: all $transition-fast;
@@ -172,8 +172,8 @@
 
 .dialBtn {
   flex-shrink: 0;
-  // 2026-11-19：实测 66×40，差 4px；视觉不变，上下各外扩 4rpx
-  @include hit-expand(0, 4rpx);
+  // 2026-11-19：实测 66×40（375）/ 57×34（320）；视觉不变，纵向补到 44px
+  @include hit-expand-min(44PX);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -207,8 +207,8 @@
 
 .codeBtn {
   flex-shrink: 0;
-  // 2026-11-19：实测 84×40，差 4px；视觉不变，上下各外扩 4rpx
-  @include hit-expand(0, 4rpx);
+  // 2026-11-19：实测 84×40（375）/ 72×34（320）；视觉不变，纵向补到 44px
+  @include hit-expand-min(44PX);
   margin-left: $spacing-sm;
   padding: 0 $spacing-md;
   height: $button-height-md;
