@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import classnames from 'classnames';
 import { View, Text, Input, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { apiGetBriefing, apiGetLibrary, apiNewsSearch } from '@/services/api';
 import { formatEventTime } from '@/utils/date';
 import { openExternalPage } from '@/utils/externalLink';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import type { Briefing, CollectionItem, HotspotNews } from '@/types';
 import { useT, useLanguageStore } from '@/store/language';
 import styles from './index.module.scss';
@@ -22,6 +23,7 @@ function SearchPage() {
   const t = useT();
   const lang = useLanguageStore((s) => s.lang);
   const { theme } = useThemeStore();
+  const { resolved } = useThemeMode();
   const [keyword, setKeyword] = useState('');
   /**
    * 搜索范围（2026-10-24 新增）：本站 = 日程/待办/收藏纯本地过滤；
@@ -152,7 +154,7 @@ function SearchPage() {
   );
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.searchBar}>
         <View className={styles.backButton} onClick={handleBack}>
           <Text className={styles.backIcon}>‹</Text>

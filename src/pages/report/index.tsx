@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import classnames from 'classnames';
 import { View, Text } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import { useT } from '@/store/language';
 import { apiGetBriefing } from '@/services/api';
 import { computeValueReport } from '@/utils/valueReport';
@@ -25,6 +26,7 @@ import styles from '../mine/index.module.scss';
  */
 function ReportPage() {
   const { theme } = useThemeStore();
+  const { resolved } = useThemeMode();
   const t = useT();
   const [archive, setArchive] = useState<BriefingArchiveEntry[]>(() => listBriefingArchive());
   const [openIdx, setOpenIdx] = useState<number>(-1);
@@ -98,7 +100,7 @@ function ReportPage() {
     );
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <SubPageHeader />
       {/* ===== A 价值周报 ===== */}
       <View className={styles.card}>

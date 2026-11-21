@@ -520,6 +520,8 @@
   align-items: center;
   justify-content: space-between;
   gap: $spacing-md;
+  // 2026-11-21：320 下实测 40~41px 高，低于 44 触控下限，抬到 44PX 实尺寸
+  min-height: 44PX;
   padding: $spacing-md 0;
   border-bottom: 1rpx solid $color-divider;
 
@@ -544,9 +546,40 @@
 }
 
 .input {
+  // 2026-11-21：320 下原生输入框实测 146×18，低于 44 触控下限，抬到 44PX 实尺寸
+  min-height: 44PX;
   text-align: right;
   font-size: $font-size-md;
   color: $color-text-primary;
+}
+
+.page :global(input.weui-input) {
+  height: 44PX;
+}
+
+/* 2026-11-21：320 下开关实测 52×32，低于 44 触控下限。
+   开关本体盒抬到 44 高（实尺寸，不做透明外扩），轨道仍按 32 高绘制：
+   上下 padding 6PX + background-clip: content-box，视觉不变但命中盒是 44。 */
+.page :global(taro-switch-core) {
+  height: 44PX;
+}
+
+.page :global(input.weui-switch) {
+  height: 44PX;
+  padding: 6PX 0;
+  box-sizing: border-box;
+  border-radius: 21PX;
+  border-color: transparent !important;
+  background-clip: content-box;
+}
+
+.page :global(input.weui-switch::before),
+.page :global(input.weui-switch::after) {
+  top: 6PX;
+}
+
+.page :global(input.weui-switch:checked::after) {
+  transform: translateX(20PX);
 }
 
 .valueText {
@@ -643,10 +676,9 @@
 }
 
 .scaleChip {
-  /* 2026-11-03：字号/语言 chip 实测仅 29.1px 高，低于 44px 触控下限。
-     高度与最小宽度都提到 88rpx（390 视口 ≈45.8px）。 */
-  min-width: 88rpx;
-  height: 88rpx;
+  /* 2026-11-21：88rpx 在 320 视口缩到 38px，低于 44px 触控下限，改用 CSS px 实尺寸。 */
+  min-width: 44PX;
+  height: 44PX;
   padding: 0 $spacing-sm;
   display: flex;
   align-items: center;

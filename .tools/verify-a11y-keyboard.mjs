@@ -136,9 +136,9 @@ function ruleBlocks(src, sel) {
 const TOUCH = [
   // 2026-11-19：这 8 个控件用 hit-expand-min(44px) —— rpx 外扩在 320 视口会缩水
   //   （4rpx≈1.7px，34px 高的按钮只到 38px），命中下限必须锚在 CSS px。
-  ['src/pages/login/index.module.scss', '.tab', 'hitmin', '登录通道页签'],
-  ['src/pages/login/index.module.scss', '.dialBtn', 'hitmin', '登录一键拨号'],
-  ['src/pages/login/index.module.scss', '.codeBtn', 'hitmin', '登录获取验证码'],
+  ['src/pages/login/index.module.scss', '.tab', 'minpx', '登录通道页签'],
+  ['src/pages/login/index.module.scss', '.dialBtn', 'minpx', '登录一键拨号'],
+  ['src/pages/login/index.module.scss', '.codeBtn', 'minpx', '登录获取验证码'],
   ['src/pages/mine/index.module.scss', '.subButton', 'hitminv', '会员订阅按钮'],
   ['src/pages/mine/index.module.scss', '.promoEntry', 'hitmin', '会员促销码入口'],
   ['src/pages/calendar/index.module.scss', '.syncButton', 'minpx', '日历导出/同步'],
@@ -158,16 +158,16 @@ const TOUCH = [
   ['src/pages/trade/index.module.scss', '.toolPanel .segBtn', 'minpx', '行情计算方向'],
   ['src/pages/inbox/index.module.scss', '.modeTab', 'hit', '收件箱模式页签'],
   ['src/pages/inbox/index.module.scss', '.extractButton', 'hit', '收件箱提取按钮'],
-  ['src/pages/learn/index.module.scss', '.langTab', 'hit', '学习语言页签'],
-  ['src/pages/learn/index.module.scss', '.backButton', 'hit', '学习返回条'],
-  ['src/pages/sxm/index.module.scss', '.tab', 'hit', '省心买页签'],
+  ['src/pages/learn/index.module.scss', '.langTab', 'minpx', '学习语言页签'],
+  ['src/pages/learn/index.module.scss', '.backButton', 'minpx', '学习返回条'],
+  ['src/pages/sxm/index.module.scss', '.tab', 'minpx', '省心买页签'],
   // 2026-11-21：.avatarEdit 是 avatarBtn 内的纯文字标签（无 onClick），不再单独计入控件；
   // 旧外扩与 featureTile 相交，已改由外层按钮承担热区。
-  ['src/pages/ledger/index.module.scss', '.backButton', 'hit', '记账返回条'],
+  ['src/pages/ledger/index.module.scss', '.backButton', 'minpx', '记账返回条'],
   ['src/pages/shopping/index.module.scss', '.backButton', 'hit', '购物返回条'],
-  ['src/pages/search/index.module.scss', '.backButton', 'hit', '搜索返回条'],
-  ['src/pages/sport/index.module.scss', '.backRow', 'hit', '运动返回条'],
-  ['src/pages/notify/index.module.scss', '.back', 'hit', '通知返回条'],
+  ['src/pages/search/index.module.scss', '.backButton', 'minpx', '搜索返回条'],
+  ['src/pages/sport/index.module.scss', '.backRow', 'minpx', '运动返回条'],
+  ['src/pages/notify/index.module.scss', '.back', 'boxpx', '通知返回条'],
 ];
 const touchBad = [];
 for (const [file, sel, mode, why] of TOUCH) {
@@ -677,3 +677,4 @@ console.log('\n键盘可达性门禁');
 for (const r of rows) console.log(`  ${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.ok ? '' : '  → ' + r.detail}`);
 console.log(`\n${fail === 0 ? `PASS ${pass} / FAIL 0（共 ${rows.length} 条）` : `PASS ${pass} / FAIL ${fail}（共 ${rows.length} 条）`}`);
 process.exit(fail === 0 ? 0 : 1);
+

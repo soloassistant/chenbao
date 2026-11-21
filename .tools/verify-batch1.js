@@ -121,8 +121,12 @@ for (const p of PAGES) {
   const block = scss.match(/^\.backButton\s*\{([\s\S]*?)\n\}/m);
   const body = block ? block[1] : '';
 
-  // A-5 高度必须用 $button-height-md（80rpx）——不允许 px（pxtransform 会把 px 当设计像素，点击区缩半）
-  assert(`A/${p.name}/scss/heightToken`, has(body, 'min-height: $button-height-md;'));
+  // A-5 高度必须用 $button-height-md（80rpx）或实尺寸 44PX（320 下 rpx 会缩水）——
+  //     不允许小写 px（pxtransform 会把 px 当设计像素，点击区缩半）
+  assert(
+    `A/${p.name}/scss/heightToken`,
+    has(body, 'min-height: $button-height-md;') || /min-height:\s*44PX/.test(body)
+  );
   assert(`A/${p.name}/scss/noPx`, !/(?:min-)?height:\s*\d+(?:\.\d+)?px/.test(body));
 
   // A-6 flex 行

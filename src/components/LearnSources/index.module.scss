@@ -26,3 +26,10 @@
   padding: 4rpx 16rpx; border-radius: $radius-tier-sm; background: $color-bg-page;
   color: $color-text-secondary; font-size: $font-size-xs; line-height: $line-height-normal;
 }
+
+// 深色（2026-11-21，仅学习页使用本组件）：徽标的靛蓝字 #4338ca 是照 12% 浅靛蓝底调的，
+// 深色下底变暗、字反而更深，实测 ≈1.6:1，换成浅靛蓝字 + 高透明底。
+:global(.theme-dark) .badge {
+  background: rgba(165, 180, 252, 0.18);
+  color: #c7d2fe;
+}

@@ -555,7 +555,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 88rpx; /* ≥44px 点击区（390 视口 45.8px） */
+  min-height: 44PX; /* 88rpx 在 320 视口只有 38px；命中下限锚 CSS px */
   padding: $spacing-sm $spacing-md;
   margin-bottom: $spacing-sm;
   background: $color-bg-card;

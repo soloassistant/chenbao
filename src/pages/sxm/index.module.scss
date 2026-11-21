@@ -44,9 +44,9 @@
 .tab,
 .tabActive {
   flex: 1;
-  // 2026-11-04：64rpx（375 下 32px）低于 44px；视觉不变，上下各外扩 12rpx
-  @include hit-expand(0, 12rpx);
-  height: $button-height-sm;
+  // 2026-11-21：不再透明外扩；320 下 64rpx 只剩 27px，改实尺寸 44PX
+  height: 44PX;
+  min-height: 44PX;
   border-radius: $radius-button;
   display: flex;
   align-items: center;
@@ -102,7 +102,9 @@
 }
 
 .input {
-  height: $button-height-md;
+  /* 2026-11-21：320 下 80rpx 只有 34px，改实尺寸 44PX */
+  height: 44PX;
+  min-height: 44PX;
   background: $color-bg-card;
   border-radius: $radius-button;
   padding: 0 $spacing-lg;
@@ -111,6 +113,12 @@
   border: 2rpx solid $color-border;
   box-sizing: border-box;
   width: 100%;
+}
+
+/* Taro Input 真正可点的是内部 input.weui-input */
+.input :global(.weui-input) {
+  height: 44PX;
+  min-height: 44PX;
 }
 
 .chipBlock {
@@ -135,6 +143,12 @@
   background: $color-bg-card;
   border: 2rpx solid $color-border;
   border-radius: $radius-round;
+  /* 2026-11-21：320 下 43×34 不足 44，改实尺寸（相邻 chip 间距不变） */
+  min-width: 44PX;
+  min-height: 44PX;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
   &:active {
     opacity: 0.85;
@@ -414,4 +428,51 @@
   font-size: $font-size-sm;
   color: $color-text-secondary;
   line-height: $line-height-normal;
+}
+
+// 深色（2026-11-21）：其余颜色走全局 token，以下四处是「白底/浅底专用」取值。
+.page:global(.theme-dark) {
+  // 顶部渐变原本是 18% 品牌软色 → 页面底：软色带透明，会透出 Taro 页面容器的白底，
+  // 深色下整块变成浅粉（实测 #ffe7de），标题几乎读不出。深色改用不透明的 header→page。
+  background: linear-gradient(180deg, var(--dm-bg-header, #241a14) 0%, var(--dm-bg-page, #16130f) 360rpx);
+
+  // 选中分栏：深色下 --brand-strong 是 onDark 浅橙，白字压它只有 1.7:1；
+  // 同色描边还会以 1:1 计入边界，一并收掉（背景在 border-box 下铺满）
+  .tabActive {
+    background: var(--dm-brand-solid, var(--brand-strong));
+    border-color: transparent;
+  }
+
+  // 平台徽标：--brand 原橙（#ff7a45）压 18% 品牌软底只有 ~3.6:1，换 onDark
+  .pfBadge {
+    color: var(--brand-strong);
+  }
+
+  // 白字按钮：--brand 原橙白字 2.59:1，换实心变体
+  .pfAction {
+    background: var(--dm-brand-solid, var(--brand));
+  }
+
+  // 未填关键词时动作按钮为禁用态：浅灰底 #c9cdd4 + 白字在暗卡上是一块发亮白斑
+  // （实测 1.59:1）。禁用态虽豁免，但「复制搜索链接」要能看清是哪个按钮。
+  .pfActionDisabled {
+    background: var(--dm-bg-hover);
+    opacity: 1;
+
+    .pfActionText {
+      color: var(--dm-text-tertiary);
+    }
+  }
+
+  // 警示卡/比价声明写死浅杏底 #fff7e8，暗页上整块发亮（secondary 字压它 ≈1.7:1）
+  .warnCard,
+  .disclaimer {
+    background: rgba(255, 125, 0, 0.12);
+  }
+
+  // 结论标签写死浅蓝底 #f0f5ff + 深蓝字，深色下把整块换成高透明层
+  .verdictPick {
+    background: rgba(91, 141, 239, 0.16);
+    color: var(--dm-secondary-strong);
+  }
 }

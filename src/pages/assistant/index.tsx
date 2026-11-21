@@ -1,6 +1,8 @@
+import classnames from 'classnames';
 import { View } from '@tarojs/components';
 import AiAssistant from '@/components/AiAssistant';
 import SubPageHeader from '@/components/SubPageHeader';
+import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import styles from './index.module.scss';
 
 /**
@@ -17,8 +19,11 @@ import styles from './index.module.scss';
  *   它们本质是「用自然语言下命令」的快捷方式，在对话框里直接打字同样能做到。
  */
 export default function AssistantPage() {
+  const theme = useThemeStore((s) => s.theme);
+  const { resolved } = useThemeMode();
+
   return (
-    <View className={styles.page}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <SubPageHeader />
       <AiAssistant embedded />
     </View>

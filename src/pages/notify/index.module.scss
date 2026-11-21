@@ -16,12 +16,16 @@
 }
 
 .back {
-  // 2026-11-04：实测 31×19（375）远低于 44px；视觉不变，透明外扩到 ≈47×47
-  @include hit-expand(16rpx, 28rpx);
+  // 2026-11-21：实测 27×16（320）远低于 44px；改实尺寸 44PX（不用透明外扩）
   display: inline-flex;
   align-items: center;
   gap: 4rpx;
   flex: 0 0 auto;
+  width: 44PX;
+  height: 44PX;
+  min-width: 44PX;
+  min-height: 44PX;
+  box-sizing: border-box;
   cursor: pointer;
 }
 
@@ -158,4 +162,13 @@
   font-size: $font-size-sm;
   text-align: center;
   color: $color-text-tertiary;
+}
+
+// 深色（2026-11-21）：本页其余颜色都走全局 token，挂 .theme-dark 即切换。
+// 唯一写死的是「晨报」徽标的浅橙底 $color-voice-bg(#fff3ec) —— 在暗卡上是一块
+// 发亮白斑，抢过标题；改用同色相低透明层，保留「晨报=橙」的识别。
+.page:global(.theme-dark) {
+  .badge_briefing {
+    background: rgba(255, 122, 69, 0.18);
+  }
 }
