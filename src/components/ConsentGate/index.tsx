@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, Button } from '@tarojs/components';
 import { useT, useLanguageStore } from '@/store/language';
 import { saveConsent } from '@/data/legal-consent';
@@ -25,10 +25,68 @@ export default function ConsentGate({ onAgree }: ConsentGateProps) {
   const t = useT();
   const lang = useLanguageStore((s) => s.lang);
   const [declined, setDeclined] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  // 遮罩是全屏的，但 background 元素仍在 Tab 序列里：把焦点约束在面板内，
+  // 初始落在第一个可操作项（不同意），避免键盘用户绕过同意直接激活遮罩后的页面。
+  useEffect(() => {
+    if (!isH5) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const list = () =>
+      Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'taro-button-core, button, [tabindex]:not([tabindex="-1"]), input, textarea, a[href]'
+        )
+      ).filter((el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden');
+    const timer = window.setTimeout(() => list()[0]?.focus(), 0);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const items = list();
+      if (!items.length) return;
+      e.preventDefault();
+      const cur = document.activeElement as HTMLElement | null;
+      let i = cur ? items.indexOf(cur) : -1;
+      if (i === -1) {
+        items[e.shiftKey ? items.length - 1 : 0].focus();
+        return;
+      }
+      i = e.shiftKey ? (i - 1 + items.length) % items.length : (i + 1) % items.length;
+      items[i].focus();
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      if (!panel.contains(e.target as Node)) list()[0]?.focus();
+    };
+    document.addEventListener('keydown', onKey, true);
+    document.addEventListener('focusin', onFocusIn, true);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('focusin', onFocusIn, true);
+    };
+  }, []);
 
   const handleAgree = () => {
     saveConsent();
     onAgree();
+    // 遮罩关闭后焦点不能留在 body：等遮罩真正卸载，再回到当前页第一个可操作项
+    const restoreFocus = (tries: number) => {
+      if (document.querySelector('[class*="consentMask"]') && tries < 20) {
+        window.setTimeout(() => restoreFocus(tries + 1), 30);
+        return;
+      }
+      const page = document.querySelector('.taro_page_show') as HTMLElement | null;
+      const first = page?.querySelector('[data-pressable]') as HTMLElement | null;
+      if (first) {
+        first.focus();
+        if (document.activeElement !== document.body) return;
+      }
+      if (page) {
+        page.setAttribute('tabindex', '-1');
+        page.focus();
+      }
+    };
+    window.setTimeout(() => restoreFocus(0), 30);
   };
   const handleDecline = () => setDeclined(true);
 
@@ -36,7 +94,7 @@ export default function ConsentGate({ onAgree }: ConsentGateProps) {
 
   return (
     <View className={styles.consentMask}>
-      <View className={styles.consentPanel}>
+      <View className={styles.consentPanel} ref={panelRef} role='dialog' aria-modal='true'>
         <Text className={styles.consentTitle}>{t('consent.title')}</Text>
         {declined ? (
           <View className={styles.consentDeclinedBox}>

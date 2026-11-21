@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { create } from 'zustand';
 import Taro from '@tarojs/taro';
 
@@ -10,6 +11,10 @@ export interface ThemePreset {
   soft: string;
   /** 深色（渐变终点/强调） */
   deep: string;
+  /** 深色模式下的品牌文字色（对 #16130f 底 ≥4.5:1） */
+  onDark: string;
+  /** 深色模式下的实心品牌底（压白字 ≥4.5:1） */
+  solid: string;
   /**
    * 同色系加深变体：用于「品牌色文字」与「白字品牌控件」。
    * 背景/大色块仍用 color（保留品牌识别），凡承载信息的小文字或
@@ -20,10 +25,10 @@ export interface ThemePreset {
 
 /** 界面主题预设：切换后通过 CSS 变量 --brand* 应用到各页面 */
 export const THEME_PRESETS: ThemePreset[] = [
-  { id: 'sunrise', name: '晨光橙', color: '#FF7A45', soft: '#FFF3EC', deep: '#E85D2A', strong: '#C7371A' },
-  { id: 'ocean', name: '天空蓝', color: '#5B8DEF', soft: '#EEF3FE', deep: '#3A6FD8', strong: '#3560B8' },
-  { id: 'forest', name: '森林绿', color: '#00B42A', soft: '#E8FFEA', deep: '#008A20', strong: '#00751C' },
-  { id: 'sakura', name: '樱花粉', color: '#F5669C', soft: '#FEEEF5', deep: '#D14B80', strong: '#C03A6E' }
+  { id: 'sunrise', name: '晨光橙', color: '#FF7A45', soft: '#FFF3EC', deep: '#E85D2A', strong: '#C7371A', onDark: '#FFB59A', solid: '#A82C13' },
+  { id: 'ocean', name: '天空蓝', color: '#5B8DEF', soft: '#EEF3FE', deep: '#3A6FD8', strong: '#3560B8', onDark: '#A8C4FF', solid: '#2F5BB0' },
+  { id: 'forest', name: '森林绿', color: '#00B42A', soft: '#E8FFEA', deep: '#008A20', strong: '#00751C', onDark: '#6BE38A', solid: '#006A17' },
+  { id: 'sakura', name: '樱花粉', color: '#F5669C', soft: '#FEEEF5', deep: '#D14B80', strong: '#C03A6E', onDark: '#FFA8C8', solid: '#A32E5C' }
 ];
 
 export const STORAGE_KEY = 'brand-theme';
@@ -57,11 +62,195 @@ try {
 }
 
 /** 生成页面根节点的 CSS 变量样式（各页面根 View 使用） */
-export function brandVars(theme: ThemePreset): React.CSSProperties {
+export function brandVars(theme: ThemePreset, resolved: ResolvedTheme = 'light'): React.CSSProperties {
+  if (resolved === 'dark') {
+    return {
+      '--brand': theme.color,
+      '--brand-soft': hexToRgba(theme.color, 0.18),
+      '--brand-deep': theme.onDark,
+      '--brand-strong': theme.onDark,
+      '--dm-brand-strong': theme.onDark,
+      '--dm-brand-solid': theme.solid
+    } as React.CSSProperties;
+  }
   return {
     '--brand': theme.color,
     '--brand-soft': theme.soft,
     '--brand-deep': theme.deep,
-    '--brand-strong': theme.strong
+    '--brand-strong': theme.strong,
+    '--dm-brand-strong': theme.strong
   } as React.CSSProperties;
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const v = hex.replace('#', '');
+  const n = parseInt(v.length === 3 ? v.split('').map((c) => c + c).join('') : v, 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
+// ============================================
+// 显示模式：跟随系统 / 浅色 / 深色（2026-11-20）
+// ============================================
+export type ThemeMode = 'system' | 'light' | 'dark';
+export type ResolvedTheme = 'light' | 'dark';
+
+export const MODE_STORAGE_KEY = 'theme-mode';
+
+export function getSystemTheme(): ResolvedTheme {
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+  }
+  try {
+    const info = Taro.getSystemInfoSync();
+    if (info.theme === 'dark') return 'dark';
+    if (info.theme === 'light') return 'light';
+  } catch (err) {
+    console.warn('[ThemeMode] system theme unavailable:', err);
+  }
+  return 'light';
+}
+
+function resolveMode(mode: ThemeMode): ResolvedTheme {
+  return mode === 'system' ? getSystemTheme() : mode;
+}
+
+function readStoredMode(): ThemeMode {
+  try {
+    const saved = Taro.getStorageSync(MODE_STORAGE_KEY) as string;
+    if (saved === 'system' || saved === 'light' || saved === 'dark') return saved;
+  } catch (err) {
+    console.warn('[ThemeMode] restore failed:', err);
+  }
+  return 'system';
+}
+
+interface ThemeModeState {
+  mode: ThemeMode;
+  resolved: ResolvedTheme;
+  setMode: (mode: ThemeMode) => void;
+  syncSystem: () => void;
+}
+
+const initialMode = readStoredMode();
+
+export const useThemeModeStore = create<ThemeModeState>((set, get) => ({
+  mode: initialMode,
+  resolved: resolveMode(initialMode),
+  setMode: (mode) => {
+    set({ mode, resolved: resolveMode(mode) });
+    try {
+      Taro.setStorageSync(MODE_STORAGE_KEY, mode);
+    } catch (err) {
+      console.warn('[ThemeMode] persist failed:', err);
+    }
+  },
+  syncSystem: () => {
+    const next = resolveMode(get().mode);
+    if (next !== get().resolved) set({ resolved: next });
+  }
+}));
+
+/** 页面根节点用的类名：把 .theme-dark / .theme-light 挂上去，token 才会切换 */
+export function themeModeClass(resolved: ResolvedTheme): string {
+  return resolved === 'dark' ? 'theme-dark' : 'theme-light';
+}
+
+/** 读取当前显示模式，并在系统主题变化时同步；H5 同时把类名挂到 html/body 兜底 */
+export function useThemeMode() {
+  const mode = useThemeModeStore((s) => s.mode);
+  const resolved = useThemeModeStore((s) => s.resolved);
+  const setMode = useThemeModeStore((s) => s.setMode);
+
+  useEffect(() => {
+    const store = useThemeModeStore.getState();
+    store.syncSystem();
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      const onChange = () => useThemeModeStore.getState().syncSystem();
+      if (typeof mq.addEventListener === 'function') {
+        mq.addEventListener('change', onChange);
+        return () => mq.removeEventListener('change', onChange);
+      }
+      mq.addListener(onChange);
+      return () => mq.removeListener(onChange);
+    }
+    type ThemeChangeApi = {
+      onThemeChange?: (cb: (res: { theme: string }) => void) => void;
+      offThemeChange?: (cb: (res: { theme: string }) => void) => void;
+    };
+    const api = Taro as unknown as ThemeChangeApi;
+    const onChange = (res: { theme: string }) => {
+      if (useThemeModeStore.getState().mode === 'system') {
+        useThemeModeStore.setState({ resolved: res.theme === 'dark' ? 'dark' : 'light' });
+      }
+    };
+    api.onThemeChange?.(onChange);
+    return () => api.offThemeChange?.(onChange);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    root.classList.toggle('theme-dark', resolved === 'dark');
+    root.classList.toggle('theme-light', resolved === 'light');
+    root.style.colorScheme = resolved;
+    if (document.body) {
+      document.body.classList.toggle('theme-dark', resolved === 'dark');
+      document.body.classList.toggle('theme-light', resolved === 'light');
+    }
+  }, [resolved]);
+
+  return { mode, resolved, setMode };
+}
+
+/**
+ * 原生 TabBar 壳层跟随显示模式（2026-11-20）。
+ *
+ * H5 的内置 tabbar 把底色与文字色写成**内联样式**（来自 app.config），只靠 CSS 覆盖
+ * 既需要 !important，也拿不到当前品牌的深色高亮色。改走官方 setTabBarStyle：
+ * 一次更新底色、选中/未选中文字色，小程序端原生 tabBar 同样生效。
+ *
+ * 只在应用根调用一次：tab 页里未必都用了 useThemeMode（如收件箱/日历），
+ * 挂到页面级会漏掉「从这些页启动」的场景。
+ */
+export function useTabBarTheme() {
+  const resolved = useThemeModeStore((s) => s.resolved);
+  const theme = useThemeStore((s) => s.theme);
+
+  useEffect(() => {
+    type TabBarApi = {
+      setTabBarStyle?: (opts: {
+        color: string;
+        selectedColor: string;
+        backgroundColor: string;
+        borderStyle: 'black' | 'white';
+      }) => void;
+    };
+    const api = Taro as unknown as TabBarApi;
+    const dark = resolved === 'dark';
+    // H5 的 tabbar 在路由切换时会用 app.config 的内联色重渲染，事件式 API 会被覆盖；
+    // 把当前品牌的深色高亮写到 html 上，供 app.scss 的 !important 规则兜底（小程序无 CSS，仍靠 API）。
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.setProperty('--dm-tabbar-active', dark ? theme.onDark : '#C7371A');
+    }
+    if (typeof api.setTabBarStyle !== 'function') return;
+    const apply = () => {
+      try {
+        api.setTabBarStyle?.({
+          // 浅色保持 app.config 现值（零回归）；深色用 token：未选中 6.23:1、选中 9.83:1（日出橙）
+          color: dark ? '#a89c8d' : '#657080',
+          selectedColor: dark ? theme.onDark : '#C7371A',
+          backgroundColor: dark ? '#211d18' : '#FFFFFF',
+          borderStyle: dark ? 'black' : 'white'
+        });
+      } catch (err) {
+        console.warn('[ThemeMode] tabBar 样式同步失败:', err);
+      }
+    };
+    apply();
+    // tabbar 元素由路由在应用渲染前创建；首帧事件若早于监听挂载，补一次
+    const timer = setTimeout(apply, 0);
+    return () => clearTimeout(timer);
+  }, [resolved, theme]);
 }

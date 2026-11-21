@@ -16,6 +16,11 @@
   cursor: pointer;
   user-select: none;
 
+  /* 返回控件贴页面左/上边缘时，2px 外描边会被 .taro_page 的 overflow 裁掉 */
+  &[data-pressable]:focus-visible {
+    outline-offset: -2PX;
+  }
+
   &:active {
     opacity: 0.6;
   }
@@ -351,6 +356,15 @@
   line-height: 1.2;
   box-shadow: 0 8PX 20PX rgba(199, 55, 26, 0.28);
   z-index: 60;
+}
+
+// 2026-11-19：320x568 实测空态提示 y=426..445、悬浮按钮 y=416..472，
+// 重叠 7x19PX，「第一笔」被红钮压住。该页是二级页、没有底部标签栏，
+// 矮屏下把按钮下移仍保留安全区；高屏（>640PX）维持 96PX。
+@media (max-height: 640PX) {
+  .fab {
+    bottom: calc(16PX + env(safe-area-inset-bottom));
+  }
 }
 
 /* 分类选择弹层 */

@@ -3,6 +3,7 @@ import { View, Text } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import classnames from 'classnames';
 import EmptyState from '@/components/EmptyState';
+import SubPageHeader from '@/components/SubPageHeader';
 import { LEARN_LANGS, findCourse } from '@/data/learn';
 import { getCourseProgress, markWords, setCourseCompleted, getDrillScore, LearnLangId } from '@/utils/learn';
 import { langToTts } from '@/utils/learnDrills';
@@ -203,6 +204,7 @@ function LearnDetailPage() {
 
   return (
     <View className={styles.page}>
+      <SubPageHeader fallbackUrl='/pages/learn/index' />
       <View className={styles.header}>
         <Text className={styles.courseTitle}>{course.title}</Text>
         {mode === 'words' && !finished && word ? (

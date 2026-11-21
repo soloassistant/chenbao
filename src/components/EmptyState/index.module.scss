@@ -32,6 +32,11 @@
 .action {
   margin-top: $spacing-lg;
   padding: $spacing-sm $spacing-xl;
+  min-height: 44PX;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: $color-primary-strong;
   border-radius: $radius-button;
 }

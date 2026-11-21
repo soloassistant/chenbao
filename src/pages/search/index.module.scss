@@ -28,6 +28,11 @@
     cursor: pointer;
     user-select: none;
 
+    /* 返回控件贴页面左/上边缘时，2px 外描边会被 .taro_page 的 overflow 裁掉 */
+    &[data-pressable]:focus-visible {
+      outline-offset: -2PX;
+    }
+
     &:active {
       opacity: 0.6;
     }

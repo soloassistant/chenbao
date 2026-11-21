@@ -96,7 +96,12 @@ section('B. 色值与应用同源（theme.scss ⇄ site.css）');
 const theme = read('src/styles/theme.scss');
 const scssVar = (name) => {
   const m = new RegExp(`^\\$${name}:\\s*([^;]+);`, 'm').exec(theme);
-  return m ? m[1].trim() : null;
+  if (!m) return null;
+  const raw = m[1].trim();
+  // 2026-11-20 深色模式：SCSS token 改成 var(--dm-*, 浅色回退)。
+  // 官网是纯浅色静态页，同源比对取回退值即可；深色值不参与落地页。
+  const fallback = /^var\([^,]+,\s*([^)]+)\)$/.exec(raw);
+  return fallback ? fallback[1].trim() : raw;
 };
 const cssVar = (name) => {
   const m = new RegExp(`--${name}:\\s*([^;]+);`).exec(css);

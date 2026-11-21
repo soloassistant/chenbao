@@ -7,7 +7,8 @@
   align-items: center;
   gap: $spacing-xs;
   min-height: 88rpx;
-  padding: 0 $page-padding;
+  /* 左侧不再叠一层 16px 内边距：「返回」贴条左缘，与 learn/search 的返回键对齐 */
+  padding: 0 $page-padding 0 0;
   color: $color-text-secondary;
   background: transparent;
   user-select: none;
@@ -15,6 +16,14 @@
   &:active {
     opacity: 0.6;
   }
+}
+
+/* 返回条本身贴边（部分页面 .page 无左右内边距，条宽 375；sxm 顶部 y=0）。
+   全局焦点环用 outline-offset: 2px 画在外侧：底部会压到紧邻卡片，左右/顶部
+   会被页面 overflow-x:hidden 裁掉。这里改成内描边，四边都完整可见，命中区不变。 */
+.bar[data-pressable]:focus-visible {
+  /* 大写 PX：跳过 Taro 的 px→rpx 换算，和 app.scss 里的 2PX 焦点环保持同一刻度 */
+  outline-offset: -2PX;
 }
 
 .icon {

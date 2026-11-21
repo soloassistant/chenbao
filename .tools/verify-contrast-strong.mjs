@@ -108,8 +108,9 @@ try {
   ok('A3 brandVars 注入 --brand-strong', /--brand-strong['"]?\s*:\s*theme\.strong/.test(theme));
 
   const scss = read('src/styles/theme.scss');
-  ok('A4 theme.scss 定义 $color-primary-strong', /\$color-primary-strong\s*:\s*#c7371a/i.test(scss));
-  ok('A5 theme.scss 定义 $color-secondary-strong', /\$color-secondary-strong\s*:\s*#3560b8/i.test(scss));
+  // 2026-11-20：token 改为 var(--dm-*, 浅色回退)，断言认回退值，保证浅色语义不变。
+  ok('A4 theme.scss 定义 $color-primary-strong', /\$color-primary-strong\s*:\s*(?:var\([^,]+,\s*#c7371a\)|#c7371a)/i.test(scss));
+  ok('A5 theme.scss 定义 $color-secondary-strong', /\$color-secondary-strong\s*:\s*(?:var\([^,]+,\s*#3560b8\)|#3560b8)/i.test(scss));
   // $color-text-disabled 必须保持原值：theme.scss 注释明确禁用态有意豁免对比度，
   // 改它会削弱「禁用」的视觉语义。修法是逐点改误用处，不是改变量。
   ok('A6 $color-text-disabled 保持 #c9cdd4（禁用态豁免是有意设计，不许顺手改变量）', /\$color-text-disabled\s*:\s*#c9cdd4/i.test(scss));
@@ -253,12 +254,13 @@ try {
 // ============ G. 三页补 brandVars（消除回退蓝与主题橙不一致） ============
 console.log('\nG 组 三页根节点注入 brandVars');
 for (const [file, marker] of [
-  ['src/pages/library/index.tsx', 'styles.page} style={brandVars(theme)}'],
-  ['src/pages/inbox/index.tsx', 'styles.page} style={brandVars(theme)}'],
-  ['src/pages/learn/index.tsx', 'styles.page} style={brandVars(theme)}']
+  ['src/pages/library/index.tsx', 'style={brandVars(theme'],
+  ['src/pages/inbox/index.tsx', 'style={brandVars(theme'],
+  ['src/pages/learn/index.tsx', 'style={brandVars(theme']
 ]) {
   try {
-    ok(`G ${file.split('/').slice(-2)[0]} 根 View 注入 brandVars`, read(file).includes(marker));
+    const src = read(file);
+    ok(`G ${file.split('/').slice(-2)[0]} 根 View 注入 brandVars`, src.includes(marker) && src.includes('styles.page'));
   } catch (e) {
     ok(`G ${file} 读取失败`, false);
   }
@@ -407,7 +409,12 @@ const J_POINTS = [
   // 2026-11-10：真实渲染门禁第二轮在登录屏又逮到 2 处 4.32:1（卡片半透叠 .screen 桃色渐变，真实底色≈#FFEAE1；
   // $color-text-tertiary(#657080) 压它 4.32:1 未达 AA 4.5）；改 secondary(#4e5969)≈6.1:1。静态清单补锁。
   ['src/pages/login/index.module.scss', 'privacyText', '$color-text-secondary', '隐私说明（tertiary 压桃色底 4.32:1）'],
-  ['src/pages/login/index.module.scss', 'rememberHint', '$color-text-secondary', '记住登录提示（tertiary 压桃色底 4.32:1）']
+  ['src/pages/login/index.module.scss', 'rememberHint', '$color-text-secondary', '记住登录提示（tertiary 压桃色底 4.32:1）'],
+  // 2026-11-19：papers 选中单元的文字压在 .unitChipActive 的 rgba(199,55,26,.08) 底上
+  // （叠白卡后 rgb(246,231,223)），$color-primary-strong 实测 4.36:1 未达 AA；
+  // 换本页专用加深色 #a82c13 后 5.74:1。两处（单元号 14.6px / 单元名 11.4px）都要锁。
+  ['src/pages/papers/index.module.scss', 'unitCodeActive', '$paper-active-ink', '真题库选中单元号（4.36:1 → 5.74:1）'],
+  ['src/pages/papers/index.module.scss', 'unitNameActive', '$paper-active-ink', '真题库选中单元名（4.36:1 → 5.74:1）']
 ];
 for (const [file, cls, expect, why] of J_POINTS) {
   try {
@@ -594,7 +601,13 @@ try {
 //   · learn / learnCommunity 的 .footerText 拿禁用灰当**内容**色 → #c9cdd4 压 #f7f8fa = 1.50
 try {
   const themeScss = read('src/styles/theme.scss');
-  const varOf = (name) => (new RegExp(`\\$${name}\\s*:\\s*(#[0-9a-f]{6})`, 'i').exec(themeScss) || [])[1];
+  const varOf = (name) => {
+    const raw = (new RegExp(`\\$${name}\\s*:\\s*([^;]+);`, 'i').exec(themeScss) || [])[1];
+    if (!raw) return undefined;
+    // token 现在是 var(--dm-*, #hex)，取回退值参与浅色对比度计算
+    const hex = /#[0-9a-f]{6}/i.exec(raw);
+    return hex ? hex[0] : undefined;
+  };
   const strong = varOf('color-primary-strong');
   const tertiary = varOf('color-text-tertiary');
   const pageBg = varOf('color-bg-page');
@@ -684,8 +697,14 @@ try {
   );
   const themeSrc = read('src/styles/theme.scss');
   const m = /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/.exec(notice || '');
-  const pageHex = (/\$color-bg-page\s*:\s*(#[0-9a-f]{6})/i.exec(themeSrc) || [])[1];
-  const errStrongHex = (/\$color-error-strong\s*:\s*(#[0-9a-f]{6})/i.exec(themeSrc) || [])[1];
+  const fallbackHex = (name) => {
+    const raw = (new RegExp(`\\$${name}\\s*:\\s*([^;]+);`, 'i').exec(themeSrc) || [])[1];
+    if (!raw) return undefined;
+    const h = /#[0-9a-f]{6}/i.exec(raw);
+    return h ? h[0] : undefined;
+  };
+  const pageHex = fallbackHex('color-bg-page');
+  const errStrongHex = fallbackHex('color-error-strong');
   if (m && pageHex && errStrongHex && text && text.includes('$color-error-strong')) {
     const a = parseFloat(m[4]);
     const p = hexRGB(pageHex);
