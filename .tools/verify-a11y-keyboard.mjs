@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
  * verify-a11y-keyboard.mjs —— 键盘可达性门禁（2026-10-29，审计 P1：全站零可聚焦操作元素）
  *
@@ -136,9 +136,9 @@ function ruleBlocks(src, sel) {
 const TOUCH = [
   // 2026-11-19：这 8 个控件用 hit-expand-min(44px) —— rpx 外扩在 320 视口会缩水
   //   （4rpx≈1.7px，34px 高的按钮只到 38px），命中下限必须锚在 CSS px。
-  ['src/pages/login/index.module.scss', '.tab', 'hitmin', '登录通道页签'],
-  ['src/pages/login/index.module.scss', '.dialBtn', 'hitmin', '登录一键拨号'],
-  ['src/pages/login/index.module.scss', '.codeBtn', 'hitmin', '登录获取验证码'],
+  ['src/pages/login/index.module.scss', '.tab', 'minpx', '登录通道页签'],
+  ['src/pages/login/index.module.scss', '.dialBtn', 'minpx', '登录一键拨号'],
+  ['src/pages/login/index.module.scss', '.codeBtn', 'minpx', '登录获取验证码'],
   ['src/pages/mine/index.module.scss', '.subButton', 'hitminv', '会员订阅按钮'],
   ['src/pages/mine/index.module.scss', '.promoEntry', 'hitmin', '会员促销码入口'],
   ['src/pages/calendar/index.module.scss', '.syncButton', 'minpx', '日历导出/同步'],
