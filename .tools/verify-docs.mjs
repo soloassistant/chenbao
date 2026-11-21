@@ -118,10 +118,6 @@ const norm = (p) => p.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
 //       （有 src/app.scss，git remote 指向本仓），输出里写明是降级口径，不静默通过。
 const claimIsAbsolute = /^([a-zA-Z]:[\\/]|\/)/.test(claimedRoot);
 const claimExistsHere = claimRoot !== null && fs.existsSync(claimedRoot);
-let sameRepoIdentity = false;
-try {
-  sameRepoIdentity = /soloassistant\/9-8/i.test(fs.readFileSync(path.join(realRoot, '.git', 'config'), 'utf8'));
-} catch { sameRepoIdentity = false; }
 // 「当前目录确实是本项目」的判据：有 src/app.scss 且 package.json 是 morning-brief。
 // 不用 git remote 认身份：本机 clone 的 origin 可能是本地路径（我实测过），CI 里才是 https。
 const hasProjectTree =

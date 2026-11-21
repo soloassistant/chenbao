@@ -161,7 +161,8 @@ const TOUCH = [
   ['src/pages/learn/index.module.scss', '.langTab', 'hit', '学习语言页签'],
   ['src/pages/learn/index.module.scss', '.backButton', 'hit', '学习返回条'],
   ['src/pages/sxm/index.module.scss', '.tab', 'hit', '省心买页签'],
-  ['src/pages/mine/index.module.scss', '.avatarEdit', 'hit', '头像编辑'],
+  // 2026-11-21：.avatarEdit 是 avatarBtn 内的纯文字标签（无 onClick），不再单独计入控件；
+  // 旧外扩与 featureTile 相交，已改由外层按钮承担热区。
   ['src/pages/ledger/index.module.scss', '.backButton', 'hit', '记账返回条'],
   ['src/pages/shopping/index.module.scss', '.backButton', 'hit', '购物返回条'],
   ['src/pages/search/index.module.scss', '.backButton', 'hit', '搜索返回条'],
