@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
+import classnames from 'classnames';
 import { View, Text, Input, ScrollView, Picker } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import SubPageHeader from '@/components/SubPageHeader';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import { useT } from '@/store/language';
 import { openExternalPage } from '@/utils/externalLink';
 import {
@@ -72,6 +73,7 @@ const PICK_LABEL_KEY = {
 function SxmPage() {
   const t = useT();
   const { theme } = useThemeStore();
+  const { resolved } = useThemeMode();
 
   const [tab, setTab] = useState<TabId>('travel');
   const [from, setFrom] = useState('');
@@ -152,7 +154,7 @@ function SxmPage() {
   };
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <SubPageHeader fallbackUrl='/pages/mine/index' />
       <View className={styles.header}>
         <Text className={styles.title}>{t('sxm.title')}</Text>
