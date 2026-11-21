@@ -2,15 +2,14 @@
 
 /* 二级页返回键（2026-10-23 补）：H5 的 TabRouter 不渲染原生导航栏，
    页内没有返回控件时用户会走进死路。
-   ⚠️ 高度必须用 rpx（$button-height-md = 80rpx）：h5 的 pxtransform baseFontSize=37.5，
-      写 px 会被当设计像素换算，点击区凭空小一半且肉眼看不出来。 */
+   ⚠️ h5 的 pxtransform 会把小写 px 当设计像素换算；命中区下限一律用大写 PX
+      （44PX 才是真 CSS 像素，写 44px 会缩水）。 */
 .backButton {
-  // 2026-11-04：80rpx（375 下 40px）差 4px；视觉不变，上下各外扩 4rpx
-  @include hit-expand(0, 4rpx);
+  // 2026-11-21：320 下实测 320×34，低于 44 触控下限；改实尺寸 44PX（不用透明外扩）
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  min-height: $button-height-md;
+  min-height: 44PX;
   margin-bottom: $spacing-xs;
   color: $color-text-secondary;
   cursor: pointer;
@@ -52,11 +51,11 @@
 }
 
 .langTab {
-  // 2026-11-04：实测 70×36（375）低于 44px；视觉不变，外扩到 44 高
-  @include hit-expand(0, 8rpx);
+  // 2026-11-21：320 下实测 60×31，低于 44 触控下限；改实尺寸 44PX（不用透明外扩）
   display: flex;
   align-items: center;
   gap: 8rpx;
+  min-height: 44PX;
   padding: 12rpx 28rpx;
   border-radius: $radius-round;
   border: 2rpx solid $color-border;
@@ -174,6 +173,10 @@
 }
 
 .freezeBadge {
+  // 2026-11-21：320 下实测 79×34，抬到 44PX 实尺寸
+  display: flex;
+  align-items: center;
+  min-height: 44PX;
   padding: 8rpx 20rpx;
   border-radius: $radius-round;
   background: rgba(22, 119, 255, 0.1);
@@ -193,6 +196,10 @@
 }
 
 .makeupBtn {
+  // 2026-11-21：320 下实测 55×32，抬到 44PX 实尺寸
+  display: flex;
+  align-items: center;
+  min-height: 44PX;
   padding: 8rpx 20rpx;
   border-radius: $radius-round;
   background: var(--brand-strong, $color-secondary-strong); // 白字 5.26:1（原 --brand 白字 3.23:1）
@@ -546,3 +553,4 @@
     background: var(--dm-bg-hover);
   }
 }
+

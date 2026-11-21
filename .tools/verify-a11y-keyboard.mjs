@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * verify-a11y-keyboard.mjs —— 键盘可达性门禁（2026-10-29，审计 P1：全站零可聚焦操作元素）
  *
@@ -158,8 +158,8 @@ const TOUCH = [
   ['src/pages/trade/index.module.scss', '.toolPanel .segBtn', 'minpx', '行情计算方向'],
   ['src/pages/inbox/index.module.scss', '.modeTab', 'hit', '收件箱模式页签'],
   ['src/pages/inbox/index.module.scss', '.extractButton', 'hit', '收件箱提取按钮'],
-  ['src/pages/learn/index.module.scss', '.langTab', 'hit', '学习语言页签'],
-  ['src/pages/learn/index.module.scss', '.backButton', 'hit', '学习返回条'],
+  ['src/pages/learn/index.module.scss', '.langTab', 'minpx', '学习语言页签'],
+  ['src/pages/learn/index.module.scss', '.backButton', 'minpx', '学习返回条'],
   ['src/pages/sxm/index.module.scss', '.tab', 'minpx', '省心买页签'],
   ['src/pages/mine/index.module.scss', '.avatarEdit', 'hit', '头像编辑'],
   ['src/pages/ledger/index.module.scss', '.backButton', 'minpx', '记账返回条'],
@@ -676,3 +676,4 @@ console.log('\n键盘可达性门禁');
 for (const r of rows) console.log(`  ${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.ok ? '' : '  → ' + r.detail}`);
 console.log(`\n${fail === 0 ? `PASS ${pass} / FAIL 0（共 ${rows.length} 条）` : `PASS ${pass} / FAIL ${fail}（共 ${rows.length} 条）`}`);
 process.exit(fail === 0 ? 0 : 1);
+
