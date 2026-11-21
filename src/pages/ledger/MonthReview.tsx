@@ -79,6 +79,7 @@ export default function MonthReview({ entries }: { entries: LedgerEntry[] }) {
           fontSize: '13px',
           lineHeight: '1.6',
           padding: '4px 12px',
+          minHeight: '44px',
           margin: 0,
           background: 'transparent',
           border: 'none',
