@@ -110,7 +110,6 @@ export default [
     cmd: 'node .tools/verify-live-bridge.mjs'
   },
   {
-  {
     label: '去掉刷新代次判断（旧的刷新结果可以覆盖新数据）',
     file: 'src/services/cloud.ts',
     from: 'if (gen !== hotspotGeneration) return null',
@@ -124,6 +123,7 @@ export default [
     to: 'if (true) hotspotCache',
     cmd: 'node .tools/verify-live-bridge.mjs'
   },
+  {
     label: '热点载荷把远端排到同源前面（首屏又变成一次跨域 + 一次 404 往返）',
     file: 'src/services/cloud.ts',
     from: 'const same = await fetchHotspotJson(SAME_ORIGIN_HOTSPOT_URL)',
