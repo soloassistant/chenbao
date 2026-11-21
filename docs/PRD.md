@@ -14,7 +14,7 @@
 
 ---
 
-## 0. 口径与范围（v3.0.1 新增）
+## 0. 口径与范围（v3.0.1 起）
 
 本 PRD 描述**产品应该是什么**，但规模数字必须能对上代码。为避免「按分支写、拿 main 读」的失真，约定：
 
@@ -23,12 +23,12 @@
 | 路由 | `origin/main:src/app.config.ts` 的 `pages` 条目 | **27 条**（含 `login`） |
 | 同步键 | `origin/main:src/services/cloudSync.ts` 的 `SYNC_KEYS` 数组长度（去注释） | **44** |
 | 词典 | `origin/main:src/store/language.ts` 中文词典键数（`const zh` 到 `const en`） | **1505** |
-| 发布分支 | `release/consolidated`（本 PR 所在分支） | 44 键 / 1551 词典键 / 27 路由 |
+| 发布分支 | `release/consolidated`（本 PR 所在分支） | 44 键 / 1563 词典键 / 27 路由 |
 | 工作分支 | 含 `aiClass`、`aiGrade` 的功能分支 | 45 键（多 `sport-meals`）/ 31 路由 / 1748 词典键 |
 
 **不在 main 的模块**（文档中出现时必须标「分支」）：
 
-- `aiClass`、`aiGrade`：只在功能分支，main 无这两个路由。
+- `aiClass`、`aiGrade`、`learnSubject`、`learnLanguage`：只在功能分支（31 路由），main 无这四个路由。
 - `travel`（旅行推荐与攻略）：只在 `feat/travel-spec`。
 - 反例（容易误判）：`questionBank`、`questionBankAnswer`、`questionBankMistakes`、`questionBankImport`、`papers`、`mockExam`、`mockExamResult` **都在 main**。
 
@@ -98,11 +98,11 @@ Tab 5 我的 ─── 身份、用量、会员、偏好、数据管理、注销
 二级页（navigateTo，均在 main）：
   assistant（唯一 AI 对话）、search、membership、prefs、report
   shopping（购物清单）、ledger（记账）、sxm（省心买）、trade（行情）
-  learn / learnSubject / learnLanguage / learnDetail / learnCommunity
+  learn / learnDetail / learnCommunity
   questionBank / Answer / Mistakes / Import、papers、mockExam、mockExamResult
   sport、notify
   —— 以下仅存在于功能分支，main 无此路由 ——
-  aiClass、aiGrade（31 路由分支）；travel（feat/travel-spec）
+  aiClass、aiGrade、learnSubject、learnLanguage（31 路由分支）；travel（feat/travel-spec）
 ```
 
 桌面端（≥600px）用自绘左侧导航，移动端用 TabBar；两者入口集合一致。
@@ -183,6 +183,7 @@ AI：cloud.llm 直连（首选）→ 本地代理（开发）→ 明确降级
 | F43 | 权益 | 以服务端订单/权益状态为准；关单不误关已付订单 | ✅ |
 | F44 | 偏好 | 主题（含深色）、字号、语言（中/英）、城市 | ✅ |
 | F45 | 数据管理 | 全量导出/导入、注销（先清云端再登出） | ✅ |
+| F46 | 意见反馈 | 「我的」页 → 意见反馈弹层；类型可选、历史可查、提交失败可见 | ✅ |
 
 ### 4.6 AI 助手（唯一对话入口）
 
@@ -227,7 +228,7 @@ AI：cloud.llm 直连（首选）→ 本地代理（开发）→ 明确降级
 
 ---
 
-### 4.9 定位承诺的三条断链（未实现，v3.2 优先）
+### 4.9 定位承诺的三条断链（F90/F91 未实现，v3.3 优先）
 
 > 判定标准：定位句写了、代码里没有、用户能感知。三条都属于「管线已存在，只差最后一跳」。
 
@@ -235,11 +236,10 @@ AI：cloud.llm 直连（首选）→ 本地代理（开发）→ 明确降级
 |---|---|---|---|---|
 | F90 | 晨报送达通道 | H5 无推送；用户只能主动打开 | 提供 ICS 订阅（含今日日程/待办）或邮件晨报；订阅数/打开率可统计 | 📋 |
 | F91 | AI 回答写回日程 | `AiAssistant` 无任何 `dailyPlanStore` 写入 | 助手回答末尾生成可确认草稿，走「提取→勾选→入库」同一管道；失败不谎报 | 📋 |
-| F92 | 收藏→行动 | 晨报只展示最近 2 条收藏 | 收藏可一键转待办（进晨报时间线）；转换后回读校验 | ✅ **本分支已实现** |
+| F92 | 收藏→行动 | 晨报只展示最近 2 条收藏 | 收藏可一键转待办（进晨报时间线）；转换后回读校验 | ✅ **release/consolidated 已实现** |
 
 实现顺序按价值/成本：F90 > F91 > F92。三条都不新开页面，复用现有存储与管道。
 
-| F83 | 意见反馈 | 「我的」页 → 意见反馈弹层；类型可选、历史可查、提交失败可见 | ✅ |
 
 ## 5. 账号、同步与数据
 
@@ -293,7 +293,7 @@ AI：cloud.llm 直连（首选）→ 本地代理（开发）→ 明确降级
 |---|---|---|
 | 首屏 | 主指标 ≤ 335KB；按模块分配：框架+公共 ≤ 60%（201KB）、业务页 ≤ 40%（134KB） | 324.8KB（`release/consolidated` 构建实测）；模块拆分待 `verify:startup-perf` 输出分项后生效 |
 | 命中区 | 可点控件 ≥ 44×44；禁止靠透明外扩压邻控件 | 部分达成，仍在收敛 |
-| 双语 | 中英全量；英文模式不得残留中文 | main 1505 键 / 发布分支 1551 键，zh/en 集合一致 |
+| 双语 | 中英全量；英文模式不得残留中文 | main 1505 键 / 发布分支 1563 键，zh/en 集合一致 |
 | 深色 | token 化；无 SCSS 颜色运算依赖 | 已覆盖主要页面 |
 | 桌面 | ≥600px 自绘导航，宽度三档 | 已实现 |
 | 无障碍 | role/aria-label、Tab 可达、Esc 关顶层 | 已实现 |
@@ -321,30 +321,24 @@ AI：cloud.llm 直连（首选）→ 本地代理（开发）→ 明确降级
 
 ## 10. 版本规划
 
-### v3.0（当前）
+### v3.2（当前，release/consolidated）
 
-H5 主形态：登录与云同步、晨报、收件箱、热点、日历、会员与偏好、AI 单一入口、题库/模拟考、工具集；首屏 324.8KB；双语与深色覆盖。
+H5 主形态：登录与云同步、晨报、收件箱、热点、日历、会员与偏好、AI 单一入口、题库/模拟考、工具集。
+本版已实现：F92 收藏→待办（含回读校验）、F42b 促销码本机限兑、D03b 冲突一键裁决与模块聚合、
+A05 词库门禁、C10 出境合规条目。首屏 325.3KB，双语与深色覆盖。
 
-### v3.1（下一步）
-
-1. 合并 `feat/travel-spec`（旅行推荐与攻略），补齐 44px 与门禁口径。
-2. 修复发布路径单点：发布必须用 `D:\Agent\dist-restore` + 固定 appId，禁止从 `dist` 发。
-3. `a11y B-2e` 改为不依赖外部图源可解码的判据（当前会因远端 404/TLS 失败误红）。
-4. 把「可点元素实测口径」脚本收进 `.tools/`，CI 只做回归对比，不做绝对值门槛。
-5. 同步键说明与 `AGENTS.md` 数量对齐（44，不是 18）。
-
-### v3.2（联动补链）
+### v3.3（下一步）
 
 1. **F90 送达通道**：ICS 订阅（复用现有 ics 导出）+ 可选邮件晨报；先做订阅数统计。
 2. **F91 AI 写回日程**：助手输出结构化草稿，复用收件箱确认管道。
-3. **F92 收藏→待办**：已实现（晨报收藏精选「转为待办」，写 `dailyPlanStore.todos` + 回读校验）。
-4. 工具集保持独立，不新增跨模块耦合。
+3. 合并 `feat/travel-spec`（旅行推荐与攻略），补齐 44px 与门禁口径。
+4. 发布路径单点：固化 `dist-restore` + appId，禁止从 `dist` 发。
+5. 可点元素实测口径脚本收进 `.tools/`，CI 只做回归对比；首屏按模块拆分预算。
+6. 最小埋点集（匿名设备 ID / 首日事件 / 晨报打开）落地，指标才可计算。
 
-### v3.3（待外部条件）
+### v3.4（待外部条件）
 
 - 支付通道（需主体资质）、小程序云函数部署、订阅消息模板配置。
-
----
 
 ## 11. 风险与依赖
 
@@ -365,15 +359,15 @@ H5 主形态：登录与云同步、晨报、收件箱、热点、日历、会�
 2. **`a11y B-2e` 已改为不依赖外部图源**：允许「显式降级占位」，同时新增 B-2f 禁止「浏览器已放弃但仍留在 DOM 的破图」；此前因 billboard URL 404 / ifanr TLS 失败误红。
 3. **命中区未全覆盖**：375 视口仍有约 54% 可点元素 <44px，窄屏更差；门禁只静态读 scss，锁实现不锁事实。
 4. **多个模块未并入 main**：`aiClass`、`aiGrade`（功能分支 31 路由）与 `travel`（`feat/travel-spec`）都不在 main；线上构建来自旧分支，与 main 不等价。
-5. **规模数字有分支口径**：main 为 27 路由 / 44 键 / 1505 词典键；发布分支为 27 / 44 / 1551；工作分支为 31 / 45 / 1748。引用时必须带口径。
+5. **规模数字有分支口径**：main 为 27 路由 / 44 键 / 1505 词典键；发布分支为 27 / 44 / 1563；工作分支为 31 / 45 / 1748。引用时必须带口径。
 6. **命中区 54%**：来自外部审计的浏览器实测，本仓库门禁未纳入该口径，未在本轮复核。
-7. **`AGENTS.md` 计数漂移**：曾写 18 个同步键（实际 44），本版已修并加门禁 B6。
+7. **`AGENTS.md` 计数漂移**：曾写 18 个同步键（实际 44）；修复在 `release/consolidated`，随本 PR 合入 main 后 main 才是 44。
 8. **「主动送达」未兑现**：H5 无推送，核心承诺与交付相反；PRD 已把 F90 列为 v3.2 第一优先。
 9. **AI 回答不写回日程**：`AiAssistant` 零 `dailyPlanStore` 写入；定位句后半段尚未成立（F91）。
 
 ## 附录 A　用户旅程（含失败路径）
 
-### A1　周五晚：决定周末去哪
+### A1　周五晚：决定周末去哪（旅行页仅 `feat/travel-spec`，发布分支无此路由）
 
 | 步 | 用户动作 | 系统 | 失败路径 |
 |---|---|---|---|
@@ -426,8 +420,8 @@ H5 主形态：登录与云同步、晨报、收件箱、热点、日历、会�
 | 日程待办 | `dailyPlanStore` | 是 |
 | 收藏 | `collectionStore` | 是 |
 | 购物 | `shoppingList` | 是 |
-| 记账 | `ledgerStore` | 是 |
-| 偏好 | `app-lang`、`user-city`、`theme` | 是（语言/城市） |
+| 记账 | `ledgerEntries`、`ledger-categories`、`ledgerBudget` | 是 |
+| 偏好 | `app-lang`、`user-city`、`brand-theme` | 是 |
 | AI 记忆 | `ai-memory` | 是 |
 | 合规同意 | `privacy-consent`、`sxm-privacy-consent` | **否**（设备级） |
 | 引导状态 | `onboarded-v2` | **否** |
@@ -459,7 +453,7 @@ H5 主形态：登录与云同步、晨报、收件箱、热点、日历、会�
 
 | 项 | 值 |
 |---|---|
-| 发布目录 | `D://Agent//dist-restore`（**不是** `dist`） |
+| 发布目录 | `D:\Agent\dist-restore`（**不是** `dist`） |
 | 应用 id | `wbapp_nT3qDLBM2NVl5IdCtfJOex` |
 | 分享链接 | 必须带 `?sharecode=`；裸域名 403 是门禁不是故障 |
 | 镜像构建产物 | `robocopy /MIR` 必须加 `/XF .wbapp_*`，否则删掉应用绑定标记 |
