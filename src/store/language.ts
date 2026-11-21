@@ -238,6 +238,8 @@ const zh = {
   'papers.mockStart': '按这套真题的考卷结构组一套模拟卷',
   'papers.mockUnsupported': '该单元暂未建立考点映射，组不了模拟卷（考点对不上，硬抽会抽到不相干的题）',
   // 模拟考试
+  'mock.aiReviewStart': '获取 AI 错题讲解',
+  'mock.aiReviewUnsafe': '内容检查未通过，讲解未生成',
   'mock.title': '模拟考试',
   'mock.loading': '正在组卷…',
   'mock.loadFailed': '题库读取失败',

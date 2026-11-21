@@ -246,6 +246,8 @@ export const en: Record<LangKey, string> = {
   'mock.genBadOutput': 'AI returned malformed questions and they were discarded',
   'mock.genFailed': 'Generation failed, please retry',
   'mock.aiReview': 'AI explanation',
+  'mock.aiReviewStart': 'Get AI review of wrong answers',
+  'mock.aiReviewUnsafe': 'Content check failed; no review was generated',
   'mock.aiReviewBusy': 'AI is analysing your mistakes… (~20s)',
   'mock.aiReviewNote': 'AI-generated explanations for reference only; your score is final.',
   'mock.aiReviewFail': 'AI explanation unavailable — review the answer key above',
