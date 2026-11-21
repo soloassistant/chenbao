@@ -6,6 +6,7 @@ import classnames from 'classnames';
 import { getAchievements, getLearnerName, setLearnerName, Achievement } from '@/utils/achievements';
 import { readLearnStore, getStreak } from '@/utils/learn';
 import { LEARN_LANGS } from '@/data/learn';
+import SubPageHeader from '@/components/SubPageHeader';
 import { useT } from '@/store/language';
 import { fromNow } from '@/utils/date';
 import styles from './index.module.scss';
@@ -166,6 +167,7 @@ function LearnCommunityPage() {
 
   return (
     <View className={styles.page}>
+      <SubPageHeader fallbackUrl='/pages/learn/index' />
       {/* 头部：学习身份 + 成就进度 */}
       <View className={styles.headCard} style={{ background: lang.accent }}>
         <View className={styles.headRow}>

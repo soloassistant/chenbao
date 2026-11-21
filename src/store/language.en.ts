@@ -1645,5 +1645,7 @@ export const en: Record<LangKey, string> = {
   'trade.sizingRisk': 'Risk % of equity',
   'trade.sizingDist': 'Stop distance (pips)',
   'trade.sizingResult': 'Suggested lots',
-  'trade.fxAmount': 'Amount'
+  'trade.fxAmount': 'Amount',
+  'library.hotEmptyTitle': 'No stories yet today',
+  'library.hotEmptyHint': 'Check back in a little while, or browse your saved items.',
 };

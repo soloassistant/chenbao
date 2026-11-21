@@ -9,12 +9,12 @@ $color-primary-dark: #e85d2a;
 // strong 变体：品牌色承载「文字」或「白字控件」时的加深色。
 // 2026-10-24 无障碍修复：#ff7a45 对白底仅 2.59:1（WCAG AA 需 4.5），
 // 大场面背景仍用 $color-primary 保留品牌识别，凡信息性文字/白字按钮改用 strong。
-$color-primary-strong: #c7371a;   // 白底 5.26:1 / 浅橙底 4.95:1
+$color-primary-strong: var(--dm-brand-strong, #c7371a);   // 白底 5.26:1 / 浅橙底 4.95:1
 
 // 辅助色：晨空蓝（语音、对话、信息）
 $color-secondary: #5b8def;
 $color-secondary-light: #8fb2f5;
-$color-secondary-strong: #3560b8; // 白底 5.97:1（原 #5b8def 仅 3.23:1）
+$color-secondary-strong: var(--dm-secondary-strong, #3560b8); // 白底 5.97:1（原 #5b8def 仅 3.23:1）
 
 // 功能色
 $color-success: #00b42a;
@@ -38,34 +38,36 @@ $color-sub-gradient: linear-gradient(135deg, #ff9a76 0%, #ff7a45 100%); // 会�
 // 明度与原 #f7f8fa 几乎一致，tertiary/secondary 文字对比度只升不降（verify-contrast 现算把关）。
 // 2026-10-27 晨报改版：按参考设计稿实测值微调为 #faf6f0（更暖半档），
 // 已同步官网 site/site.css 的 --bg-page（verify-site B1 把关）。
-$color-bg-page: #faf6f0;
-$color-bg-card: #ffffff;
-$color-bg-hover: #f1efec;
+// 2026-11-20 深色模式：底色/文字/描边改为 CSS 自定义属性 + 浅色回退，
+// 深色取值只在 .theme-dark（本文末）定义；未挂 .theme-dark 的页面继续用回退值，视觉零变化。
+$color-bg-page: var(--dm-bg-page, #faf6f0);
+$color-bg-card: var(--dm-bg-card, #ffffff);
+$color-bg-hover: var(--dm-bg-hover, #f1efec);
 // 卡片发丝描边（card-surface 专用，非表单边框）。
 // 2026-10-28 多端改版：从近透明冷灰 rgba(29,33,41,.06) 换成参考稿暖纸色
 // --line #DDD3C7 —— 白卡在奶油底上的轮廓要「看得见」，接近透明的描边
 // 只在灰色底上有用，暖纸上等于没有（和 morning-brief-ui 同一取值）。
-$color-card-border: #ddd3c7;
-$color-bg-header: #fff3ec;   // 页面顶部晨光渐变起点
+$color-card-border: var(--dm-card-border, #ddd3c7);
+$color-bg-header: var(--dm-bg-header, #fff3ec);   // 页面顶部晨光渐变起点
 
 // 文本色
-$color-text-primary: #1d2129;
-$color-text-secondary: #4e5969;
+$color-text-primary: var(--dm-text-primary, #1d2129);
+$color-text-secondary: var(--dm-text-secondary, #4e5969);
 // 次要说明文字（全仓 93 处引用）。
 // 2026-10-12 无障碍修复：原 #86909c 在**所有浅色底**上都达不到 WCAG AA 4.5:1
 // （白 #ffffff 3.24:1 / 页面底 #f7f8fa 3.05:1 / hover 底 #f2f3f5 2.92:1）。
 // 调深为 #657080：同灰蓝色相（hsl 213°→216°，饱和度 10%→12%），
 // 白底 5.02:1、最差的 hover 浅底 4.52:1，全部 ≥ 4.5:1。
 // ⚠️ 这是**全局视觉改动**，会影响所有页面的次要文字颜色；如需回退，改回 #86909c 即可。
-$color-text-tertiary: #657080;
+$color-text-tertiary: var(--dm-text-tertiary, #657080);
 // 禁用态文字：WCAG 1.4.3 对「失效的界面组件」明确豁免对比度要求，故**有意不动**
 // （原 #c9cdd4，白底 1.59:1）。改动它会削弱「禁用」的视觉语义。
 $color-text-disabled: #c9cdd4;
 $color-text-white: #ffffff;
 
 // 边框色
-$color-border: #e5e6eb;
-$color-divider: #f2f3f5;
+$color-border: var(--dm-border, #e5e6eb);
+$color-divider: var(--dm-divider, #f2f3f5);
 
 // ============================================
 // 晨报参考稿 token（2026-10-27 晨报页改版新增）
@@ -101,6 +103,52 @@ $color-emphasis-shadow-soft: rgba(199, 55, 26, 0.18);
 // 只做背景，上面压的都是深色文字（brand-strong 5.26 起），不参与白字判定。
 $color-accent-wash: linear-gradient(135deg, rgba(255, 122, 69, 0.1) 0%, rgba(247, 186, 30, 0.08) 100%);
 $color-accent-border: rgba(255, 122, 69, 0.14);
+
+// ============================================
+// 深色模式 token（2026-11-20，首笔只落地晨报/热点/我的三页）
+// ------------------------------------------------------------
+// 页面根挂 .theme-dark 后，上面被改写成 var(--dm-*) 的全局 token 全部切到下列值；
+// 未挂 .theme-dark 的页面继续走 var() 的浅色回退，不受影响。
+// 取值以暖黑为底（延续晨报「纸感」的暗部），实测对比度见 PR 说明。
+.theme-dark {
+  color-scheme: dark;
+
+  --dm-bg-page: #16130f;
+  --dm-bg-card: #211d18;
+  --dm-bg-hover: #2a251f;
+  --dm-card-border: #6b5f52;
+  --dm-bg-header: #241a14;
+
+  --dm-text-primary: #f5efe7;
+  --dm-text-secondary: #c9bfb2;
+  --dm-text-tertiary: #a89c8d;
+
+  --dm-border: #73675a;      // 表单/控件描边，对卡片底 ≥3:1
+  --dm-divider: #6b5f52;     // 列表分隔线，不再消失在底里（≈3:1）
+  --dm-secondary-strong: #a8c4ff; // 次级链接色（暗底 ≥7:1）
+
+  --dm-input-bg: #1d1915;
+  --dm-input-border: #73675a;
+  --dm-placeholder: #9a8f82;
+  --dm-chip-bg: #2a251f;
+  --dm-chip-text: #d8cec2;
+  --dm-danger-text: #ff8a80;
+}
+
+// H5：主题属性挂在 html/body 上时同步页面底色，避免滚动越界露白
+html.theme-dark,
+body.theme-dark {
+  background: #16130f;
+  color-scheme: dark;
+}
+
+// 深色下表单占位符统一提亮（H5 的 input/textarea 默认占位灰在暗底仅 ~3.6:1）
+// 注意 Taro H5 把 <input> 编译成 <taro-input-core> 包着 .weui-input，必须命中内部类
+.theme-dark .weui-input::placeholder,
+.theme-dark .weui-textarea::placeholder {
+  color: var(--dm-placeholder);
+  opacity: 1;
+}
 
 // ============================================
 // 交易终端深色 token（2026-10-28，仅 pages/trade 使用）

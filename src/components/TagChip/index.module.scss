@@ -3,8 +3,11 @@
 .chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   padding: 0 $spacing-md;
-  height: 52rpx;
+  height: 44PX;
+  min-width: 44PX;
+  box-sizing: border-box;
   font-size: $font-size-sm;
   color: $color-text-secondary;
   background: $color-bg-hover;
@@ -21,6 +24,6 @@
 
 .active {
   color: $color-text-white;
-  background: $color-primary-strong; // 白字 5.26:1（原 #ff7a45 仅 2.59:1；选中态是导航信息必须可读）
+  background: var(--dm-brand-solid, $color-primary-strong); // 白字 5.26:1（原 #ff7a45 仅 2.59:1；选中态是导航信息必须可读）
   font-weight: $font-weight-medium;
 }

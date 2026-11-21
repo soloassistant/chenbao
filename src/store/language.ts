@@ -1721,7 +1721,9 @@ const zh = {
   'trade.sizingRisk': '可亏净值 %',
   'trade.sizingDist': '止损距离（点）',
   'trade.sizingResult': '建议手数',
-  'trade.fxAmount': '金额'
+  'trade.fxAmount': '金额',
+  'library.hotEmptyTitle': '今天还没有热点资讯',
+  'library.hotEmptyHint': '稍后刷新看看；想先看点别的，可以去收藏里翻翻。',
 };
 
 /* ---------------- 英文词典按需加载（2026-11-19 首屏字节） ---------------- */

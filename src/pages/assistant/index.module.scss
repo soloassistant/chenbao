@@ -1,6 +1,9 @@
 @use '@/styles/variables.scss' as *;
 
 .page {
+  /* 返回条与其余二级页统一 y=12；大写 PX 跳过 px→rpx 换算 */
+  padding-top: 12PX;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   height: 100vh;

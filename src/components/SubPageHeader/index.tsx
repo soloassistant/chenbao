@@ -15,12 +15,12 @@ import styles from './index.module.scss';
  * 行为：优先 navigateBack（保留来源页状态），栈里只剩本页时兜底 reLaunch 回晨报。
  * 仅 H5 渲染：weapp 有原生导航栏，再放一条会重复。
  */
-export default function SubPageHeader() {
+export default function SubPageHeader({ fallbackUrl = '/pages/briefing/index' }: { fallbackUrl?: string }) {
   const t = useT();
 
   const handleBack = useCallback(() => {
     const fallback = () => {
-      Taro.reLaunch({ url: '/pages/briefing/index' }).catch(() => {});
+      Taro.reLaunch({ url: fallbackUrl }).catch(() => {});
     };
     // H5 直接打开二级页（书签/分享链接）时页面栈只有 1 页；此时 navigateBack
     // **不一定 reject**（实测直接加载会员页点返回，URL 原地不动），必须按栈深判断。
@@ -30,7 +30,7 @@ export default function SubPageHeader() {
     } else {
       fallback();
     }
-  }, []);
+  }, [fallbackUrl]);
 
   if (process.env.TARO_ENV !== 'h5') return null;
 

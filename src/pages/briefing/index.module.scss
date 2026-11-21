@@ -125,7 +125,7 @@
 
 .readStreakDone {
   color: #fff;
-  background: var(--brand, #{$color-secondary});
+  background: var(--dm-brand-solid, var(--brand, #{$color-secondary}));
 }
 
 .readStreakFlame {
@@ -478,8 +478,8 @@
 }
 
 .checkboxDone {
-  background: var(--brand, $color-secondary);
-  border-color: var(--brand, $color-secondary);
+  background: var(--dm-brand-solid, var(--brand, $color-secondary));
+  border-color: var(--dm-brand-solid, var(--brand, $color-secondary));
 }
 
 .checkboxMark {
@@ -702,7 +702,8 @@
   background: $color-gold;
   // 金底 #f7ba1e 上白字仅 1.75:1（任何加深都救不回白字）→ 改深色字 9.22:1。
   // 这是「白字改深字」而非「改背景色」：保留订阅金标识别别度，同时满足 WCAG AA。
-  color: $color-text-primary;
+  // 深色模式也必须是深字（不能用会随主题变白的 $color-text-primary）。
+  color: #5a3200;
   font-size: $font-size-sm;
   white-space: nowrap;
   transition: all $transition-fast;
@@ -761,9 +762,19 @@
   flex-shrink: 0;
   padding: 4rpx 20rpx;
   border-radius: $radius-round;
-  background: var(--brand, $color-primary);
+  background: var(--dm-brand-solid, var(--brand, $color-primary));
   color: $color-text-white;
   font-size: $font-size-xs;
+}
+
+/* 深色模式：页头两个悬浮圆钮原来写死 rgba(255,255,255,.85)，暗底上是一块刺眼白 */
+.page:global(.theme-dark) {
+  .searchButton,
+  .audioButton {
+    // 图标是黑色 emoji，纯暗底会「消失」；用暖浅底承载，而非刺眼纯白
+    background: #e8e0d5;
+    box-shadow: none;
+  }
 }
 
 /* U-01 骨架屏后真实内容淡入（≤200ms） */

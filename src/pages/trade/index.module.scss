@@ -37,7 +37,9 @@
   overflow: hidden;
   display: grid;
   grid-template-columns: 260PX 1fr;
-  grid-template-rows: 48PX 1fr 44PX;
+  // 2026-11-19：底条 44PX → 48PX。工具页签改成实高 44PX，44 的条子扣掉 1PX 上边框后只剩 43，
+  // 会被 overflow:hidden 裁掉 1PX；48 给足余量，顶栏与底条同高也更整齐。
+  grid-template-rows: 48PX 1fr 48PX;
   background: var(--t-bg);
   color: var(--t-text);
   font-family: 'SF Mono', 'Cascadia Mono', Consolas, 'Courier New', monospace;
@@ -62,28 +64,16 @@
   .backBtn {
     flex: 0 0 auto;
     display: flex;
-    // 2026-11-04：26PX 高，低于手机端 44px 下限；视觉不变，透明外扩 18rpx（≈9px）
-    position: relative;
+    // 2026-11-19：26PX → 44PX 实高，不再靠伪元素外扩（顶栏 48PX 里 44 放得下）。
     align-items: center;
     gap: 5PX;
-    height: 26PX;
+    height: 44PX;
     padding: 0 10PX;
     border: 1PX solid var(--t-line);
     border-radius: 4PX;
     color: var(--t-text-dim);
     cursor: pointer;
     transition: color 120ms ease, border-color 120ms ease;
-
-    // 只扩命中，不画像素
-    &::before {
-      content: '';
-      position: absolute;
-      top: -18rpx;
-      right: 0;
-      bottom: -18rpx;
-      left: 0;
-      background: transparent;
-    }
 
     &:hover {
       color: var(--t-text);
@@ -278,25 +268,20 @@
   }
 
   .wlTab {
-    // 2026-11-04：实测 44×24，高度低于手机端 44px；视觉不变，透明外扩到 44
-    // 向上扩到标题行（非交互），向下只吃 6PX 容器内边距，不碰下方自选行
-    position: relative;
-    padding: 2PX 10PX;
+    // 2026-11-19：实测 44×23.6，高度不足 44。原实现靠 ::before 上下外扩，但页签横向间隙
+    // 只有 4PX、纵向又压到自选行 —— 扩出来的区域互相重叠，点哪个取决于层叠顺序。
+    // 改成实尺寸 44 高（横向 44 由内容宽度保证），不再外扩。
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44PX;
+    min-height: 44PX;
+    padding: 0 10PX;
     border-radius: 3PX;
     font-size: 11PX;
     color: var(--t-text-dim);
     border: 1PX solid transparent;
     cursor: pointer;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: -36rpx;
-      right: 0;
-      bottom: -4rpx;
-      left: 0;
-      background: transparent;
-    }
   }
 
   .wlTabActive {
@@ -846,20 +831,29 @@
     overflow: hidden;
   }
 
+  // 2026-11-19：原来是三行竖排（每行 18PX，塞在 44PX 底条里），任何一行的命中都远低于 44。
+  // 竖排在一个 44 高的条里**不可能**做到 44 —— 改成横排，每个页签实高 44、最小宽 44。
+  // 原有 2PX 间隙靠伪元素外扩会与相邻页签重叠，这里改为实尺寸 + 4PX 间隙，不再外扩。
   .toolTabs {
     flex: 0 0 auto;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: stretch;
     justify-content: center;
     border-right: 1PX solid var(--t-line);
     padding: 0 6PX;
-    gap: 2PX;
+    gap: 4PX;
   }
 
   .toolTab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44PX;
+    min-height: 44PX;
     font-size: 10PX;
     color: var(--t-text-dim);
-    padding: 1PX 8PX;
+    padding: 0 8PX;
     border-radius: 2PX;
     cursor: pointer;
   }
@@ -925,6 +919,15 @@
     flex: 0 0 auto;
   }
 
+  // 底条里的方向/币种切换：实测 52×25.6。底条现在 48PX 高，撑到 44 即可，
+  // 横向 52 已达标，不需要外扩。
+  .toolPanel .segBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44PX;
+  }
+
   .toolResult {
     flex: 0 0 auto;
     display: flex;
@@ -967,6 +970,14 @@
       padding: 6PX 10PX;
       gap: 8PX 12PX;
       white-space: normal;
+    }
+
+    // 2026-11-19：320 视口实测 badge 宽 336PX、右缘到 346（出屏 26PX）。
+    // 父条已允许换行，但 badge 仍是 flex:0 0 auto（按内容取宽、拒绝收缩），
+    // 文本换行永远不触发。放宽为可收缩 + min-width:0，让它按剩余宽度折行。
+    .demoBadge {
+      flex: 0 1 auto;
+      min-width: 0;
     }
 
     .clock { margin-left: 0; }
