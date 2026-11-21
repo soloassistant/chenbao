@@ -7,7 +7,7 @@ import classnames from 'classnames';
 import EmptyState from '@/components/EmptyState';
 import PlanProposalCard from '@/components/PlanProposalCard';
 import { apiGetBriefing, apiConfirmItem, apiApplyPlan, apiTodoSetStatus, apiUpdateEvent } from '@/services/api';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import { formatEventTime } from '@/utils/date';
 import { logActivity } from '@/utils/activityLog';
 import { isOverlap, hasGapBuffer, buildPlanProposal, DEFAULT_DURATION_MINUTES, SCHED_GAP_BUFFER_MINUTES } from '@/utils/schedule';
@@ -31,6 +31,7 @@ function CalendarPage() {
   const t = useT();
   const lang = useLanguageStore((s) => s.lang);
   const { theme } = useThemeStore();
+  const { resolved } = useThemeMode();
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [month, setMonth] = useState(() => dayjs());
   const [selected, setSelected] = useState(() => dayjs().format('YYYY-MM-DD'));
@@ -428,7 +429,7 @@ function CalendarPage() {
   };
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.panel}>
         <View className={styles.monthBar}>
           <Button

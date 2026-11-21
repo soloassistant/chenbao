@@ -114,7 +114,7 @@
     font-weight: $font-weight-semibold;
     // 白字压渐变：原 `--brand`(#ff7a45) 那一档只有 2.59:1。改实色 `--brand-strong` = 5.26:1；
     // 日期是 14.6px 半粗（不足 18.66px），不能按大字 3:1 放宽。
-    background: var(--brand-strong, $color-primary-strong);
+    background: var(--dm-brand-solid, var(--brand-strong, $color-primary-strong));
     border-radius: $radius-button;
     box-shadow: 0 4rpx 12rpx $color-emphasis-shadow;
   }
@@ -303,7 +303,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--brand-strong); // 白字 4.95:1（原 --brand 白字 2.59:1）
+  background: var(--dm-brand-solid, var(--brand-strong)); // 白字 4.95:1（原 --brand 白字 2.59:1）；深色用实心变体
   color: #fff;
   border-radius: $radius-sm;
   padding: 10rpx 26rpx;
@@ -474,7 +474,7 @@
   @include button-reset;
   padding: 8rpx 24rpx;
   border-radius: $radius-sm;
-  background: var(--brand-strong);
+  background: var(--dm-brand-solid, var(--brand-strong));
   color: $color-text-white;
 }
 
@@ -502,8 +502,8 @@
 }
 
 .todoChecked {
-  background: var(--brand);
-  border-color: var(--brand);
+  background: var(--dm-brand-solid, var(--brand));
+  border-color: var(--dm-brand-solid, var(--brand));
 }
 
 .checkMark {
@@ -554,5 +554,56 @@
 
   .cell {
     min-width: 44PX;
+  }
+}
+
+/* 深色模式：日历页局部壳层（2026-11-21）
+   全局 token 已覆盖卡片/文字/分隔线；这里只处理深色下会「反向」的固定浅色面
+   与浅色语义无法沿用的小面积色块。 */
+.page:global(.theme-dark) {
+  // 原 #fff 圆钮：深色下白底 + 浅色文字不可读
+  .navButton {
+    background: var(--dm-bg-hover);
+    box-shadow: none;
+  }
+
+  // 选中日：浅色 active-wash 在深色下过亮，改用品牌柔光（文字已是 onDark）
+  .selected {
+    background: var(--brand-soft);
+  }
+
+  // 待办勾选框边界：divider 2.70 不足 3:1，控件用 border 档
+  .todoCheck {
+    border-color: var(--dm-border);
+  }
+
+  // 输入框：页面底压卡片底只有 1.11 反差，补输入底 + 描边
+  .qaTitle,
+  .qaTime,
+  .editInput {
+    background: var(--dm-input-bg);
+    border: 1rpx solid var(--dm-input-border);
+  }
+
+  // 编辑按钮原为页面底色，深色下更暗一档才看得出是控件
+  .eventEditBtn {
+    background: var(--dm-bg-hover);
+  }
+
+  .editPanel {
+    background: var(--dm-bg-hover);
+  }
+
+  // 琥珀警示条：浅色 #b45309 压深色底不足；按钮 #d97706 白字仅 3.1:1
+  .conflictBar {
+    background: rgba(255, 176, 102, 0.16);
+  }
+
+  .conflictText {
+    color: #ffc078;
+  }
+
+  .rescheduleBtn {
+    background: #b45309;
   }
 }
