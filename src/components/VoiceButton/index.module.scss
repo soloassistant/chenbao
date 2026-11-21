@@ -33,12 +33,25 @@
     transform: scale(0.98);
     opacity: 0.9;
   }
+
+  // 深色（2026-11-21）：默认态是浅橙底 + 深橙描边（照白底调过），暗页上成了发亮块，
+  // 且描边压在浅底上只有 1.84:1。换成品牌 wash 底 + 浅橙描边（8.19:1）。
+  :global(.theme-dark) & {
+    background: var(--brand-soft, #{$color-voice-bg});
+    border-color: var(--brand-strong, #{$color-primary-light});
+  }
 }
 
 .recording {
   background: var(--brand, #{$color-primary});
   border-color: var(--brand, #{$color-primary});
   transform: scale(1.02);
+
+  // 深色下 --brand 仍是 #FF7A45，白字只有 2.59:1；改实心变体（白字 5.26:1）
+  :global(.theme-dark) & {
+    background: var(--dm-brand-solid, var(--brand-strong, #{$color-primary}));
+    border-color: var(--dm-brand-solid, var(--brand-strong, #{$color-primary}));
+  }
 }
 
 /* 处理中（TailCapture / AutoStop）：按钮态收拢，提示「已收到，正在转写」 */
@@ -47,6 +60,12 @@
   border-color: var(--brand-deep, #{$color-primary-dark});
   transform: scale(0.98);
   opacity: 0.9;
+
+  // 深色下 --brand-deep 是浅橙 onDark，白字压它仅 ~1.7:1；同样改实心变体
+  :global(.theme-dark) & {
+    background: var(--dm-brand-solid, var(--brand-strong, #{$color-primary-dark}));
+    border-color: var(--dm-brand-solid, var(--brand-strong, #{$color-primary-dark}));
+  }
 }
 
 .compact.button {
@@ -72,6 +91,12 @@
   font-size: $font-size-md;
   font-weight: $font-weight-medium;
   color: $color-primary-dark;
+
+  // 深色下 #e85d2a 压 wash 底只有 ~3.2:1，换浅橙（8.19:1）；
+  // 录音/处理中仍是白字（下方规则后置、特异性同级，覆盖这条）
+  :global(.theme-dark) & {
+    color: var(--brand-strong, #{$color-primary-dark});
+  }
 }
 
 .recording .label,

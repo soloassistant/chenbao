@@ -10,6 +10,7 @@ import { langToTts } from '@/utils/learnDrills';
 import { isTtsLangSupported, stopSpeak } from '@/utils/tts';
 import { pressableProps } from '@/utils/a11y';
 import { useT } from '@/store/language';
+import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import GrammarDrill from './GrammarDrill';
 import ListeningDrill from './ListeningDrill';
 import SpeakingDrill from './SpeakingDrill';
@@ -20,6 +21,8 @@ type DrillMode = 'words' | 'grammar' | 'listening' | 'speaking';
 /** 课程学习页：单词卡自测 + 语法填空 + 听力选义 + 口语跟读（四模式 Tab，进度统一写入 learn store） */
 function LearnDetailPage() {
   const t = useT();
+  const theme = useThemeStore((s) => s.theme);
+  const { resolved } = useThemeMode();
   const router = useRouter();
   const courseId = router.params.courseId || '';
   const [mode, setMode] = useState<DrillMode>('words');
@@ -61,7 +64,7 @@ function LearnDetailPage() {
 
   if (!found) {
     return (
-      <View className={styles.page}>
+      <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
         <EmptyState
           icon='📖'
           title={t('learn.courseMissing')}
@@ -90,6 +93,9 @@ function LearnDetailPage() {
   const { course, lang } = found;
   const words = course.words;
   const word = words[index];
+  // 深色下语种原色（en #2F6DB5 / ja #C7394A / ko #5B4FC4）压暗卡片不足 4.5:1，
+  // 只把「文字/描边」用途换到 --dm-secondary-strong；进度条/主按钮等填充仍用 accent 保留语种识别。
+  const accentText = resolved === 'dark' ? 'var(--dm-secondary-strong)' : lang.accent;
 
   const switchMode = (next: DrillMode) => {
     if (next === mode) return;
@@ -170,7 +176,7 @@ function LearnDetailPage() {
           <View className={classnames(styles.card, flipped && styles.cardFlipped)}>
             {!flipped ? (
               <View className={styles.cardFront}>
-                <Text className={styles.term} style={{ color: lang.accent }}>
+                <Text className={styles.term} style={{ color: accentText }}>
                   {word.term}
                 </Text>
                 {word.reading ? <Text className={styles.reading}>{word.reading}</Text> : null}
@@ -203,7 +209,7 @@ function LearnDetailPage() {
   };
 
   return (
-    <View className={styles.page}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <SubPageHeader fallbackUrl='/pages/learn/index' />
       <View className={styles.header}>
         <Text className={styles.courseTitle}>{course.title}</Text>
@@ -220,7 +226,7 @@ function LearnDetailPage() {
           <View
             key={tab.id}
             className={classnames(styles.modeTab, mode === tab.id && styles.modeTabActive)}
-            style={mode === tab.id ? { borderColor: lang.accent, color: lang.accent } : undefined}
+            style={mode === tab.id ? { borderColor: accentText, color: accentText } : undefined}
             onClick={() => switchMode(tab.id)}
           >
             <Text>
@@ -235,13 +241,20 @@ function LearnDetailPage() {
         {mode === 'words' ? (
           renderWordsMode()
         ) : mode === 'grammar' ? (
-          <GrammarDrill key={`g-${course.id}`} course={course} accent={lang.accent} best={getDrillScore(course.id, 'grammar')} />
+          <GrammarDrill
+            key={`g-${course.id}`}
+            course={course}
+            accent={lang.accent}
+            accentText={accentText}
+            best={getDrillScore(course.id, 'grammar')}
+          />
         ) : mode === 'listening' ? (
           audioSupported ? (
             <ListeningDrill
               key={`l-${course.id}`}
               course={course}
               accent={lang.accent}
+              accentText={accentText}
               ttsLang={ttsLang}
               best={getDrillScore(course.id, 'listening')}
             />
@@ -254,6 +267,7 @@ function LearnDetailPage() {
             course={course}
             langId={langId}
             accent={lang.accent}
+            accentText={accentText}
             best={getDrillScore(course.id, 'speaking')}
             audioSupported={audioSupported}
           />

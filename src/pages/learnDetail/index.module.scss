@@ -583,3 +583,12 @@
   gap: $spacing-lg;
   margin-top: $spacing-md;
 }
+
+/* 深色（2026-11-21）：本页其余颜色全走全局 token，只剩白字实心按钮需要换档。 */
+.page:global(.theme-dark) {
+  /* 单词模式的主按钮没有内联色，走 --brand（深色下仍是 #FF7A45），白字压它只有 2.59:1；
+     用实心变体。练习里的主按钮是内联语种色（白字 ≥5.1:1），不受这条覆盖影响。 */
+  .btnPrimary {
+    background: var(--dm-brand-solid, var(--brand, $color-secondary));
+  }
+}

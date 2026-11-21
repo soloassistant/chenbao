@@ -35,11 +35,13 @@ interface DrillOptionsProps {
   /** 已点选的选项（null = 未作答） */
   picked: string | null;
   accent: string;
+  /** 正确项文字/描边色（深色下语种原色不足 4.5:1，由调用方换档；缺省同 accent） */
+  accentText?: string;
   onPick: (opt: string) => void;
 }
 
 /** 四选项列表：答后锁定，正确项高亮主题色、错选项标红 */
-export function DrillOptions({ options, answer, picked, accent, onPick }: DrillOptionsProps) {
+export function DrillOptions({ options, answer, picked, accent, accentText = accent, onPick }: DrillOptionsProps) {
   return (
     <View className={styles.optionList}>
       {options.map((opt) => {
@@ -53,7 +55,7 @@ export function DrillOptions({ options, answer, picked, accent, onPick }: DrillO
               picked !== null && isAnswer && styles.optionCorrect,
               isPicked && !isAnswer && styles.optionWrong
             )}
-            style={picked !== null && isAnswer ? { borderColor: accent, color: accent } : undefined}
+            style={picked !== null && isAnswer ? { borderColor: accentText, color: accentText } : undefined}
             onClick={() => onPick(opt)}
           >
             <Text>{opt}</Text>
@@ -96,17 +98,19 @@ interface DrillFinishProps {
   /** 历史最高分（>0 才显示；调用方负责取 max） */
   best: number;
   accent: string;
+  /** 得分文字色（深色下换高对比档；缺省同 accent） */
+  accentText?: string;
   onRestart: () => void;
 }
 
 /** 结算卡：emoji + 标题 + 得分 + 历史最高分 + 「再来一轮」 */
-export function DrillFinish({ emoji, title, score, best, accent, onRestart }: DrillFinishProps) {
+export function DrillFinish({ emoji, title, score, best, accent, accentText = accent, onRestart }: DrillFinishProps) {
   const t = useT();
   return (
     <View className={styles.drillFinish}>
       <Text className={styles.finishEmoji}>{emoji}</Text>
       <Text className={styles.finishTitle}>{title}</Text>
-      <Text className={styles.finishScore} style={{ color: accent }}>
+      <Text className={styles.finishScore} style={{ color: accentText }}>
         {score}
       </Text>
       {best > 0 ? <Text className={styles.finishBest}>{t('learn.bestScore', { score: best })}</Text> : null}
