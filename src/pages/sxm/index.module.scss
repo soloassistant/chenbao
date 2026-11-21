@@ -44,9 +44,9 @@
 .tab,
 .tabActive {
   flex: 1;
-  // 2026-11-04：64rpx（375 下 32px）低于 44px；视觉不变，上下各外扩 12rpx
-  @include hit-expand(0, 12rpx);
-  height: $button-height-sm;
+  // 2026-11-21：不再透明外扩；320 下 64rpx 只剩 27px，改实尺寸 44PX
+  height: 44PX;
+  min-height: 44PX;
   border-radius: $radius-button;
   display: flex;
   align-items: center;
@@ -102,7 +102,9 @@
 }
 
 .input {
-  height: $button-height-md;
+  /* 2026-11-21：320 下 80rpx 只有 34px，改实尺寸 44PX */
+  height: 44PX;
+  min-height: 44PX;
   background: $color-bg-card;
   border-radius: $radius-button;
   padding: 0 $spacing-lg;
@@ -111,6 +113,12 @@
   border: 2rpx solid $color-border;
   box-sizing: border-box;
   width: 100%;
+}
+
+/* Taro Input 真正可点的是内部 input.weui-input */
+.input :global(.weui-input) {
+  height: 44PX;
+  min-height: 44PX;
 }
 
 .chipBlock {
@@ -135,6 +143,12 @@
   background: $color-bg-card;
   border: 2rpx solid $color-border;
   border-radius: $radius-round;
+  /* 2026-11-21：320 下 43×34 不足 44，改实尺寸（相邻 chip 间距不变） */
+  min-width: 44PX;
+  min-height: 44PX;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
   &:active {
     opacity: 0.85;
