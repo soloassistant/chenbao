@@ -10,6 +10,7 @@ import IntelGroupCard, { IntelItemRow } from '@/components/IntelGroupCard';
 import SafeImage from '@/components/SafeImage';
 import HabitGuardBar from '@/components/HabitGuardBar';
 import PlanProposalCard from '@/components/PlanProposalCard';
+import { nextId, readPlan, writePlan } from '@/data/dailyPlan';
 import { BriefingSkeleton } from '@/components/Skeleton';
 import BurstBanner from '@/components/BurstBanner';
 import { NAV_MAIN, NAV_MORE, type Item as NavItem } from '@/components/DesktopNav';
@@ -93,6 +94,28 @@ const r2r = (n: number): string => `${(n / DESIGN_PX_PER_REM).toFixed(5)}rem`;
 const BRIEFING_CACHE_KEY = 'briefingDailyCache';
 /** X8 连读徽章 storage key：{ last: 'YYYY-MM-DD', count: n }，进页即记当天 */
 const BRIEF_STREAK_KEY = 'mb-brief-streak';
+
+/**
+ * F92：收藏 → 待办（2026-11-21）。
+ * 晨报的「收藏精选」此前只展示，看完即止；这里给它一个出口。
+ * 与其他写路径一致：writePlan 会吞掉 storage 异常，必须**回读**确认真的落盘，
+ * 否则「已加入待办」就是假的。
+ */
+function addDigestAsTodo(text: string): boolean {
+  const title = text.trim().slice(0, 60);
+  if (!title) return false;
+  const plan = readPlan();
+  const todo = {
+    id: nextId('todo'),
+    title,
+    status: 'confirmed' as const,
+    source: '晨报收藏',
+    createTime: new Date().toISOString()
+  };
+  plan.todos.push(todo);
+  writePlan(plan);
+  return readPlan().todos.some((item) => item.id === todo.id);
+}
 
 /** 读当日晨报缓存：跨日或损坏时视为未命中 */
 function readBriefingCache(): Briefing | null {
@@ -1626,6 +1649,19 @@ function BriefingPage() {
               {(briefing.digest || []).map((text, i) => (
                 <View key={i} className={styles.digestItem}>
                   <Text className={styles.digestText}>{text}</Text>
+                  <Text
+                    className={styles.digestAdd}
+                    {...pressableProps(t('briefing.favToTodo'))}
+                    onClick={() => {
+                      const ok = addDigestAsTodo(text);
+                      Taro.showToast({
+                        title: t(ok ? 'briefing.favToTodoDone' : 'briefing.favToTodoFail'),
+                        icon: ok ? 'success' : 'none'
+                      });
+                    }}
+                  >
+                    {t('briefing.favToTodo')}
+                  </Text>
                 </View>
               ))}
             </View>

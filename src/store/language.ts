@@ -573,6 +573,9 @@ const zh = {
 
   'briefing.sectionToday': '今日日程',
   'briefing.sectionTodo': '待办',
+  'briefing.favToTodo': '转为待办',
+  'briefing.favToTodoDone': '已加入待办',
+  'briefing.favToTodoFail': '加入失败，请重试',
   'briefing.sectionFav': '昨日收藏精选',
   // 2026-10-27 参考稿改版：深色概览卡 + 桌面三栏（侧栏导航 / 右栏天气与快捷入口）
   'briefing.sectionOverview': '今日概览',

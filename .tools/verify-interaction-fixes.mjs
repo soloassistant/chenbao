@@ -892,5 +892,25 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     brief.includes('if (!SUBSCRIBE_CONFIGURED)'));
 }
 
+/* M40（2026-11-21）：收藏 → 待办（F92）。
+ * 守三件事：真的写 dailyPlanStore.todos、写后回读校验、失败不得报成功。 */
+{
+  const src = read('src/pages/briefing/index.tsx');
+  ok('M40a 收藏精选有「转为待办」出口且写入 dailyPlanStore',
+    src.includes('addDigestAsTodo') &&
+      src.includes('readPlan()') && src.includes('writePlan(plan)') &&
+      src.includes("t('briefing.favToTodo')"));
+  ok('M40b 写入后回读校验（writePlan 吞异常，不能只凭返回值报成功）',
+    /readPlan\(\)\.todos\.some\(/.test(src));
+  ok('M40c 成功/失败文案分开，失败不报「已加入」',
+    src.includes("t(ok ? 'briefing.favToTodoDone' : 'briefing.favToTodoFail')"));
+  const zh = read('src/store/language.ts');
+  const en = read('src/store/language.en.ts');
+  ok('M40d 三条文案中英齐全',
+    ['favToTodo', 'favToTodoDone', 'favToTodoFail'].every(
+      (k) => zh.includes(`'briefing.${k}':`) && en.includes(`'briefing.${k}':`)
+    ));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

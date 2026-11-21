@@ -555,6 +555,9 @@ export const en: Record<LangKey, string> = {
 
   'briefing.sectionToday': "Today's Schedule",
   'briefing.sectionTodo': 'To-dos',
+  'briefing.favToTodo': 'Add as to-do',
+  'briefing.favToTodoDone': 'Added',
+  'briefing.favToTodoFail': 'Failed, retry',
   'briefing.sectionFav': "Yesterday's Picks",
   'briefing.sectionOverview': 'Today at a Glance',
   'briefing.leanOverview': 'No events or todos today · {n} brief items',
