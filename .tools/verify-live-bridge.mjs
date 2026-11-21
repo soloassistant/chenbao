@@ -416,6 +416,12 @@ assert(
     /hotspotInFlight/.test(cloudTs) && /hotspotCache/.test(cloudTs)
   );
   assert(
+    'G4 刷新与首屏加载有代次保护（先发的旧请求晚到不得覆盖新数据）',
+    /let hotspotGeneration = 0/.test(cloudTs) &&
+      /if \(gen !== hotspotGeneration\) return null/.test(cloudTs) &&
+      /if \(gen === hotspotGeneration\) hotspotCache/.test(cloudTs)
+  );
+  assert(
     'G3 载荷有新鲜度闸（烘焙副本过期才去问远端 ⇒ 常态只有 1 个请求）',
     /HOTSPOT_FRESH_MS/.test(cloudTs) && /HOTSPOT_CACHE_MS/.test(cloudTs)
   );
