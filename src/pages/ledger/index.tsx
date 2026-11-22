@@ -469,8 +469,12 @@ function LedgerPage() {
             <Text>⚠️</Text>
             <Text>
               {todaySum.overDaily && budget.daily !== undefined
-                ? t('ledger.overDaily', { amount: formatMoney(budget.daily) })
-                : t('ledger.overMonthly', { amount: formatMoney(budget.monthly ?? 0) })}
+                ? t('ledger.overDaily', {
+                    amount: formatMoney(Math.max(0, todaySum.expense - budget.daily))
+                  })
+                : t('ledger.overMonthly', {
+                    amount: formatMoney(Math.max(0, monthSum.expense - (budget.monthly ?? 0)))
+                  })}
             </Text>
           </View>
         ) : null}

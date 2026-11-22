@@ -319,7 +319,7 @@ function ShoppingPage() {
                   <View className={styles.head}>
                     <Text className={item.bought ? styles.nameDone : styles.name}>{item.name}</Text>
                     {item.prices.length > 0 && cheapest ? (
-                      <Text className={styles.cheapest}>最低 {cheapest}</Text>
+                      <Text className={styles.cheapest}>{t('shopping.lowestRecorded', { price: cheapest })}</Text>
                     ) : null}
                   </View>
                   {item.prices.length > 0 ? (

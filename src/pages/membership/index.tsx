@@ -5,7 +5,7 @@ import Taro, { useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import { useUserStore } from '@/store/user';
 import { brandVars, useThemeStore } from '@/store/theme';
-import { useT, useLanguageStore } from '@/store/language';
+import { useT, useLanguageStore, dict } from '@/store/language';
 import type { LangKey } from '@/store/language';
 import { apiCreateOrder, type CreateOrderPayload } from '@/services/api';
 import { ordersListOwn, type CloudOrder } from '@/services/cloudOrders';
@@ -950,9 +950,15 @@ function MembershipPage() {
               // channel 来自云端行、是不可信输入：空串时 ch[0] 为 undefined，
               // .toUpperCase() 直接抛错整页崩。空值/未知值都回落到原始串展示。
               const ch = String(o.channel || '');
-              const channelLabel = ch
-                ? t(`mine.orderChannel${ch[0].toUpperCase()}${ch.slice(1)}` as LangKey)
-                : o.channel || '—';
+              // 通道值可能是 wechat_h5 / alipay 这类带后缀的形态，直接拼 key 会渲染成
+              // mine.orderChannelWechat_h5 这种裸键名。取主通道名，未知值给「其他」。
+              const channelBase = ch.split('_')[0];
+              const channelKey = channelBase
+                ? (`mine.orderChannel${channelBase[0].toUpperCase()}${channelBase.slice(1)}` as LangKey)
+                : null;
+              const channelLabel = channelKey && channelKey in dict
+                ? t(channelKey)
+                : t('mine.orderChannelOther');
               const channelIcon = CHANNEL_ICON[ch] || CHANNEL_ICON_FALLBACK;
               const statusLabel = getOrderStatusLabel(o.status, o.refundStatus);
               const statusColor = getOrderStatusColor(o.status, o.refundStatus);

@@ -1069,5 +1069,27 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     zh.includes("'briefing.upgradePro':") && en.includes("'briefing.upgradePro':"));
 }
 
+/* M56（2026-11-22）：用户可见数字/名称必须与口径一致。
+ * 订单通道不得渲染裸键名；客服行右值要与点击动作一致；
+ * 超预算提示给「超出额」而不是「预算额」；最低价标明是记录值；运动汇总按 8 周窗口算。 */
+{
+  const member = read('src/pages/membership/index.tsx');
+  ok('M56a 订单通道按主通道名映射，未知回落「其他」',
+    member.includes('channelBase') && member.includes("t('mine.orderChannelOther')") &&
+      !/mine\.orderChannel\$\{ch\[0\]/.test(member));
+  const mine = read('src/pages/mine/index.tsx');
+  ok('M56b 联系客服右值与「在线提交」动作一致',
+    mine.includes("t('mine.serviceOnline')") && !mine.includes('{SERVICE_WECHAT}'));
+  const ledger = read('src/pages/ledger/index.tsx');
+  ok('M56c 超预算提示计算「超出额」',
+    /todaySum\.expense - budget\.daily/.test(ledger) &&
+      /monthSum\.expense - \(budget\.monthly/.test(ledger));
+  const shop = read('src/pages/shopping/index.tsx');
+  ok('M56d 最低价标注为「记录最低」', shop.includes("t('shopping.lowestRecorded'"));
+  const sport = read('src/pages/sport/index.tsx');
+  ok('M56e 运动汇总只统计近 8 周',
+    sport.includes('eightWeeksAgo') && sport.includes('recentRuns.length'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

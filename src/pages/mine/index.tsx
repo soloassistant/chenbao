@@ -123,7 +123,6 @@ const DELETE_CONFIRM_WORD = '注销';
  * （nslookup 返回 Non-existent domain），邮件必退信。客服统一走站内反馈 → 后台工单，
  * 不再对外暴露任何邮箱地址。 */
 
-const SERVICE_WECHAT = '私人晨报助理';
 const LAST_DELETE_KEY = 'mb-last-delete-at';
 const TICKET_HISTORY_KEY = 'mb-support-tickets';
 const TICKET_KINDS = ['llm_events', 'feedback', 'client_errors'] as const;
@@ -1956,7 +1955,7 @@ function MinePage() {
         )}
         {renderRow(
           t('mine.service'),
-          <Text className={styles.linkText}>{SERVICE_WECHAT}</Text>,
+          <Text className={styles.linkText}>{t('mine.serviceOnline')}</Text>,
           handleContactService
         )}
         {renderRow(t('mine.feedback'), null, () => setFbOpen(true))}

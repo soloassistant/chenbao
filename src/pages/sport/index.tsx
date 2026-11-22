@@ -425,6 +425,13 @@ export default function SportPage() {
     }).catch(() => undefined);
   }, [detail, t]);
 
+  // 「近 8 周 · 共 N 次」的 N 必须真的是近 8 周；以前用的是全历史 runs.length。
+  const eightWeeksAgo = Date.now() - 56 * 24 * 60 * 60 * 1000;
+  const recentRuns = runs.filter((r) => {
+    const t = new Date(r.startedAt).getTime();
+    return Number.isFinite(t) && t >= eightWeeksAgo;
+  });
+
   /* ---------------- 渲染 ---------------- */
 
   const headerTitle =
@@ -432,7 +439,10 @@ export default function SportPage() {
 
   const subtitle =
     view === 'records'
-      ? t('sport.recordsSummary', { n: runs.length, km: formatKm(runs.reduce((s, r) => s + r.distanceM, 0)) })
+      ? t('sport.recordsSummary', {
+          n: recentRuns.length,
+          km: formatKm(recentRuns.reduce((s, r) => s + r.distanceM, 0))
+        })
       : view === 'detail'
         ? ''
         : lastRun
