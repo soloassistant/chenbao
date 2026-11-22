@@ -1054,5 +1054,20 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     member.includes('Taro.showLoading') && member.includes('Taro.hideLoading'));
 }
 
+/* M54（2026-11-22）：二次提取 0 条不得清空已有草稿；
+ * M55 未订阅角标必须写「升级 PRO」，不能把免费用户标成 PRO。 */
+{
+  const inbox = read('src/pages/inbox/index.tsx');
+  ok('M54a 提取 0 条时提前返回，不覆盖已有草稿',
+    /if \(next\.length === 0\)[\s\S]{0,200}return;/.test(inbox));
+  const brief = read('src/pages/briefing/index.tsx');
+  ok('M55a 未订阅角标走 upgradePro 文案',
+    brief.includes("t('briefing.upgradePro')") && !/>\s*⚡ PRO\s*</.test(brief));
+  const zh = read('src/store/language.ts');
+  const en = read('src/store/language.en.ts');
+  ok('M55b upgradePro 中英齐全',
+    zh.includes("'briefing.upgradePro':") && en.includes("'briefing.upgradePro':"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

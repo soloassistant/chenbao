@@ -260,6 +260,12 @@ function InboxPage() {
           origin: result.collection
         });
       }
+      if (next.length === 0) {
+        // 0 条不清空用户已有的草稿：二次提取失败时把上一版擦掉，等于逼用户重来
+        Taro.showToast({ title: result.note || '没找到日程或待办，带上时间试试', icon: 'none' });
+        setNote(result.note || '');
+        return;
+      }
       setDrafts(next);
       setNote(result.note || '');
       setBills(result.bills || []);
@@ -279,12 +285,6 @@ function InboxPage() {
           briefing?.events || []
         )
       );
-      if (next.length === 0) {
-        // 2026-10-24：区分「没解析出东西」与「提取能力不可用」。
-        // 降级路径（src/data/extract.ts）现在**不编造结果**，只在 note 里如实说明原因；
-        // 详细原因随下方空态卡渲染，toast 只做瞬时反馈（太长会被截断）。
-        Taro.showToast({ title: result.note ? '这次没解析出内容' : '没找到日程或待办，带上时间试试', icon: 'none' });
-      }
     } catch (err) {
       console.error('[InboxPage] extract failed:', err);
       // A06：模型返回结构不合法时给专门文案，不混进「网络/能力不可用」

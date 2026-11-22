@@ -1354,7 +1354,7 @@ function BriefingPage() {
                 <Text className={styles.badge}>{t('mine.badgeSubscribed')}</Text>
               ) : (
                 <Text className={styles.proBadge} onClick={handleGoSubscribe}>
-                  ⚡ PRO
+                  ⚡ {t('briefing.upgradePro')}
                 </Text>
               )}
               {/* v2.1：晨报连续阅读打卡（主 streak 已改挂晨报）

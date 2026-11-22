@@ -580,6 +580,7 @@ export const en: Record<LangKey, string> = {
   'briefing.navTrade': 'Trading',
   'briefing.helpers': 'Quick Access',
   'briefing.brandTagline': 'Plan tomorrow tonight',
+  'briefing.upgradePro': 'Upgrade to PRO',
   'briefing.freePlan': 'Free plan',
   'briefing.chatHint': 'Talk to me, or hold the mic to speak',
   'briefing.aiTag': '— AI-generated content, for reference only —',

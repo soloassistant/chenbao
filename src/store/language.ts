@@ -600,6 +600,7 @@ const zh = {
   'briefing.navTrade': '交易',
   'briefing.helpers': '快捷入口',
   'briefing.freePlan': '免费版',
+  'briefing.upgradePro': '升级 PRO',
   'briefing.chatHint': '和 AI 助理说点什么，或按住麦克风说话',
   'briefing.aiTag': '— AI 生成内容，仅供参考 —',
   'briefing.inputPlaceholder': '说点什么…', // D2：原长文案在 414px 手机宽度下被截断（2026-10-21 视觉巡检复现），按问题总表解法改短
