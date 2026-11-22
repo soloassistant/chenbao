@@ -12,7 +12,7 @@ import { needsAuthGate, getSession, markGateRedirect, getCloudUserId, hasStoredS
 // 只依赖「同意读写」小模块：三份法务正文（~11 KB gzip）不该为这一个布尔值进首屏包
 import { hasAgreedConsent } from '@/data/legal-consent';
 import { useLanguageStore, dict, isEnDictLoaded, loadEnDict, STORAGE_KEY as LANG_KEY } from '@/store/language';
-import { useThemeStore, useTabBarTheme, STORAGE_KEY as THEME_KEY } from '@/store/theme';
+import { applyThemeClass, useThemeModeStore, useThemeStore, useTabBarTheme, STORAGE_KEY as THEME_KEY } from '@/store/theme';
 import { useUiScaleStore, STORAGE_KEY as UI_SCALE_KEY } from '@/store/uiScale';
 import { initCloudSync, subscribeSyncApplied } from '@/services/cloudSync';
 import { syncHealthSyncExclusion } from '@/services/healthConsent';
@@ -171,6 +171,12 @@ function App(props: PropsWithChildren) {
   const lang = useLanguageStore((s) => s.lang);
   // 原生 TabBar 壳层跟随「跟随系统/浅色/深色」（应用级调用，避免从收件箱/日历启动时漏同步）
   useTabBarTheme();
+
+  // 显示模式在应用根挂一次：页面级 hook 只覆盖了 10 个调用点，其余路由会整页浅色。
+  useEffect(() => {
+    applyThemeClass();
+    return useThemeModeStore.subscribe((state) => applyThemeClass(state.resolved));
+  }, []);
 
   // 应用级合规同意（H5 首启）：未同意前整屏遮罩，覆盖所有 tab 与 AI 悬浮球。
   // 小程序端依赖微信平台隐私弹窗，此处恒为 true 不参与。

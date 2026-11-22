@@ -241,8 +241,13 @@ export function getHotspotVideos(): HotspotNews[] {
  *  「源全挂了」在下游无法区分 —— 热点页会把空列表当成云端故障，亮出
  *  「云端功能暂不可用，当前为本地演示数据」并塞入 mock。空与失败必须是两种状态。 */
 async function fetchHotspotJson(url: string): Promise<HotspotPayload | null> {
+  // 2026-11-22：跨域源没有超时，一条挂起的请求会经 in-flight 去重放大成整会话阻塞
+  // （热点空壳、日历添加后不刷新、晨报情报区块消失）。4s 拿不到就当失败，
+  // 由调用方回落到同源快照 —— 已有数据绝不为了等远端而丢掉。
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), 4000) : null
   try {
-    const res = await fetch(url)
+    const res = await fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
     if (!res.ok) return null
     const payload = await res.json()
     if (!Array.isArray(payload.items)) return null
@@ -269,6 +274,8 @@ async function fetchHotspotJson(url: string): Promise<HotspotPayload | null> {
     }
   } catch {
     return null
+  } finally {
+    if (timer) clearTimeout(timer)
   }
 }
 
@@ -292,6 +299,10 @@ async function loadHotspotPayload(): Promise<HotspotPayload | null> {
       // 同源这份够新鲜（或没有时间戳可判）⇒ 不用再问远端
       return same
     }
+    // 同源过期：先把已有数据交出去，再后台升级。
+    // 以前这里串行 await 远端，跨域挂起时用户看到的是一整片空壳，手里的 413 条全浪费。
+    void refreshHotspotPayload().catch(() => null)
+    return same
   }
   const live = await fetchHotspotJson(LIVE_HOTSPOT_URL)
   if (live && live.items.length) {

@@ -7,6 +7,9 @@
 // 同意记录的实现已拆到 legal-consent.ts（首屏只需要那个布尔值，正文留在异步 chunk）。
 import { LEGAL_VERSION } from './legal-consent';
 
+/** 用户可见版本号：去掉内部审计后缀（PENDING-SIGNATURE 不是给用户看的）。 */
+const LEGAL_DISPLAY_VERSION = LEGAL_VERSION.replace(/-PENDING-SIGNATURE$/, '');
+
 export { CONSENT_KEY, hasAgreedConsent, saveConsent } from './legal-consent';
 export type { ConsentRecord } from './legal-consent';
 
@@ -96,7 +99,7 @@ export type { ConsentRecord } from './legal-consent';
  *                 首启/复同意只比对后者；签字定稿时才推进它（清单见 docs/legal/07）。
  */
 export const TERMS_TEXT = `《用户服务协议》
-版本：${LEGAL_VERSION}
+版本：${LEGAL_DISPLAY_VERSION}
 
 欢迎使用「私人晨报助理」（以下简称"本服务"）。本协议是你与本服务运营者之间就使用本服务所订立的协议。你勾选同意或实际使用本服务，即视为已阅读并同意本协议全部内容。
 
@@ -150,7 +153,7 @@ export const TERMS_TEXT = `《用户服务协议》
 如对本协议有任何疑问、意见或建议，可通过「我的-联系客服」与我们联系。`;
 
 export const PRIVACY_TEXT = `《隐私政策》
-版本：${LEGAL_VERSION}
+版本：${LEGAL_DISPLAY_VERSION}
 
 「私人晨报助理」（以下简称"我们"）深知个人信息对你的重要性。我们将按照法律法规要求，以最小必要原则收集和使用你的个人信息。请你在使用服务前仔细阅读本政策。
 
@@ -211,7 +214,7 @@ export const PRIVACY_TEXT = `《隐私政策》
 如对本政策有任何疑问、意见或建议，或需行使个人信息权利，可通过「我的-联系客服」与我们联系。我们将在15个工作日内答复。`;
 
 export const AI_SERVICES_TEXT = `《第三方 AI 服务说明》
-版本：${LEGAL_VERSION}
+版本：${LEGAL_DISPLAY_VERSION}
 
 1. 服务披露：本产品的部分智能功能（晨报摘要、内容整理、日程/待办理解、购物比价分析、AI 对话等）调用第三方大模型服务完成，按端区分：微信小程序端为 DeepSeek（deepseek-chat）；小程序端的购物比价与联网资讯类查询另使用通义千问（qwen-plus，阿里云百炼 DashScope）进行联网检索；你提交截图做提取时，小程序端改用智谱（glm-4v-flash）识别图中文字；网页端为 WorkBuddy 云服务下发的大模型接口（模型由平台目录提供，当前模型标识为 hy4-preview）。后续如更换或新增服务，将在此更新披露。
 2. 数据传输：你主动输入的内容（文字、语音识别后的文本、转发的消息内容）将通过网络传输至上述第三方服务的 API 进行处理，并返回生成结果。

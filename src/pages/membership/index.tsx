@@ -503,6 +503,8 @@ function MembershipPage() {
         if (!ok) return;
       }
       setPaying(true);
+      // 创建订单可能等网关 6s+；不给 loading 就是「点了没反应」
+      Taro.showLoading({ title: t('mine.subscribing'), mask: true });
       try {
         const ownerId = useUserStore.getState().profile?.openid || '';
         const created = await createH5Order(planId, ownerId);
@@ -524,6 +526,7 @@ function MembershipPage() {
                 : 'mine.h5payGatewayError';
         Taro.showToast({ title: t(key), icon: 'none', duration: 3000 });
       } finally {
+        Taro.hideLoading();
         setPaying(false);
       }
       return;

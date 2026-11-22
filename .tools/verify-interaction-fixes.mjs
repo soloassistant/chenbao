@@ -1032,5 +1032,27 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     ai.includes("m.notice === 'fallback'") && ai.includes("t('ai.fallbackLocal')"));
 }
 
+/* M50（2026-11-22）：跨域热点请求必须有超时，失败回落同源快照；
+ * M51 主题类名必须在 app 根挂载（不是页面级 hook 逐页挂）；
+ * M52 内部审计后缀不得出现在用户可见法务正文；
+ * M53 订阅创建订单期间必须有 loading。 */
+{
+  const cloud = read('src/services/cloud.ts');
+  ok('M50a 热点请求有 AbortController 4s 超时',
+    /AbortController/.test(cloud) && /4000/.test(cloud) && /signal: ctrl\.signal/.test(cloud));
+  ok('M50b 同源过期先返回旧数据，远端后台升级（不阻塞首屏）',
+    /void refreshHotspotPayload\(\)\.catch/.test(cloud));
+  const app = read('src/app.tsx');
+  ok('M51a app 根挂载主题类名并订阅变化',
+    app.includes('applyThemeClass()') && app.includes('useThemeModeStore.subscribe'));
+  const legal = read('src/data/legal.ts');
+  ok('M52a 用户可见法务版本不含 PENDING-SIGNATURE',
+    legal.includes("LEGAL_VERSION.replace(/-PENDING-SIGNATURE$/, '')") &&
+      !/版本：\$\{LEGAL_VERSION\}/.test(legal));
+  const member = read('src/pages/membership/index.tsx');
+  ok('M53a 创建订单期间有 showLoading / hideLoading',
+    member.includes('Taro.showLoading') && member.includes('Taro.hideLoading'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

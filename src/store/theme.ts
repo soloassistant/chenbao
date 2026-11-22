@@ -151,6 +151,21 @@ export const useThemeModeStore = create<ThemeModeState>((set, get) => ({
   }
 }));
 
+/** 把显示模式挂到 html/body。由 app 根调用一次并订阅变化 ——
+ *  以前只在 useThemeMode() 里挂，全仓只有 10 处调用，其余 17 个路由整页浅色。 */
+export function applyThemeClass(resolved?: ResolvedTheme): void {
+  if (typeof document === 'undefined') return;
+  const mode = resolved || useThemeModeStore.getState().resolved;
+  const root = document.documentElement;
+  root.classList.toggle('theme-dark', mode === 'dark');
+  root.classList.toggle('theme-light', mode === 'light');
+  root.style.colorScheme = mode;
+  if (document.body) {
+    document.body.classList.toggle('theme-dark', mode === 'dark');
+    document.body.classList.toggle('theme-light', mode === 'light');
+  }
+}
+
 /** 页面根节点用的类名：把 .theme-dark / .theme-light 挂上去，token 才会切换 */
 export function themeModeClass(resolved: ResolvedTheme): string {
   return resolved === 'dark' ? 'theme-dark' : 'theme-light';
