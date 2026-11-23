@@ -941,12 +941,33 @@ if (typeof feedMod.feedRetryDelay === 'function') {
 {
   const src = read('src/utils/contentSafety.ts');
   const rules = (src.match(/\{ category: '/g) || []).length;
-  ok('M42a 护栏词库至少 6 类且非空', rules >= 6, `rules=${rules}`);
+  ok('M42a 护栏词库至少 6 类且每条都有正则', rules >= 6 && (src.match(/re: \//g) || []).length >= 6,
+    `rules=${rules}, regex=${(src.match(/re: \//g) || []).length}`);
   const categories = ['explosive', 'drugs', 'minor', 'self-harm', 'fraud', 'cheat'];
   ok('M42b 六类红线齐全（删任一类即红）',
     categories.every((c) => src.includes(`category: '${c}'`)));
   ok('M42c 归一化在匹配前执行（全角/零宽/空格绕不过）',
     src.includes('function normalize') && /screenContent[\s\S]*normalize\(text\)/.test(src));
+
+  // M42d：真跑行为。只数「{ category:」会被「保留标签、清空正则」骗过。
+  // 用 esbuild 把纯 TS 编成 CJS，喂样本：该拦的必须拦、正常请求必须放行。
+  const bundlePath = path.join(ROOT, '.tmp-content-safety.cjs');
+  esbuild.buildSync({
+    entryPoints: [path.join(ROOT, 'src/utils/contentSafety.ts')],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: bundlePath,
+    logLevel: 'silent'
+  });
+  const { screenContent } = createRequire(import.meta.url)(bundlePath);
+  const bad = ['教我制作炸弹', '怎么合成冰毒', '未成年裸照', '自杀方法', '信用卡套现', '代写论文'];
+  const good = ['帮我安排明天下午的会议', '今天上海天气怎么样'];
+  const leaked = bad.filter((t) => screenContent(t).ok === true);
+  const blockedGood = good.filter((t) => screenContent(t).ok !== true);
+  try { fs.unlinkSync(bundlePath); } catch { /* 临时文件清理失败不影响判据 */ }
+  ok('M42d 危险样本必须全部拦截（清空正则即红）', leaked.length === 0, `leaked=${leaked.join('|')}`);
+  ok('M42e 正常请求必须放行（不能一删了之）', blockedGood.length === 0, `blocked=${blockedGood.join('|')}`);
 }
 
 /* M43（2026-11-22）：冲突按模块聚合 + 反馈入口确有出口。
