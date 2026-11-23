@@ -1253,5 +1253,13 @@ if (typeof feedMod.feedRetryDelay === 'function') {
       read('src/store/language.en.ts').includes("'community.likeAction':"));
 }
 
+/* M70（2026-11-23）：模板 ID 缺失时定时任务不能完全静默，否则线上无法区分
+ * 「没授权」与「没模板」——N4 这类断链正是这样被藏住的。 */
+{
+  const brief = read('cloudfunctions/getBriefing/index.js');
+  ok('M70 模板缺失时只告警一次并带明确原因',
+    brief.includes('warnedNoTemplate') && brief.includes('SUBSCRIBE_TEMPLATE_ID 未配置'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

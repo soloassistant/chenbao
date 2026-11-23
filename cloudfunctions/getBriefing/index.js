@@ -508,7 +508,12 @@ async function runScheduled(event) {
       } else {
         briefing = dup.data[0]; // 已存在：直接复用，含 events/todos，够发订阅消息
       }
-      if (templateId && user.subscribeAccepted) {
+      if (!templateId) {
+        if (!warnedNoTemplate) {
+          console.warn('[getBriefing.scheduled] SUBSCRIBE_TEMPLATE_ID 未配置，本次跳过全部推送');
+          warnedNoTemplate = true;
+        }
+      } else if (user.subscribeAccepted) {
         try {
           await cloud.openapi.subscribeMessage.send({
             touser: user.openid,
@@ -560,6 +565,10 @@ async function runScheduled(event) {
   else console.log(line);
   return summary;
 }
+
+/** 模板 ID 未配置时每次定时任务都会「静默跳过推送」——
+ *  线上排查时看不出是没授权还是没模板。这里只告警一次，避免按用户刷日志。 */
+let warnedNoTemplate = false;
 
 exports.main = async (event = {}) => {
   // 定时触发器无 OPENID（getWXContext 为空），必须先于用户路径分流
