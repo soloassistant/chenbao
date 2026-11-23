@@ -1091,5 +1091,22 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     sport.includes('eightWeeksAgo') && sport.includes('recentRuns.length'));
 }
 
+/* M57（2026-11-23）：订阅授权必须回写云端，否则定时推送恒不下发；
+ * M58 云端清除未执行必须让用户看见；M59 test: 命名空间不能被门禁视野漏掉。 */
+{
+  const sub = read('src/utils/subscribe.ts');
+  const upd = read('cloudfunctions/updateSettings/index.js');
+  ok('M57a 客户端 accept 后把 subscribeAccepted 写回云端',
+    sub.includes('subscribeAccepted: true') && sub.includes("name: 'updateSettings'"));
+  ok('M57b 云函数接收并校验该字段（只认真 true）',
+    upd.includes('payload.subscribeAccepted === true') && upd.includes('update.subscribeAccepted = true'));
+  const mine = read('src/pages/mine/index.tsx');
+  ok('M58a 云端清除未执行时给用户可见提示，不再只 console.info',
+    mine.includes("t('mine.deleteCloudWarn')") && /not-deployed[\s\S]{0,300}deleteCloudWarn/.test(mine));
+  const all = read('.tools/verify-all.mjs');
+  ok('M59a 门禁普查包含 test: 命名空间',
+    all.includes("k.startsWith('test:')") && /verify\|audit\|test/.test(all));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

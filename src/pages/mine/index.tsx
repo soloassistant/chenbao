@@ -1074,6 +1074,11 @@ function MinePage() {
         .then((status) => {
           if (status === 'failed' || status === 'no-db' || status === 'denied-authenticated') {
             console.error(`[MinePage] purgeMyH5Data = ${status} — 三表残留未清偿，需人工核查`);
+            Taro.showToast({ title: t('mine.deleteCloudWarn'), icon: 'none', duration: 4000 });
+          } else if (status === 'not-deployed') {
+            // N5：函数未部署时三表不清，用户此前完全无感知；至少给一次性提示
+            console.error('[MinePage] purgeMyH5Data = not-deployed — 云端三表未清除');
+            Taro.showToast({ title: t('mine.deleteCloudWarn'), icon: 'none', duration: 4000 });
           } else {
             console.info('[MinePage] purgeMyH5Data =', status);
           }

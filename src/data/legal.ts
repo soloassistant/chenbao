@@ -8,7 +8,7 @@
 import { LEGAL_VERSION } from './legal-consent';
 
 /** 用户可见版本号：去掉内部审计后缀（PENDING-SIGNATURE 不是给用户看的）。 */
-const LEGAL_DISPLAY_VERSION = LEGAL_VERSION.replace(/-PENDING-SIGNATURE$/, '');
+export const LEGAL_DISPLAY_VERSION = LEGAL_VERSION.replace(/-PENDING-SIGNATURE$/, '');
 
 export { CONSENT_KEY, hasAgreedConsent, saveConsent } from './legal-consent';
 export type { ConsentRecord } from './legal-consent';

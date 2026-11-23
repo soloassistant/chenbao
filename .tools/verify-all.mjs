@@ -192,9 +192,13 @@ export function checkCiParity(ciText, scripts, exempt = CI_EXEMPT) {
   //   而 CI 一直绿 —— 因为 parity 只数 verify:*，没人要求它进 CI。
   //   三个命名空间都要算门禁，否则「换个前缀命名」就等于「从某个门禁的视野里消失」。
   const gates = Object.keys(scripts).filter(
-    (k) => k.startsWith('verify:') || k.startsWith('audit:') || EXTRA_GATES.includes(k)
+    (k) =>
+      k.startsWith('verify:') ||
+      k.startsWith('audit:') ||
+      k.startsWith('test:') ||
+      EXTRA_GATES.includes(k)
   );
-  const referenced = new Set([...body.matchAll(/npm run ((?:verify|audit):[\w-]+)/g)].map((m) => m[1]));
+  const referenced = new Set([...body.matchAll(/npm run ((?:verify|audit|test):[\w-]+)/g)].map((m) => m[1]));
   // 每个 gate 的脚本路径（取第一条 .tools/ 路径，够用且不受多脚本影响）
   const pathOf = (g) => (String(scripts[g] || '').match(/\.tools\/[\w./-]+\.(mjs|js|cjs)/) || [])[0] || null;
   const missing = gates.filter((g) => {
@@ -412,7 +416,8 @@ const scripts = pkg.scripts || {};
 // `audit:identity` 红了很久而 CI 一直绿；`selfcheck` 则是**没有前缀**的另一种盲区：
 // 它在 CI 里是独立一步（node .tools/selfcheck.js），本地 `verify:all` 却完全看不见它。
 const allVerify = Object.keys(scripts).filter(
-  (k) => k.startsWith('verify:') || k.startsWith('audit:') || EXTRA_GATES.includes(k)
+  (k) =>
+    k.startsWith('verify:') || k.startsWith('audit:') || k.startsWith('test:') || EXTRA_GATES.includes(k)
 );
 
 // 例外表腐烂检查：登记了、package.json 里却没有 → 表本身过期。

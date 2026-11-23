@@ -173,6 +173,21 @@ export async function promptSubscribe(templateId: string, force = false): Promis
     writeAuthAt(); // X4：记录成功授权时间，供 getSubscriptionAgeDays/isSubscriptionStale 到期提醒使用
     writeStat(stat);
     writeDeny(deny);
+    // N4：只写本地标记时，getBriefing 的定时下发条件（user.subscribeAccepted）永远为假，
+    // 用户看到「订阅成功」但推送永不到达。这里把授权同步到云端档案。
+    // 失败不阻断用户操作，但必须留痕（生产构建保留 console.error）。
+    try {
+      if (process.env.TARO_ENV === 'weapp') {
+        void Taro.cloud.callFunction({
+          name: 'updateSettings',
+          data: { subscribeAccepted: true }
+        }).catch((err: unknown) => {
+          console.error('[subscribe] sync subscribeAccepted failed:', err);
+        });
+      }
+    } catch (err) {
+      console.error('[subscribe] sync subscribeAccepted threw:', err);
+    }
     return 'accept';
   }
   if (code === 'ban' || code === 'filter') {

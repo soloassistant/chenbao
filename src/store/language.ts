@@ -1191,6 +1191,7 @@ const zh = {
   'mine.deleteInputHint': '请输入「注销」以确认',
   'mine.deleteSubmit': '提交注销申请',
   'mine.deleteDone': '注销已完成，你的账号数据已删除。',
+  'mine.deleteCloudWarn': '云端数据清除未执行，已自动提交工单，客服将在 15 个工作日内处理',
   'mine.deleteDoneH5': '注销已完成：本地数据已立即清除；云端三类记录已自动提交删除工单，客服将在 15 个工作日内删除。',
   'mine.deleteInputMismatch': '请输入「注销」两个字以确认',
   'mine.blockEmpty': '暂无屏蔽项',

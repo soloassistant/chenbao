@@ -50,7 +50,7 @@ function assert(name, cond, detail = '') {
 const CROSS_DEVICE_KEYS = [
   'shoppingList', 'dailyPlanStore', 'browseHistory', 'newsFeedback', 'news-interests',
   'news-interests-custom', 'activity-log', 'learnStore', 'ai-memory', 'user-settings',
-  'user-city', 'collectionStore', 'usage-voice', 'feature-usage', 'briefingChatLog',
+  'user-city', 'collectionStore', 'usage-voice', 'feature-usage',
   'aiAssistantLog', 'brand-theme', 'app-lang', 'ui-scale', 'user-avatar', 'ledgerEntries',
   'ledger-categories', 'ledgerBudget', 'watchlist', 'sportRuns', 'sport-goal-km',
   // 2026-10-30 补齐的 16 个
@@ -71,6 +71,9 @@ const DEVICE_ONLY_KEYS = {
   // 2026-11-20：外观显示模式（跟随系统/浅色/深色）是设备级偏好 ——
   //   同一账号在手机与桌面可能想要不同明暗；换设备时按本机系统重新解析更合理。
   'theme-mode': '外观显示模式（设备级偏好，跟随本机系统；跨设备同步会覆盖各端环境差异）',
+  // 2026-11-22：促销码已用账本仅防本机重复兑换；权益真值在 orders 表（服务端回放），
+  // 同步到别的设备反而会与云端权益打架。
+  'promo-redeemed': '本机促销码已用账本（权益以服务端订单为准，设备级）',
   'burst-banner-dismissed': '弹窗关闭状态（设备级）',
   'sxm-phone-bind-done': '绑定引导状态（设备级）',
   'sxm-phone-bind-dismissed': '绑定引导状态（设备级）',

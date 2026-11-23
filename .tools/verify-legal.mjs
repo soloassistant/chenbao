@@ -316,8 +316,12 @@ ok(
 
 // D3 版本号必须靠插值，不许手写（手写会漂，且不会随 LEGAL_VERSION 触达老用户）
 ok(
-  'D3 三份文本的版本行都用 ${LEGAL_VERSION} 插值',
-  [TERMS, PRIVACY, AI_SERVICES].every((t) => t.includes('版本：${LEGAL_VERSION}'))
+  'D3 三份文本的版本行用展示版本插值（内部 PENDING-SIGNATURE 不外露）',
+  [TERMS, PRIVACY, AI_SERVICES].every((t) => t.includes('版本：${LEGAL_DISPLAY_VERSION}'))
+);
+ok(
+  'D3b 展示版本由 LEGAL_VERSION 去掉内部后缀得到，不是手写常量',
+  read('src/data/legal.ts').includes("LEGAL_VERSION.replace(/-PENDING-SIGNATURE$/, '')")
 );
 
 // D4 「注销删全部数据」类表述必须与第四条第 5 项（账号另走客服）口径一致，不能自相矛盾

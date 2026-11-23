@@ -1143,6 +1143,7 @@ export const en: Record<LangKey, string> = {
   'mine.deleteInputHint': 'Type "注销" to confirm',
   'mine.deleteSubmit': 'Submit',
   'mine.deleteDone': 'Your account has been closed and your data has been deleted.',
+  'mine.deleteCloudWarn': 'Cloud data was not purged; a ticket has been submitted (15 business days)',
   'mine.deleteDoneH5': 'Your account has been closed. Local data has been cleared immediately. A deletion request for the three cloud record types has been submitted automatically; support will delete them within 15 business days.',
   'mine.deleteInputMismatch': 'Please type "注销" to confirm',
   'mine.blockEmpty': 'Nothing blocked yet',
