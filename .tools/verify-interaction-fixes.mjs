@@ -1242,5 +1242,16 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M68b 真题行最小高度 88rpx（≈44px）', papers.includes('min-height: 88rpx'));
 }
 
+/* M69（2026-11-23）：社区点赞是可点元素，要有 44px 热区与键盘可达。 */
+{
+  const page = read('src/pages/learnCommunity/index.tsx');
+  const css = read('src/pages/learnCommunity/index.module.scss');
+  ok('M69a 点赞热区扩到 44PX', css.includes('hit-expand-min(44PX'));
+  ok('M69b 点赞有可访问名（pressableProps）', page.includes("pressableProps(t('community.likeAction'))"));
+  ok('M69c 文案中英齐全',
+    read('src/store/language.ts').includes("'community.likeAction':") &&
+      read('src/store/language.en.ts').includes("'community.likeAction':"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

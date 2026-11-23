@@ -8,6 +8,7 @@ import { readLearnStore, getStreak } from '@/utils/learn';
 import { LEARN_LANGS } from '@/data/learn';
 import SubPageHeader from '@/components/SubPageHeader';
 import { useT, useLanguageStore } from '@/store/language';
+import { pressableProps } from '@/utils/a11y';
 import { fromNow } from '@/utils/date';
 import styles from './index.module.scss';
 
@@ -259,6 +260,7 @@ function LearnCommunityPage() {
               <View
                 className={classnames(styles.likeRow, p.liked && styles.likeOn)}
                 onClick={() => toggleLike(p.id)}
+                {...pressableProps(t('community.likeAction'))}
               >
                 <Text>{p.liked ? '❤️' : '🤍'}</Text>
                 <Text className={styles.likeCount}>{p.likes}</Text>

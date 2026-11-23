@@ -240,6 +240,7 @@
 }
 
 .likeRow {
+  @include hit-expand-min(44PX, 10rpx);
   display: inline-flex;
   align-items: center;
   gap: 6rpx;

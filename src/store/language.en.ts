@@ -39,6 +39,7 @@ export const en: Record<LangKey, string> = {
   'inbox.shopFailed': 'Couldn\'t add to the shopping list — try again',
   'inbox.glossCopied': 'Word copied',
   'inbox.copyFailed': 'Copy failed',
+  'community.likeAction': 'Like or unlike',
   'community.empty': 'Write something before posting',
   'mine.need4Digit': 'Enter a 4-digit passcode',
   'mine.pinWrong': 'Incorrect passcode, try again',

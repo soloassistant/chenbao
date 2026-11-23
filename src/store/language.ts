@@ -45,6 +45,7 @@ const zh = {
   'inbox.shopFailed': '没能加进购物清单，再点一次',
   'inbox.glossCopied': '生词已复制',
   'inbox.copyFailed': '复制失败',
+  'community.likeAction': '点赞或取消点赞',
   'community.empty': '说点什么再发布吧',
   'mine.need4Digit': '请输入 4 位数字密码',
   'mine.pinWrong': '密码不正确，请重试',
