@@ -46,6 +46,8 @@ const DIST = arg('dist') || path.join(ROOT, 'dist');
 const CHROME = process.env.CHROME_BIN || 'C:\\Users\\geral\\.agent-browser\\browsers\\chrome-154.0.8037.92\\chrome.exe';
 const ONLY = (arg('only') || '').split(',').filter(Boolean);
 const ONLY_VP = arg('viewport');
+/** 2026-11-23：--theme=dark 时预置主题并断言页面底色确实是深色 */
+const THEME = arg('theme') || 'light';
 
 /** 路由从配置里读，避免硬编码列表腐烂 */
 function routesFromConfig() {
@@ -201,7 +203,7 @@ async function main() {
   await send('Network.enable');
   await send('Page.addScriptToEvaluateOnNewDocument', { source: fs.readFileSync(path.resolve(ROOT, '.tools/cdp-probe-session.js'), 'utf8') });
   await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: `try{localStorage.setItem('onboarded-v2', JSON.stringify({data:true}));localStorage.setItem('onboarded-v2:probe-user-0001', JSON.stringify({data:true}));localStorage.setItem('privacy-consent', JSON.stringify({data:true}));}catch(e){}`
+    source: `try{localStorage.setItem('onboarded-v2', JSON.stringify({data:true}));localStorage.setItem('onboarded-v2:probe-user-0001', JSON.stringify({data:true}));localStorage.setItem('privacy-consent', JSON.stringify({data:true}));localStorage.setItem('theme-mode', JSON.stringify({data:'${THEME}'}));}catch(e){}`
   });
 
   const rows = [];
@@ -228,6 +230,7 @@ async function main() {
 
         let nodes = 0;
         let textLen = 0;
+        let bg = '';
         let done = false;
         while (Date.now() - t0 < BUDGET_MS) {
           await new Promise((r) => setTimeout(r, 700));
@@ -276,10 +279,11 @@ async function main() {
               vis++;
               if (el.tagName === 'TARO-TEXT-CORE') chars += (el.innerText || '').trim().length;
             }
-            return JSON.stringify({ n: vis, t: chars });
+            return JSON.stringify({ n: vis, t: chars, bg: getComputedStyle(document.body).backgroundColor });
           })()`)));
           nodes = settled.n;
           textLen = settled.t;
+          bg = settled.bg || '';
         }
         const ms = Date.now() - t0;
         const aborted = bag.failed.some((f) => f.indexOf('ERR_ABORTED') >= 0);
@@ -287,9 +291,29 @@ async function main() {
           await new Promise((r) => setTimeout(r, 1200));
           continue; // 重试一次
         }
-        attempt = { done, ms, nodes, textLen, errors: bag.errors.slice(0, 3), failed: bag.failed.slice(0, 3) };
+        attempt = { done, ms, nodes, textLen, bg, errors: bag.errors.slice(0, 3), failed: bag.failed.slice(0, 3) };
       }
-      const { done, ms, nodes, textLen } = attempt;
+      const { done, ms, nodes, textLen, bg } = attempt;
+
+      // 暗色断言：看 body 计算后的底色亮度。页面自己白底会把 body 遮住，
+      // 所以同时看 #app 根节点（取第一个可见 taro-view-core）。
+      if (THEME === 'dark') {
+        const rootBg = await ev(`(() => {
+          var el = document.querySelector('#app taro-view-core');
+          return el ? getComputedStyle(el).backgroundColor : '';
+        })()`);
+        const lum = (c) => {
+          const m = String(c || '').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+          if (!m) return null;
+          return (0.2126 * +m[1] + 0.7152 * +m[2] + 0.0722 * +m[3]) / 255;
+        };
+        const l1 = lum(bg);
+        const l2 = lum(rootBg);
+        const measured = l1 === null ? l2 : l2 === null ? l1 : Math.max(l1, l2);
+        if (measured !== null && measured > 0.6) {
+          attempt.darkBad = `底色仍为浅色（${bg || rootBg}）`;
+        }
+      }
 
       // 关掉开屏/隐私层后再量溢出（否则量的是遮罩）
       await ev(`(()=>{const s=document.querySelector('[class*="__splash__"]')||document.querySelector('[class*="splash"]');if(s)s.click();const c=document.querySelector('[class*="consentAgree"]');if(c)c.click();return 1})()`);
@@ -328,7 +352,8 @@ async function main() {
         failed: attempt.failed,
         overflow: Math.max(0, ov.scrollW - ov.innerW),
         worstOver: ov.worstOver,
-        worstTag: ov.worstTag
+        worstTag: ov.worstTag,
+        darkBad: attempt.darkBad || ''
       });
     }
   }
@@ -339,7 +364,7 @@ async function main() {
 
   const fails = [];
   const t = (s, n) => String(s).padEnd(n);
-  console.log('\n全路由渲染巡检');
+  console.log(`\n全路由渲染巡检（主题：${THEME}）`);
   console.log(`${t('视口', 12)}${t('路由', 16)}${t('耗时', 8)}${t('节点', 7)}${t('正文', 8)}${t('溢出', 7)}错误`);
   for (const r of rows) {
     const bad = [];
@@ -348,6 +373,7 @@ async function main() {
     // 隐藏面板的文字算进来，量到每页恒定 6300+ 字（那是口径问题，不是页面问题）。
     // 体量只作为信息列打印，人肉看出「某页 0 字」时再查。
     if (!r.ok) bad.push(`未渲染(节点${r.nodes}/正文${r.textLen})`);
+    if (r.darkBad) bad.push(r.darkBad);
     if (r.errors.length) bad.push(`异常:${r.errors[0]}`);
     if (r.failed.length) bad.push(`请求失败:${r.failed[0]}`);
     if (r.overflow > 1) bad.push(`横向溢出${r.overflow}px(${r.worstTag})`);

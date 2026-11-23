@@ -91,6 +91,7 @@
     "verify:memory-injection": "node .tools/verify-memory-injection.mjs",
     "verify:layout": "node .tools/verify-layout.mjs",
     "verify:routes": "node .tools/verify-routes.mjs",
+    "verify:theme-dark": "node .tools/verify-routes.mjs --theme=dark",
     "verify:deploy-fresh": "node .tools/verify-deploy-fresh.mjs dist",
     "verify:ai-quota": "node .tools/verify-ai-quota.mjs",
     "verify:ai-entry": "node .tools/verify-ai-entry-audit.mjs",

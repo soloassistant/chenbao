@@ -1282,5 +1282,15 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     r.includes('WATCHDOG') && r.includes('--disable-background-timer-throttling'));
 }
 
+/* M73（2026-11-23）：深色覆盖必须可自动验证，而不是靠人眼看截图。 */
+{
+  const r = read('.tools/verify-routes.mjs');
+  const pkg = read('package.json');
+  ok('M73a 巡检支持 --theme=dark 并断言底色亮度',
+    r.includes("arg('theme')") && r.includes('底色仍为浅色'));
+  ok('M73b 有独立脚本入口 verify:theme-dark',
+    pkg.includes('verify:theme-dark') && pkg.includes('--theme=dark'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
