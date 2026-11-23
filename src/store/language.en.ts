@@ -17,6 +17,7 @@ export const en: Record<LangKey, string> = {
   'app.title': 'Personal Morning Assistant',
   'app.slogan': 'Your day, briefed before it starts',
   'app.skip': 'Skip',
+  'inbox.nothingSaved': 'Nothing was saved; your draft is kept',
   'inbox.schemaInvalid': 'AI returned a bad format, retry',
   'inbox.parseFailed': 'Couldn\'t parse. Check your connection and try again',
   'inbox.analyzeFailed': 'Couldn\'t analyze. Network or service is temporarily unavailable',

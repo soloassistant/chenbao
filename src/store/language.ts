@@ -23,6 +23,7 @@ const zh = {
   'app.title': '私人晨报助理',
   'app.slogan': '今天的事，晨报先知道',
   'app.skip': '点击跳过',
+  'inbox.nothingSaved': '没有写入成功，草稿已保留',
   'inbox.schemaInvalid': 'AI 返回格式不对，请重试',
   'inbox.parseFailed': '没能解析，检查网络后再点一次',
   'inbox.analyzeFailed': '没能分析，网络或服务暂时不可用',

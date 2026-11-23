@@ -416,6 +416,11 @@ function InboxPage() {
         | undefined;
       const res = await apiConfirmItem({ events, todos, collection });
       console.info('[InboxPage] confirmed:', res.saved);
+      // saved=0 不算成功：以前会弹「已入库 0 条」并清空草稿，用户勾选的东西直接消失。
+      if (!res || typeof res.saved !== 'number' || res.saved <= 0) {
+        Taro.showToast({ title: t('inbox.nothingSaved'), icon: 'none' });
+        return;
+      }
       Taro.showToast({ title: `已入库 ${res.saved} 条`, icon: 'success' });
       const sourceLabel = images.length > 0 ? `🖼 截图×${images.length}${content.trim() ? ' + 文字' : ''}` : content.trim();
       setHistory((prev) => [

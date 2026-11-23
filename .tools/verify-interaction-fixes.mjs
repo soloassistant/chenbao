@@ -1187,5 +1187,16 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     mine.includes("t(ok ? 'mine.avatarSaved' : 'mine.avatarTempOnly')"));
 }
 
+/* M65（2026-11-23）：确认入库 saved=0 不算成功，不得清空草稿。 */
+{
+  const inbox = read('src/pages/inbox/index.tsx');
+  ok('M65a saved<=0 时提前返回，草稿保留',
+    /typeof res\.saved !== 'number' \|\| res\.saved <= 0[\s\S]{0,160}return;/.test(inbox));
+  ok('M65b 失败提示走词典且中英齐全',
+    inbox.includes("t('inbox.nothingSaved')") &&
+      read('src/store/language.ts').includes("'inbox.nothingSaved':") &&
+      read('src/store/language.en.ts').includes("'inbox.nothingSaved':"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
