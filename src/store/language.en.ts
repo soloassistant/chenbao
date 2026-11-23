@@ -1672,6 +1672,7 @@ export const en: Record<LangKey, string> = {
   'trade.calcTarget': 'Target',
   'trade.calcPoints': 'Pips',
   'trade.calcPnl': 'P/L',
+  'trade.rrGradeHint': 'Grade by reward/risk: A ≥ 3, B ≥ 2, C ≥ 1, D < 1. Higher means more reward per unit of risk.',
   'trade.calcRR': 'Risk-reward',
   'trade.needSl': 'Enter stop loss first',
   'trade.sizingRisk': 'Risk % of equity',

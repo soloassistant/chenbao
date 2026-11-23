@@ -1151,5 +1151,18 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     /seedPosts\(useLanguageStore\.getState\(\)\.lang\)/.test(c));
 }
 
+/* M62（2026-11-23）：风险回报比评级必须写清阈值，不能只给 A/B/C/D。 */
+{
+  const trade = read('src/pages/trade/index.tsx');
+  const zh = read('src/store/language.ts');
+  ok('M62a 评级旁有阈值说明', trade.includes("t('trade.rrGradeHint')"));
+  const flat = trade.replace(/\s+/g, ' ');
+  ok('M62b 阈值与实际计算一致（A≥3 / B≥2 / C≥1）',
+    zh.includes('A ≥ 3、B ≥ 2、C ≥ 1') &&
+      flat.includes("calcRR >= 3 ? 'A'") &&
+      flat.includes("calcRR >= 2 ? 'B'") &&
+      flat.includes("calcRR >= 1 ? 'C'"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

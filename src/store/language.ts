@@ -1749,6 +1749,7 @@ const zh = {
   'trade.calcPoints': '点数',
   'trade.calcPnl': '盈亏金额',
   'trade.calcRR': '风险回报比',
+  'trade.rrGradeHint': '评级按风险回报比：A ≥ 3、B ≥ 2、C ≥ 1、D < 1；比值越高，目标收益相对止损空间越大。',
   'trade.needSl': '需先填止损价',
   'trade.sizingRisk': '可亏净值 %',
   'trade.sizingDist': '止损距离（点）',
