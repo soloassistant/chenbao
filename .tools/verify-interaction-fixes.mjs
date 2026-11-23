@@ -1164,5 +1164,16 @@ if (typeof feedMod.feedRetryDelay === 'function') {
       flat.includes("calcRR >= 1 ? 'C'"));
 }
 
+/* M63（2026-11-23）：分类哨兵「全部」不得在英文界面露中文。 */
+{
+  const lib = read('src/pages/library/index.tsx');
+  const zh = read('src/store/language.ts');
+  const en = read('src/store/language.en.ts');
+  ok('M63a 「全部」哨兵走 library.all，不直接进 categoryLabel',
+    lib.includes("tag === '全部' ? t('library.all')") &&
+      !lib.includes('label={categoryLabel('));
+  ok('M63b library.all 中英齐全', zh.includes("'library.all':") && en.includes("'library.all':"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

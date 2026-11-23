@@ -814,6 +814,7 @@ const zh = {
   'library.digest3min': '3 分钟',
   'library.digestFull': '全文',
   'library.favTitle': '我的收藏',
+  'library.all': '全部',
   'library.favHint': '转发内容的 AI 摘要归档',
   'library.recentTitle': '最近浏览',
   'library.recentClearConfirm': '将删除 {n} 条浏览记录，此操作不可恢复。',

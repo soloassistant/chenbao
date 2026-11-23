@@ -769,6 +769,7 @@ export const en: Record<LangKey, string> = {
   'library.digest3min': '3 min',
   'library.digestFull': 'Full',
   'library.favTitle': 'My Saved',
+  'library.all': 'All',
   'library.favHint': 'AI-summarized archive of forwarded content',
   'library.recentTitle': 'Recent',
   'library.recentClearConfirm': 'This will delete {n} browsing records. This cannot be undone.',

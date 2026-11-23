@@ -270,6 +270,9 @@ function LibraryPage() {
   const [searchResults, setSearchResults] = useState<HotspotNews[]>([]);
   const [searching, setSearching] = useState(false);
   const [activeTag, setActiveTag] = useState('全部');
+
+  /** 分类哨兵「全部」不是真实 tag，不能直接交给 categoryLabel（英文模式会露中文）。 */
+  const tagLabel = (tag: string) => (tag === '全部' ? t('library.all') : categoryLabel(tag, t));
   const [keyword, setKeyword] = useState('');
   /** 最近搜索（设备本地，最多 3 条）：搜索空态时给用户一个「再点一下就能搜」的起点 */
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
@@ -1511,7 +1514,7 @@ function LibraryPage() {
                     {AI_PRESET_INTERESTS.map((tag) => (
                       <TagChip
                         key={tag}
-                        label={categoryLabel(tag, t)}
+                        label={tagLabel(tag)}
                         active={aiInterests.includes(tag)}
                         onClick={() => toggleInterest(tag)}
                       />
@@ -1612,7 +1615,7 @@ function LibraryPage() {
                 {newsTags.map((tag) => (
                   <TagChip
                     key={tag}
-                    label={categoryLabel(tag, t)}
+                    label={tagLabel(tag)}
                     active={tag === activeNewsTag}
                     onClick={() => setActiveNewsTag(tag)}
                   />
@@ -1721,7 +1724,7 @@ function LibraryPage() {
             <View className={styles.railTags}>
               {newsTags.slice(1, 7).map((tag) => (
                 <Text key={tag} className={styles.railTag} onClick={() => setActiveNewsTag(tag)}>
-                  {categoryLabel(tag, t)}
+                  {tagLabel(tag)}
                 </Text>
               ))}
             </View>
@@ -1744,7 +1747,7 @@ function LibraryPage() {
           {tags.map((tag) => (
             <TagChip
               key={tag}
-              label={categoryLabel(tag, t)}
+              label={tagLabel(tag)}
               active={tag === activeTag}
               onClick={() => setActiveTag(tag)}
             />
@@ -1775,7 +1778,7 @@ function LibraryPage() {
             <Text className={styles.summary}>{item.summary}</Text>
             <View className={styles.tagRow}>
               {item.tags.map((tg) => (
-                <TagChip key={tg} label={categoryLabel(tg, t)} />
+                <TagChip key={tg} label={tagLabel(tg)} />
               ))}
             </View>
           </View>
