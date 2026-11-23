@@ -7,7 +7,7 @@ import { getAchievements, getLearnerName, setLearnerName, Achievement } from '@/
 import { readLearnStore, getStreak } from '@/utils/learn';
 import { LEARN_LANGS } from '@/data/learn';
 import SubPageHeader from '@/components/SubPageHeader';
-import { useT } from '@/store/language';
+import { useT, useLanguageStore } from '@/store/language';
 import { fromNow } from '@/utils/date';
 import styles from './index.module.scss';
 
@@ -32,14 +32,17 @@ interface Post {
 const COMMUNITY_STORE_KEY = 'learnCommunityStore';
 
 /** 种子示例动态：展示社区氛围，真实发帖后排在前面 */
-function seedPosts(): Post[] {
+function seedPosts(lang: 'zh' | 'en'): Post[] {
+  const en = lang === 'en';
   const now = Date.now();
   return [
     {
       id: 'seed-1',
-      name: '柚子同学',
-      langName: '日语',
-      text: 'N5 寒暄课打卡 ✅ こんにちは已经在便利店用上了，店员真的会回你！',
+      name: en ? 'Yuzu' : '柚子同学',
+      langName: en ? 'Japanese' : '日语',
+      text: en
+        ? 'N5 greetings checked in ✅ Used こんにちは at a convenience store and the clerk actually replied!'
+        : 'N5 寒暄课打卡 ✅ こんにちは已经在便利店用上了，店员真的会回你！',
       at: dayjs(now - 3 * 3600 * 1000).toISOString(),
       likes: 12,
       liked: false,
@@ -49,8 +52,10 @@ function seedPosts(): Post[] {
     {
       id: 'seed-2',
       name: 'Kevin',
-      langName: '英语',
-      text: 'A2 餐厅点餐课学完，昨天给外国同事推荐了菜单，成就感和实用性双达标 🥳',
+      langName: en ? 'English' : '英语',
+      text: en
+        ? 'Finished the A2 ordering course and recommended dishes to a foreign colleague yesterday 🥳'
+        : 'A2 餐厅点餐课学完，昨天给外国同事推荐了菜单，成就感和实用性双达标 🥳',
       at: dayjs(now - 26 * 3600 * 1000).toISOString(),
       likes: 8,
       liked: false,
@@ -60,8 +65,10 @@ function seedPosts(): Post[] {
     {
       id: 'seed-3',
       name: 'momo',
-      langName: '韩语',
-      text: '连续打卡 5 天！티켓和환승记住了，下周去首尔地铁实测 🚇',
+      langName: en ? 'Korean' : '韩语',
+      text: en
+        ? '5-day streak! Remembered 티켓 and 환승 — testing them on the Seoul metro next week 🚇'
+        : '连续打卡 5 天！티켓和환승记住了，下周去首尔地铁实测 🚇',
       at: dayjs(now - 2 * 24 * 3600 * 1000).toISOString(),
       likes: 21,
       liked: false,
@@ -92,7 +99,7 @@ function readCommunity(): CommunityStore {
   } catch (err) {
     console.warn('[learnCommunity] read failed:', err);
   }
-  return { posts: seedPosts() };
+  return { posts: seedPosts(useLanguageStore.getState().lang) };
 }
 
 function writeCommunity(store: CommunityStore) {

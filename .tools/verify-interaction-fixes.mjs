@@ -1141,5 +1141,15 @@ if (typeof feedMod.feedRetryDelay === 'function') {
       chat.includes('没有写入成功'));
 }
 
+/* M61（2026-11-23）：社区种子帖不得在英文模式露出中文。
+ * 种子帖是示例数据，但用户看得见；中文正文 + 英文界面是明确的双语缺口。 */
+{
+  const c = read('src/pages/learnCommunity/index.tsx');
+  ok('M61a 种子帖按当前语言生成中英两版',
+    c.includes('function seedPosts(lang') && c.includes("en ? 'Japanese'") && c.includes("en ? 'Korean'"));
+  ok('M61b 调用点传入当前语言，不是写死 zh',
+    /seedPosts\(useLanguageStore\.getState\(\)\.lang\)/.test(c));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
