@@ -1261,5 +1261,15 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     brief.includes('warnedNoTemplate') && brief.includes('SUBSCRIBE_TEMPLATE_ID 未配置'));
 }
 
+/* M71（2026-11-23）：账本导出必须在界面上写清列口径，不能只藏在代码里。 */
+{
+  const page = read('src/pages/ledger/index.tsx');
+  const zh = read('src/store/language.ts');
+  ok('M71a 导出入口旁有列口径说明', page.includes("t('ledger.exportColumnsHint')"));
+  ok('M71b 说明覆盖 CSV 主要列（日期/类型/分类/金额/备注）',
+    ['日期', '收支类型', '分类', '金额', '备注'].every((w) => zh.includes(w)) &&
+      zh.includes("'ledger.exportColumnsHint'"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

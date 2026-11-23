@@ -619,3 +619,11 @@
   font-size: $font-size-xs;
   color: $color-text-tertiary;
 }
+
+.exportHint {
+  display: block;
+  margin: 4rpx 0 12rpx;
+  font-size: $font-size-xs;
+  line-height: 1.5;
+  color: $color-text-tertiary;
+}

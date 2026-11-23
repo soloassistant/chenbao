@@ -495,6 +495,8 @@ function LedgerPage() {
               {t('ledger.export')}
             </Text>
           </View>
+          {/* 2026-11-23：导出列口径原来只写在 ledgerExport.ts，用户看不到自己会拿到什么列 */}
+          <Text className={styles.exportHint}>{t('ledger.exportColumnsHint')}</Text>
           {monthSum.byCategory.slice(0, 5).map((c) => {
             const cat = resolveCategory(categories, c.categoryId);
             return (

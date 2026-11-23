@@ -1058,6 +1058,7 @@ const zh = {
   'ledger.overDaily': '今日支出已超日预算（¥{amount}）',
   'ledger.overMonthly': '本月支出已超月预算（¥{amount}）',
   'ledger.export': '导出',
+  'ledger.exportColumnsHint': 'CSV 包含：日期、收支类型、分类、金额、备注（另含 id 与创建时间两列）',
   'ledger.exportCsv': '导出 CSV 表格',
   'ledger.exportJson': '导出 JSON 完整数据',
   'ledger.exportCsvOk': 'CSV 已开始下载',

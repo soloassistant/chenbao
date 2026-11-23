@@ -1008,6 +1008,7 @@ export const en: Record<LangKey, string> = {
   'ledger.catInUse': 'Cannot delete: this category has entries',
   'ledger.overDaily': 'Over daily budget (¥{amount})',
   'ledger.overMonthly': 'Over monthly budget (¥{amount})',
+  'ledger.exportColumnsHint': 'CSV columns: date, type, category, amount, note (plus id and createdAt)',
   'ledger.export': 'Export',
   'ledger.exportCsv': 'Export as CSV',
   'ledger.exportJson': 'Export full data as JSON',
