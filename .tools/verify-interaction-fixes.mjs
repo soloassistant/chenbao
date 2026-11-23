@@ -1271,5 +1271,16 @@ if (typeof feedMod.feedRetryDelay === 'function') {
       zh.includes("'ledger.exportColumnsHint'"));
 }
 
+/* M72（2026-11-23）：浏览器门禁自身不能挂死。
+ * 实测 verify-routes 在 Chrome 起不来/渲染器节流时会无限等 CDP，拖死整个 verify:all。 */
+{
+  const r = read('.tools/verify-routes.mjs');
+  ok('M72a DevTools 探测有超时（不无限等端口）', r.includes('AbortSignal.timeout(1000)'));
+  ok('M72b 拿不到 ws 端点明确退出，不 new WebSocket(undefined)', r.includes('Chrome DevTools 未就绪'));
+  ok('M72c CDP 调用有超时', r.includes('CDP ${method} 超时'));
+  ok('M72d 有全局看门狗 + 反渲染节流参数',
+    r.includes('WATCHDOG') && r.includes('--disable-background-timer-throttling'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

@@ -98,6 +98,12 @@ function startServer() {
   });
 }
 
+// 全局看门狗：CDP 偶发不回包时，脚本不能无限挂住（实测曾卡 30 分钟拖死 verify:all）
+const WATCHDOG = setTimeout(() => {
+  console.error('✗ verify-routes 超过 15 分钟未结束，强制退出');
+  process.exit(2);
+}, 15 * 60 * 1000);
+
 async function main() {
   if (!fs.existsSync(path.join(DIST, 'index.html'))) {
     // 与 verify:deploy-fresh 同一口径：依赖新鲜产物、而产物不存在时**未跑**，不是失败。
@@ -117,20 +123,40 @@ async function main() {
   const udd = path.join(os.tmpdir(), `rt-${Date.now()}`);
   const dbg = 9200 + Math.floor(Math.random() * 60);
   const child = spawn(CHROME, ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
-    '--disable-extensions', '--no-proxy-server', `--remote-debugging-port=${dbg}`,
+    '--disable-extensions', '--no-proxy-server', '--disable-background-timer-throttling',
+    '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
+    `--remote-debugging-port=${dbg}`,
     `--user-data-dir=${udd}`, '--window-size=1440,900', 'about:blank'], { stdio: 'ignore' });
 
+  // 2026-11-23：Chrome 起不来时这里原来会无限等 —— fetch 没超时、循环 120 次也不够，
+  // 实测 verify-routes 卡死 30 分钟拖住整个 verify:all。改为：启动失败立即退出，
+  // 探测带 1s 超时，最多等 30s；拿不到 ws 端点明确报错，不再 new WebSocket(undefined)。
+  let launchError = null;
+  child.on('error', (err) => { launchError = err; });
   let wsUrl;
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 100; i++) {
+    if (launchError) break;
     try {
-      const l = await (await fetch(`http://127.0.0.1:${dbg}/json/list`)).json();
+      const l = await (await fetch(`http://127.0.0.1:${dbg}/json/list`, {
+        signal: AbortSignal.timeout(1000)
+      })).json();
       const p = l.find((t) => t.type === 'page');
       if (p) { wsUrl = p.webSocketDebuggerUrl; break; }
     } catch { /* 等端口 */ }
     await new Promise((r) => setTimeout(r, 300));
   }
+  if (!wsUrl) {
+    console.error(`✗ Chrome DevTools 未就绪（端口 ${dbg}）${launchError ? `：${launchError.message}` : ''}`);
+    try { child.kill(); } catch { /* 已退出 */ }
+    try { server.close(); } catch { /* 已关闭 */ }
+    process.exit(2);
+  }
   const ws = new globalThis.WebSocket(wsUrl);
-  await new Promise((r) => (ws.onopen = r));
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('WebSocket 连接超时')), 10000);
+    ws.onopen = () => { clearTimeout(timer); resolve(); };
+    ws.onerror = () => { clearTimeout(timer); reject(new Error('WebSocket 连接失败')); };
+  });
 
   let id = 0;
   const pending = new Map();
@@ -155,7 +181,14 @@ async function main() {
   const send = (method, params = {}) => {
     const i = ++id;
     ws.send(JSON.stringify({ id: i, method, params }));
-    return new Promise((r) => pending.set(i, r));
+    // 页面崩掉时 CDP 不会回包；没有超时就是整条门禁挂死
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        pending.delete(i);
+        reject(new Error(`CDP ${method} 超时`));
+      }, 10000);
+      pending.set(i, (r) => { clearTimeout(timer); resolve(r); });
+    });
   };
   const ev = async (expr) => {
     const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
@@ -184,6 +217,8 @@ async function main() {
       for (let tryIdx = 0; tryIdx < 2 && !attempt; tryIdx++) {
         bag = { errors: [], failed: [] };
         const t0 = Date.now();
+        // 卡住时要知道停在哪个路由/视口，否则只能看到最终超时
+        if (process.env.VERIFY_ROUTES_VERBOSE) console.log(`[route] ${vp.label} ${route} try=${tryIdx + 1}`);
         // ⚠️ 必须整页加载，不能只改 hash：同文档跳转时 Taro 的 tab 页**不卸载**（设计如此），
         //    量到的是累积 DOM —— 第一版就是这么干的，得到「4962 节点 / 正文 30 字」这种鬼数字，
         //    而且后面的页永远比前面的「节点多」，判定完全失真。
@@ -332,10 +367,12 @@ async function main() {
     console.log('\n失败明细：');
     for (const f of fails) console.log(`  · [${f.vp}] ${f.route}: ${f.bad.join(' / ')}`);
   }
+  clearTimeout(WATCHDOG);
   process.exit(fails.length ? 1 : 0);
 }
 
 main().catch((e) => {
+  clearTimeout(WATCHDOG);
   console.error('harness 出错:', e);
   process.exit(2);
 });
