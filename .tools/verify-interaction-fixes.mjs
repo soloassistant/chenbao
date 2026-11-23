@@ -1198,5 +1198,16 @@ if (typeof feedMod.feedRetryDelay === 'function') {
       read('src/store/language.en.ts').includes("'inbox.nothingSaved':"));
 }
 
+/* M66（2026-11-23）：卷子/题目是**原文**，不得按界面语言翻译。
+ * 界面 chrome 走词典，题目正文、选项、材料必须原样渲染 —— 翻译题干会改变题义。 */
+{
+  const papers = read('src/pages/papers/index.tsx');
+  const bank = read('src/pages/questionBank/index.tsx');
+  ok('M66a 卷子标题原样透传，不经过 t()/词典',
+    papers.includes('{ title,') && !papers.includes("t('paper"));
+  ok('M66b 题库页不读界面语言来改写题干',
+    !bank.includes('useLanguageStore') && !bank.includes("lang === 'en'"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
