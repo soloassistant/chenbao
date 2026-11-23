@@ -814,10 +814,10 @@ function MembershipPage() {
                 className={classnames(styles.reconcileRetry, rechecking && styles.reconcileRetryBusy)}
                 onClick={handleRecheck}
               >
-                {rechecking ? '核对中…' : '重新核对'}
+                {rechecking ? t('membership.rechecking') : t('membership.recheck')}
               </Text>
               <Text className={styles.reconcileDismiss} onClick={() => setReconcileIssue(null)}>
-                关闭
+                {t('common.close')}
               </Text>
             </View>
           </View>

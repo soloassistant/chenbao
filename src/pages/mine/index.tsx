@@ -2076,7 +2076,7 @@ function MinePage() {
                 {t('cancel')}
               </Button>
               <Button className={styles.docClose} onClick={handlePinSubmit}>
-                保存密码
+                {t('mine.savePassword')}
               </Button>
             </View>
           </View>

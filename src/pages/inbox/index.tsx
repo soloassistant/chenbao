@@ -771,40 +771,40 @@ function InboxPage() {
           转的是"账单原文"而不是日程草稿，所以独立于 drafts.length 渲染 */}
       {bills.length > 0 ? (
         <View className={styles.resultCard}>
-          <Text className={styles.sectionTitle}>💰 账单（{bills.length}）· 可转存记账</Text>
+          <Text className={styles.sectionTitle}>{t('inbox.billsTitle', { n: String(bills.length) })}</Text>
           {bills.map((b, i) => (
             <Text key={`bill-${i}`} className={styles.itemSummary}>
               ¥{b.amount.toFixed(2)} · {b.title}{b.source ? `（${b.source}）` : ''}
             </Text>
           ))}
           <Button className={styles.confirmButton} onClick={handleSaveBills}>
-            全部记为今日订阅支出
+            {t('inbox.billsSaveAll')}
           </Button>
         </View>
       ) : null}
       {shoppingHits.length > 0 ? (
         <View className={styles.resultCard}>
-          <Text className={styles.sectionTitle}>🛒 待购物品（{shoppingHits.length}）· 可转存购物清单</Text>
+          <Text className={styles.sectionTitle}>{t('inbox.shoppingTitle', { n: String(shoppingHits.length) })}</Text>
           {shoppingHits.map((s, i) => (
             <Text key={`shop-${i}`} className={styles.itemSummary}>
               {s.title}{s.note ? ` — ${s.note}` : ''}
             </Text>
           ))}
           <Button className={styles.confirmButton} onClick={handleSaveShopping}>
-            全部加入购物清单
+            {t('inbox.shoppingSaveAll')}
           </Button>
         </View>
       ) : null}
       {vocabHits.length > 0 ? (
         <View className={styles.resultCard}>
-          <Text className={styles.sectionTitle}>🔤 生词（{vocabHits.length}）· 复制到背单词 App</Text>
+          <Text className={styles.sectionTitle}>{t('inbox.vocabTitle', { n: String(vocabHits.length) })}</Text>
           {vocabHits.map((v, i) => (
             <Text key={`vocab-${i}`} className={styles.itemSummary}>
               {v.word} {v.meaning || ''}
             </Text>
           ))}
           <Button className={styles.confirmButton} onClick={handleCopyVocab}>
-            复制全部生词
+            {t('inbox.vocabCopyAll')}
           </Button>
         </View>
       ) : null}

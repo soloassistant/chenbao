@@ -352,7 +352,7 @@ function ShoppingPage() {
                     {item.bought ? t('shopping.unbought') : t('shopping.bought')}
                   </View>
                   <View className={styles.removeBtn} onClick={() => removeItem(item.id)}>
-                    删
+                    {t('shopping.removeShort')}
                   </View>
                 </View>
               </View>

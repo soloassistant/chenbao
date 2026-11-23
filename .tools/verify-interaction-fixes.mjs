@@ -1209,5 +1209,30 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     !bank.includes('useLanguageStore') && !bank.includes("lang === 'en'"));
 }
 
+/* M67（2026-11-23）：用户可见 chrome 不得残留硬编码中文；语音启动失败要有反馈。 */
+{
+  const inbox = read('src/pages/inbox/index.tsx');
+  const member = read('src/pages/membership/index.tsx');
+  const mine = read('src/pages/mine/index.tsx');
+  const shop = read('src/pages/shopping/index.tsx');
+  ok('M67a 收件箱三段操作区走词典',
+    inbox.includes("t('inbox.billsSaveAll')") &&
+      inbox.includes("t('inbox.shoppingSaveAll')") &&
+      inbox.includes("t('inbox.vocabCopyAll')") &&
+      !inbox.includes('全部记为今日订阅支出'));
+  ok('M67b 会员核对状态、我的保存密码、购物删除走词典',
+    member.includes("t('membership.recheck')") &&
+      mine.includes("t('mine.savePassword')") &&
+      shop.includes("t('shopping.removeShort')"));
+  const voice = read('src/components/VoiceButton/index.tsx');
+  ok('M67c 语音启动失败给出可见反馈',
+    /start engine failed[\s\S]{0,120}showToast\('voice\.startFailed'/.test(voice));
+  const zh = read('src/store/language.ts');
+  ok('M67d 新增文案中英齐全',
+    ['inbox.billsSaveAll', 'membership.recheck', 'mine.savePassword', 'shopping.removeShort', 'voice.startFailed'].every(
+      (k) => zh.includes(`'${k}':`)
+    ) && read('src/store/language.en.ts').includes("'voice.startFailed':"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
