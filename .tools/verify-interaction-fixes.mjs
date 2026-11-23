@@ -1129,5 +1129,17 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     all.includes("k.startsWith('test:')") && /verify\|audit\|test/.test(all));
 }
 
+/* M60（2026-11-23）：本地指令写库必须回读，不能写后直接报「已…」。
+ * chat.ts 的 writePlan 会吞 storage 异常；以前 6 个写点都是 writePlan 后立刻返回成功文案。 */
+{
+  const chat = read('src/data/chat.ts');
+  ok('M60a 所有写点都经 commitPlan（写后回读）',
+    (chat.match(/commitPlan\(/g) || []).length >= 7 &&
+      !/writePlan\(plan\);\s*return `/.test(chat));
+  ok('M60b commitPlan 用 readPlan 校验，失败给明确文案',
+    /function commitPlan[\s\S]{0,200}readPlan\(\)/.test(chat) &&
+      chat.includes('没有写入成功'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
