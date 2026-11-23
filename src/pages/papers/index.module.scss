@@ -198,6 +198,8 @@ $paper-active-ink: #a82c13;
   align-items: center;
   justify-content: space-between;
   gap: $spacing-sm;
+  /* 触控目标 ≥44px：原 padding 18rpx 仅约 38px，真题行密集时容易点错 */
+  min-height: 88rpx;
   padding: 18rpx $spacing-md;
   margin-bottom: 12rpx;
   background: $color-bg-card;

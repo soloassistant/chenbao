@@ -1234,5 +1234,13 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     ) && read('src/store/language.en.ts').includes("'voice.startFailed':"));
 }
 
+/* M68（2026-11-23）：题库 chip 与真题行触控目标 ≥44px。 */
+{
+  const qb = read('src/pages/questionBank/shared.module.scss');
+  const papers = read('src/pages/papers/index.module.scss');
+  ok('M68a 题库 chip 用 hit-expand-min 扩到 44PX', qb.includes('hit-expand-min(44PX'));
+  ok('M68b 真题行最小高度 88rpx（≈44px）', papers.includes('min-height: 88rpx'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

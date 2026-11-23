@@ -27,7 +27,7 @@
   box-sizing: border-box;
 }
 .chips { display: flex; flex-wrap: wrap; gap: $spacing-xs; margin-bottom: $spacing-sm; }
-.chip { padding: 8rpx $spacing-sm; border-radius: $radius-tier-sm; background: $color-bg-hover; font-size: $font-size-sm; color: $color-text-secondary; cursor: pointer; }
+.chip { @include hit-expand-min(44PX, 8rpx); padding: 8rpx $spacing-sm; border-radius: $radius-tier-sm; background: $color-bg-hover; font-size: $font-size-sm; color: $color-text-secondary; cursor: pointer; }
 .chipActive { background: $color-primary-strong; color: #fff; }
 .count { display: block; margin-bottom: $spacing-sm; font-size: $font-size-xs; color: $color-text-tertiary; }
 .card {
