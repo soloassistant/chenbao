@@ -470,8 +470,11 @@ function MinePage() {
               const saved = (r as { savedFilePath?: string }).savedFilePath;
               if (!saved) throw new Error('empty savedFilePath');
               setAvatar(saved);
-              Taro.setStorageSync(AVATAR_KEY, saved);
-              Taro.showToast({ title: t('mine.avatarSaved'), icon: 'success' });
+              const ok = persistAvatar(saved);
+              Taro.showToast({
+                title: t(ok ? 'mine.avatarSaved' : 'mine.avatarTempOnly'),
+                icon: ok ? 'success' : 'none'
+              });
             })
             .catch((err) => {
               // 转存失败（本地缓存满等）：**不谎称已保存** —— 本次会话内显示新头像，
@@ -495,8 +498,11 @@ function MinePage() {
           if (avatarObjectKey) void deleteAvatar(avatarObjectKey);
           setAvatarObjectKey('');
           setAvatar(next);
-          Taro.setStorageSync(AVATAR_KEY, next);
-          Taro.showToast({ title: t('mine.avatarSaved'), icon: 'success' });
+          const ok = persistAvatar(next);
+          Taro.showToast({
+            title: t(ok ? 'mine.avatarSaved' : 'mine.avatarTempOnly'),
+            icon: ok ? 'success' : 'none'
+          });
         })
         .catch(() => {
           /* 静默：showActionSheet 被用户取消时 reject，是正常操作而非错误 */
@@ -538,14 +544,18 @@ function MinePage() {
           const prevKey = avatarObjectKey;
           setAvatarObjectKey(res.path);
           if (url) setAvatar(url);
-          Taro.setStorageSync(AVATAR_KEY, AVATAR_CLOUD_PREFIX + res.path);
+          const persisted = persistAvatar(AVATAR_CLOUD_PREFIX + res.path);
           if (prevKey && prevKey !== res.path) void deleteAvatar(prevKey);
           // 存成功了但换不出可显示的 URL（签名服务异常）时**不谎称「已更新」**——
           // 用户眼前根本没变化，说「已更新」就是假成功。如实说「已保存、重进本页可见」。
           Taro.showToast({
-            title: url ? t('mine.avatarSaved') : t('mine.avatarSavedNoPreview'),
-            icon: url ? 'success' : 'none',
-            duration: url ? 1500 : 3000
+            title: !persisted
+              ? t('mine.avatarTempOnly')
+              : url
+                ? t('mine.avatarSaved')
+                : t('mine.avatarSavedNoPreview'),
+            icon: persisted && url ? 'success' : 'none',
+            duration: persisted && url ? 1500 : 3000
           });
         } catch (err) {
           console.error('[MinePage] avatar upload crashed:', String((err && (err as Error).message) || err));
@@ -558,6 +568,18 @@ function MinePage() {
 
   /** 点头像：更换头像 或 查看浏览历史（v2.0 F26；2026-10-25 历史页并入热点页 ——
    *  switchTab 过去并置展开标记，热点页 useDidShow 读标记自动展开「最近浏览」） */
+  /** 头像持久化：storage 满时 setStorageSync 会抛，抛了却报「已保存」就是假成功。
+   *  返回 false 时调用方必须改成「本次会话有效」的文案。 */
+  const persistAvatar = (value: string): boolean => {
+    try {
+      Taro.setStorageSync(AVATAR_KEY, value);
+      return Taro.getStorageSync(AVATAR_KEY) === value;
+    } catch (err) {
+      console.error('[MinePage] persist avatar failed:', err);
+      return false;
+    }
+  };
+
   const handleAvatarTap = () => {
     // 第三项「上传照片」单独放在这一层：Taro H5 的 showActionSheet 上限 6 项，
     // 塞进预设 emoji 那一层会变成 7 项而被 API 拒绝（历史 bug：点更换头像无反应）。

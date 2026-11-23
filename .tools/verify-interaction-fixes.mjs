@@ -705,7 +705,7 @@ ok('T6 小程序端仍走 saveFile（云端路径不影响 weapp）',
 /* T7 上传成功但换不出签名 URL 时**不谎称「头像已更新」**——用户眼前没有任何变化，
  * 这时报「已更新」就是假成功。必须按 url 是否真拿到分流两套文案。 */
 ok('T7 取不到签名 URL 时不谎称已更新（改报「已保存、重进可见」）',
-  /url \? t\('mine\.avatarSaved'\) : t\('mine\.avatarSavedNoPreview'\)/.test(mine) &&
+  /url[\s\S]{0,40}\? t\('mine\.avatarSaved'\)[\s\S]{0,40}: t\('mine\.avatarSavedNoPreview'\)/.test(mine) &&
   /'mine\.avatarSavedNoPreview':/.test(langSrc));
 /* T8 依赖的 SDK 面必须在我们**实际加载的那份 SDK**里真实存在。
  * 本仓自托管 SDK（大陆 CDN 被墙，见 src/assets/wb-sdk.js）与 npm 版可能不同版本，
@@ -1173,6 +1173,18 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     lib.includes("tag === '全部' ? t('library.all')") &&
       !lib.includes('label={categoryLabel('));
   ok('M63b library.all 中英齐全', zh.includes("'library.all':") && en.includes("'library.all':"));
+}
+
+/* M64（2026-11-23）：头像落盘必须回读；写不进去要改口，不能报「已保存」。 */
+{
+  const mine = read('src/pages/mine/index.tsx');
+  ok('M64a 头像写入统一走 persistAvatar 并回读比对',
+    /function persistAvatar|const persistAvatar/.test(mine) &&
+      /getStorageSync\(AVATAR_KEY\) === value/.test(mine));
+  ok('M64b 不再出现「裸写 storage 后直接报已保存」',
+    !/setStorageSync\(AVATAR_KEY,[\s\S]{0,80}avatarSaved/.test(mine));
+  ok('M64c 失败时有「仅本次会话有效」的替代文案',
+    mine.includes("t(ok ? 'mine.avatarSaved' : 'mine.avatarTempOnly')"));
 }
 
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
