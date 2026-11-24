@@ -428,8 +428,9 @@ export default function SportPage() {
   // 「近 8 周 · 共 N 次」的 N 必须真的是近 8 周；以前用的是全历史 runs.length。
   const eightWeeksAgo = Date.now() - 56 * 24 * 60 * 60 * 1000;
   const recentRuns = runs.filter((r) => {
-    const t = new Date(r.startedAt).getTime();
-    return Number.isFinite(t) && t >= eightWeeksAgo;
+    // 不能叫 t：外层是 useT() 的翻译函数，同名会被 no-shadow 判红
+    const startedAtMs = new Date(r.startedAt).getTime();
+    return Number.isFinite(startedAtMs) && startedAtMs >= eightWeeksAgo;
   });
 
   /* ---------------- 渲染 ---------------- */
