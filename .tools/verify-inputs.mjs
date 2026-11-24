@@ -19,6 +19,7 @@ import path from 'node:path';
 import http from 'node:http';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
+import { resolveChrome } from './lib/chrome.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const argv = process.argv.slice(2);
@@ -27,7 +28,7 @@ const arg = (k) => {
   return hit ? hit.slice(k.length + 3) : null;
 };
 const DIST = arg('dist') || path.join(ROOT, 'dist');
-const CHROME = process.env.CHROME_BIN || 'C:\\Users\\geral\\.agent-browser\\browsers\\chrome-154.0.8037.92\\chrome.exe';
+const CHROME = resolveChrome();
 const ONLY = (arg('only') || '').split(',').filter(Boolean);
 const ONLY_VP = arg('viewport');
 /** 反向变异开关：注入左偏移，验证判据不是永远绿 */
@@ -61,7 +62,7 @@ const WATCHDOG = setTimeout(() => { console.error('✗ verify-inputs 超时'); p
 
 async function main() {
   if (!fs.existsSync(path.join(DIST, 'index.html'))) { console.log('未跑（无 dist）'); process.exit(0); }
-  if (!fs.existsSync(CHROME)) { console.error(`✗ 找不到 Chrome: ${CHROME}`); process.exit(2); }
+  if (!fs.existsSync(CHROME)) { console.error('✗ 找不到 Chrome：设置 CHROME_BIN 或安装 Chrome'); process.exit(2); }
 
   const list = routes();
   const { server, port } = await startServer();
@@ -115,28 +116,48 @@ async function main() {
       await send('Page.navigate', { url: 'about:blank' });
       await new Promise((r) => setTimeout(r, 120));
       await send('Page.navigate', { url: `http://127.0.0.1:${port}/?in=${vp.w}-${route}#/pages/${route}/index` });
-      await new Promise((r) => setTimeout(r, 3500));
+      // 等审批层退场后再量，但不固定睡 3.5s：输入框出现即走，最多 8s。
+      // 固定等待会让整轮跑得很慢，而空集又会把「没测到」伪装成通过（见下方 inputs===0）。
+      const waitStart = Date.now();
+      while (Date.now() - waitStart < 8000) {
+        const n = await ev(`(() => {
+          return [...document.querySelectorAll('input,textarea')].filter(function (el) {
+            const r = el.getBoundingClientRect();
+            return r.width > 8 && r.height > 0 && (!el.checkVisibility || el.checkVisibility({ visibilityProperty: true, opacityProperty: true }));
+          }).length;
+        })()`);
+        if (n > 0) break;
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      await new Promise((r) => setTimeout(r, 400));
       const found = await ev(`(() => {
         const out = [];
         const inputs = [...document.querySelectorAll('input, textarea')].filter((el) => {
           const r = el.getBoundingClientRect();
           const cs = getComputedStyle(el);
-          // 只测当前前台页：Taro 会把访问过的 tab 页留在 DOM 里（taro_page_show 才是前台）
-          if (!el.closest('.taro_page_show')) return false;
+          // 只测**当前前台页**：Taro 会把访问过的 tab 页与登录页都留在 DOM 里，
+          // taro_page_show 可能不止一个 —— 取最后一个可见页作为 active。
+          var pages = [].slice.call(document.querySelectorAll('.taro_page_show'));
+          var active = pages.length ? pages[pages.length - 1] : null;
+          if (!active || !active.contains(el)) return false;
           const shown = el.checkVisibility ? el.checkVisibility({ visibilityProperty: true, opacityProperty: true }) : true;
           const inView = r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
           return shown && inView && r.width > 8 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden';
         });
-        if (${MUTATE}) inputs.forEach(function (x) { x.style.transform = 'translateX(9px)'; });
+        // 量「可见盒子」而不是内部原生 input：Taro 的 input 包在 taro-input-core 里，
+        // 原生元素高度只有行高（实测 21px），会把正常 36px 的框误判成太矮。
+        const boxOf = (el) => el.closest('taro-input-core, taro-textarea-core') || el;
+        if (${MUTATE}) inputs.forEach(function (x) { boxOf(x).style.transform = 'translateX(9px)'; });
         for (const el of inputs) {
-          const r = el.getBoundingClientRect();
-          const cs = getComputedStyle(el);
+          const box = boxOf(el);
+          const r = box.getBoundingClientRect();
+          const cs = getComputedStyle(box);
           const padT = parseFloat(cs.paddingTop) || 0;
           const padB = parseFloat(cs.paddingBottom) || 0;
           // 同容器内最近的前置文本元素
           let labelLeft = null;
           let labelBottom = null;
-          let sib = el.previousElementSibling;
+          let sib = box.previousElementSibling;
           while (sib && labelLeft === null) {
             if ((sib.textContent || '').trim().length > 0 && !sib.querySelector('input,textarea')) {
               const lr = sib.getBoundingClientRect();
@@ -145,14 +166,14 @@ async function main() {
             sib = sib.previousElementSibling;
           }
           // Taro 常把标签和输入框各包一层，直接兄弟找不到就再看父级的前一个兄弟
-          if (labelLeft === null && el.parentElement) {
-            let up = el.parentElement.previousElementSibling;
+          if (labelLeft === null && box.parentElement) {
+            let up = box.parentElement.previousElementSibling;
             if (up && (up.textContent || '').trim().length > 0 && !up.querySelector('input,textarea')) {
               const ur = up.getBoundingClientRect();
               labelLeft = ur.left; labelBottom = ur.bottom;
             }
           }
-          const parent = el.parentElement;
+          const parent = box.parentElement;
           const pr = parent ? parent.getBoundingClientRect() : r;
           const pcs = parent ? getComputedStyle(parent) : null;
           const padL = pcs ? parseFloat(pcs.paddingLeft) || 0 : 0;
@@ -165,22 +186,38 @@ async function main() {
             labelBottom: labelBottom === null ? null : Math.round(labelBottom),
             parentRight: Math.round(pr.right - padR),
             parentLeft: Math.round(pr.left + padL),
+            hasPrefix: (() => {
+              let prev = el.closest('taro-input-core, taro-textarea-core') || el;
+              prev = prev.previousElementSibling;
+              if (!prev) return false;
+              const pcs = getComputedStyle(prev);
+              const text = (prev.textContent || '').trim();
+              return pcs.display !== 'none' && prev.getBoundingClientRect().width > 10 && text.length > 0 && text.length <= 6;
+            })(),
             padT, padB
           });
         }
         return out;
       })()`);
+      // 受保护路由会被门禁重定向到登录页；此时量到的是登录页的框，不能算这个路由的结果。
+      const actual = await ev(`location.hash`);
+      if (!String(actual || '').includes(`/pages/${route}/index`)) {
+        rows.push({ vp: vp.w, route, skipped: true, bad: [] });
+        continue;
+      }
       if (!Array.isArray(found)) { rows.push({ vp: vp.w, route, bad: ['巡检脚本执行失败'] }); continue; }
       for (const f of found) {
         const bad = [];
-        // 只把「在输入框上方」的标签算作对齐基准；同一行左侧的前缀（+86 之类）不算
         const above = f.labelLeft !== null && f.labelBottom !== null && f.labelBottom <= f.top + 2;
-        if (above && Math.abs(f.left - f.labelLeft) > 2) bad.push(`左边缘偏 ${f.left - f.labelLeft}px`);
-        // 没有前置标签时，至少要和容器内容区左边缘对齐（否则就是被 margin/缩进挤歪）
-        if (!above && Math.abs(f.left - f.parentLeft) > 2) bad.push(`距容器左边缘 ${f.left - f.parentLeft}px`);
+        const contentW = f.parentRight - f.parentLeft;
+        // 满宽字段才判左右对齐：搜索框+按钮、金额+单位、带 +86 前缀的输入框，
+        // 左边缘本来就不等于容器左边缘，拿它当判据只会制造假阳性。
+        const fullWidth = !f.hasPrefix && contentW > 0 && (f.right - f.left) >= contentW * 0.9;
+        if (fullWidth && above && Math.abs(f.left - f.labelLeft) > 2) bad.push(`左边缘偏 ${f.left - f.labelLeft}px`);
+        if (fullWidth && !above && Math.abs(f.left - f.parentLeft) > 2) bad.push(`距容器左边缘 ${f.left - f.parentLeft}px`);
+        if (fullWidth && f.right - f.parentRight > 2) bad.push(`右侧溢出 ${f.right - f.parentRight}px`);
         if (Math.abs(f.padT - f.padB) > 4) bad.push(`上下内边距 ${f.padT}/${f.padB}`);
         if (f.h < 36) bad.push(`高度 ${f.h}px<36`);
-        if (f.right - f.parentRight > 2) bad.push(`右侧溢出 ${f.right - f.parentRight}px`);
         rows.push({ vp: vp.w, route, ph: f.ph, ctx: (f.ctx || '').slice(0, 40), labelLeft: f.labelLeft, bad });
       }
     }
@@ -190,9 +227,12 @@ async function main() {
   clearTimeout(WATCHDOG);
 
   const fails = rows.filter((r) => r.bad.length);
-  const inputs = rows.length;
-  const withLabel = rows.filter((r) => r.labelLeft !== null).length;
-  console.log(`\n打字框对齐巡检：${inputs} 个输入框，其中 ${withLabel} 个有可比对的前置标签`);
+  const skipped = rows.filter((r) => r.skipped).length;
+  const inputs = rows.length - skipped;
+  const withLabel = rows.filter((r) => !r.skipped && r.labelLeft !== null).length;
+  console.log(`\n打字框对齐巡检：${inputs} 个输入框（另有 ${skipped} 个页面因未登录被重定向，未计入），其中 ${withLabel} 个有可比对的前置标签`);
+  // 0 个输入框不是「全绿」：说明页面没挂载/选择器失效/等待过短，是门禁失效而不是合格。
+  if (inputs === 0) { console.log('FAIL 0/0：一个输入框都没测到（空集不算通过）'); process.exit(1); }
   if (!fails.length) { console.log(`PASS ${inputs}/${inputs}`); process.exit(0); }
   console.log(`FAIL ${fails.length}/${inputs}`);
   for (const f of fails.slice(0, 30)) console.log(`  · [${f.vp}px] ${f.route} · ${f.ph || '(无占位)'} [${f.ctx}]: ${f.bad.join(' / ')}`);

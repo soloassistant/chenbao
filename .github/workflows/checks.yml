@@ -602,6 +602,9 @@ jobs:
   # 单独成 job：构建 + 无头 Chrome 较重，且不应拖慢上面的离线检查；构建失败只红这一个 job。
   contrast-render:
     runs-on: ubuntu-latest
+    # 三条浏览器门禁共用同一个 Chrome；显式指定，避免各自猜路径猜不到就 SKIP。
+    env:
+      CHROME_BIN: /usr/bin/google-chrome
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

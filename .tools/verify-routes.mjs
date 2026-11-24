@@ -35,6 +35,7 @@ import path from 'node:path';
 import http from 'node:http';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
+import { resolveChrome } from './lib/chrome.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const argv = process.argv.slice(2);
@@ -43,7 +44,7 @@ const arg = (k) => {
   return hit ? hit.slice(k.length + 3) : null;
 };
 const DIST = arg('dist') || path.join(ROOT, 'dist');
-const CHROME = process.env.CHROME_BIN || 'C:\\Users\\geral\\.agent-browser\\browsers\\chrome-154.0.8037.92\\chrome.exe';
+const CHROME = resolveChrome();
 const ONLY = (arg('only') || '').split(',').filter(Boolean);
 const ONLY_VP = arg('viewport');
 /** 2026-11-23：--theme=dark 时预置主题并断言页面底色确实是深色 */
@@ -115,7 +116,7 @@ async function main() {
     process.exit(0);
   }
   if (!fs.existsSync(CHROME)) {
-    console.error(`✗ 找不到 Chrome: ${CHROME}`);
+    console.error('✗ 找不到 Chrome：设置 CHROME_BIN 或安装 Chrome');
     process.exit(2);
   }
 
