@@ -456,7 +456,7 @@ for (const name of list) {
     // 最后一口气掐死在还原前 → 退出码 -1 看起来像变异逃逸。900s ≈ 实测 × 1.6。
     // verify:routes 同理放宽：27 路由 × 3 视口 × ~3.5s ≈ 300s+，默认 300s 必然把
     // 正常跑完的那一次判成超时（2026-11-19 实测 300.0s 被杀）。
-    timeout: MUTATING.has(name) || name === 'verify:routes' ? 900000 : 300000,
+    timeout: MUTATING.has(name) || name === 'verify:routes' || name === 'verify:theme-dark' ? 900000 : 300000,
     maxBuffer: 64 * 1024 * 1024,
     env: { ...process.env, FORCE_COLOR: '0' }
   });
