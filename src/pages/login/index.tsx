@@ -301,18 +301,31 @@ export default function LoginPage() {
       .catch(() => {
         /* 由下面的 getSession 统一收口 */
       });
+    // 2026-11-24：会话检查没有超时，后端慢时用户会一直看着「稍等，先看看你是不是登录过」
+    // （本机实测超过 12s）。2.5s 内没结果就先放行到表单，让用户能开始输入；
+    // 晚到的有效会话不再把人拽走，避免用户正在输入时页面突然跳转。
+    let settled = false;
+    const release = () => {
+      if (!alive || settled) return;
+      settled = true;
+      setPhase('form');
+    };
+    const timer = setTimeout(release, 2500);
     getSession()
       .then((s) => {
-        if (!alive) return;
+        if (!alive || settled) return;
+        settled = true;
+        clearTimeout(timer);
         if (s) goToApp();
         else setPhase('form');
       })
       .catch(() => {
-        if (!alive) return;
-        setPhase('form');
+        clearTimeout(timer);
+        release();
       });
     return () => {
       alive = false;
+      clearTimeout(timer);
     };
     // t 仅用于「后端不可达」错误文案；本 effect 负责会话校验/加载，语言切换无需重跑请求
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1319,5 +1319,11 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     login.includes("if (!password) {") && login.includes("if (isSignup && password.length < 8)"));
 }
 
+/* M77（2026-11-24）：登录页会话检查必须有超时，不能一直停在「稍等」。 */
+{
+  const login = read('src/pages/login/index.tsx');
+  ok('M77 会话检查 2.5s 后放行到表单', login.includes('setTimeout(release, 2500)') && login.includes("setPhase('form')"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
