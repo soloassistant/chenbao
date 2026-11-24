@@ -585,10 +585,11 @@ export default function LoginPage() {
     if (!ensureAccount()) return;
     clearMsg();
     setBusy(true);
-    // 手机号通道走自己实现的那条（服务端支持、SDK 未封装，见 cloudAuth.requestPasswordResetByPhone）
-    const res = channel === 'phone'
-      ? await requestPasswordResetByPhone(buildPhoneE164(dialCode, account))
-      : await requestPasswordReset(account.trim());
+    // 按**用户实际输入的标识**分流：账号框允许邮箱后，channel 恒为 phone，
+    // 再用 channel 判断会把邮箱地址拼成 +86 号码去发短信。
+    const res = accountIsEmail()
+      ? await requestPasswordReset(account.trim())
+      : await requestPasswordResetByPhone(buildPhoneE164(dialCode, account));
     setBusy(false);
     if (res.error) {
       setError(sdkDownText(res.error, t) || t('auth.errGeneric'));

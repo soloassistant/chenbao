@@ -1325,5 +1325,14 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M77 会话检查 2.5s 后放行到表单', login.includes('setTimeout(release, 2500)') && login.includes("setPhase('form')"));
 }
 
+/* M78（2026-11-24）：忘记密码必须按用户输入的标识分流，不能按写死的 channel。 */
+{
+  const login = read('src/pages/login/index.tsx');
+  ok('M78 邮箱走邮件重置、手机号走短信重置',
+    login.includes('const res = accountIsEmail()') &&
+      login.includes('requestPasswordReset(account.trim())') &&
+      login.includes('requestPasswordResetByPhone(buildPhoneE164'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
