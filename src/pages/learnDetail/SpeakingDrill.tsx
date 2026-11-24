@@ -14,6 +14,8 @@ interface SpeakingDrillProps {
   course: LearnCourse;
   langId: LearnLangId;
   accent: string;
+  /** 文字/描边用的强调色（深色下由页面换高对比档；缺省同 accent） */
+  accentText?: string;
   /** 该课口语练习历史最高分 */
   best: number;
   /** 当前端是否支持该语种 TTS 发音（不支持则隐藏示范按钮，保留跟读自评） */
@@ -26,7 +28,7 @@ interface Feedback {
 }
 
 /** 口语跟读：听示范 → 按住跟读 → 英语句自动比对相似度，其余语种/端自评 */
-function SpeakingDrill({ course, langId, accent, best, audioSupported }: SpeakingDrillProps) {
+function SpeakingDrill({ course, langId, accent, accentText = accent, best, audioSupported }: SpeakingDrillProps) {
   const t = useT();
   const lines = useMemo(() => buildSpeakingLines(course), [course]);
   const [idx, setIdx] = useState(0);
@@ -109,6 +111,7 @@ function SpeakingDrill({ course, langId, accent, best, audioSupported }: Speakin
         // 不再 `Math.max(best, 100)` 把展示分硬顶到满分。
         best={Math.max(best, sessionBest ?? 0)}
         accent={accent}
+        accentText={accentText}
         onRestart={restart}
       />
     );
@@ -121,7 +124,7 @@ function SpeakingDrill({ course, langId, accent, best, audioSupported }: Speakin
       <Text className={styles.drillHint}>{t('learn.speakHint')}</Text>
 
       <View className={styles.speakCard}>
-        <Text className={styles.speakTerm} style={{ color: accent }}>
+        <Text className={styles.speakTerm} style={{ color: accentText }}>
           {line.term}
         </Text>
         {line.reading ? <Text className={styles.speakReading}>{line.reading}</Text> : null}
@@ -169,7 +172,7 @@ function SpeakingDrill({ course, langId, accent, best, audioSupported }: Speakin
         </DrillRevealBox>
       ) : (
         <DrillRevealBox>
-          <Text className={styles.scoreNum} style={{ color: accent }}>
+          <Text className={styles.scoreNum} style={{ color: accentText }}>
             {t('learn.speakMatch', { score: pct || 0 })}
           </Text>
           <Text className={styles.revealCn}>{(pct || 0) >= 60 ? t('learn.speakMatchGood') : t('learn.speakMatchRetry')}</Text>

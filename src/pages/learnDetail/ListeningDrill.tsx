@@ -13,6 +13,8 @@ import styles from './index.module.scss';
 interface ListeningDrillProps {
   course: LearnCourse;
   accent: string;
+  /** 文字/描边用的强调色（深色下由页面换高对比档；缺省同 accent） */
+  accentText?: string;
   /** 课程语种对应的 TTS 语种 */
   ttsLang: TtsLang;
   /** 该课听力练习历史最高分 */
@@ -20,7 +22,7 @@ interface ListeningDrillProps {
 }
 
 /** 听力训练：播报目标语单词（不显示文字），四选一挑出中文释义 */
-function ListeningDrill({ course, accent, ttsLang, best }: ListeningDrillProps) {
+function ListeningDrill({ course, accent, accentText = accent, ttsLang, best }: ListeningDrillProps) {
   const t = useT();
   const [round, setRound] = useState(0);
   // round 只是「重洗牌」触发器：buildListeningQuestions 内含随机 shuffle，必须随 round 重算才有效果，不能删
@@ -91,6 +93,7 @@ function ListeningDrill({ course, accent, ttsLang, best }: ListeningDrillProps) 
         score={`${t('learn.correctCount', { count: correct, total: questions.length })} · ${pct}%`}
         best={Math.max(best, pct)}
         accent={accent}
+        accentText={accentText}
         onRestart={restart}
       />
     );
@@ -102,7 +105,7 @@ function ListeningDrill({ course, accent, ttsLang, best }: ListeningDrillProps) 
       <Text className={styles.drillHint}>{t('learn.listenHint')}</Text>
 
       <View className={styles.listenCard}>
-        <View className={classnames(styles.playBtn, playing && styles.playBtnOn)} style={{ borderColor: accent }} onClick={() => play(false)}>
+        <View className={classnames(styles.playBtn, playing && styles.playBtnOn)} style={{ borderColor: accentText }} onClick={() => play(false)}>
           <Text className={styles.playIcon}>🔊</Text>
           <Text className={styles.playLabel}>{t('learn.listenPlay')}</Text>
         </View>
@@ -111,7 +114,7 @@ function ListeningDrill({ course, accent, ttsLang, best }: ListeningDrillProps) 
         </Text>
       </View>
 
-      <DrillOptions options={q.options} answer={q.answer} picked={picked} accent={accent} onPick={pick} />
+      <DrillOptions options={q.options} answer={q.answer} picked={picked} accent={accent} accentText={accentText} onPick={pick} />
 
       {picked !== null && q ? (
         <DrillReveal
