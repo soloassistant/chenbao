@@ -1485,6 +1485,7 @@ const zh = {
   'auth.errPhone': '请输入有效的手机号',
   'auth.errPhoneEmpty': '请输入手机号',
   'auth.errPassword': '密码至少 8 位',
+  'auth.errPasswordEmpty': '请输入密码',
   'auth.errCodeNeeded': '请先为当前账号获取验证码',
   'auth.errWrongCredentials': '账号和密码对不上。再核对一次；忘了密码就切到「验证码登录」。',
   'auth.errGeneric': '这一步没走完，多半是网络抖了一下。再点一次；还是不行就刷新页面重来。',

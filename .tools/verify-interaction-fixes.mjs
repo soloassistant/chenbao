@@ -1310,5 +1310,14 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M75b CI 的 contrast-render 里真的调用', wf.includes('node .tools/verify-inputs.mjs'));
 }
 
+/* M76（2026-11-24）：登录页必须能输入邮箱；密码登录不得用 8 位下限挡老账号。 */
+{
+  const login = read('src/pages/login/index.tsx');
+  ok('M76a 账号框允许邮箱（text + 含 @ 分流）',
+    login.includes('accountIsEmail') && !login.includes("type='number'\n                value={account}\n                maxlength={15}"));
+  ok('M76b 密码登录只校验非空，注册/重置仍要求 8 位',
+    login.includes("if (!password) {") && login.includes("if (isSignup && password.length < 8)"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

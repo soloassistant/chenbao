@@ -394,8 +394,13 @@ export default function LoginPage() {
    *  （旧注释「国际区号归一由 SDK 内部完成」是错的，已按实测纠正。
    *   另注意：区号表刻意不含 `+1`，因为 SDK 会把任何 1 开头的 11 位数字改写成 +86 号码，
    *   详见 `src/data/dialCodes.ts` 头注释。） */
+  // 2026-11-24：账号框允许直接输入邮箱。此前通道写死 phone + 输入框 type=number，
+  // 邮箱账号连字符都打不进去，等于没有邮箱登录入口。
+  const accountIsEmail = (v: string = account) => v.includes('@');
   const currentId = (): AuthIdentifier =>
-    channel === 'phone' ? { phone: buildPhoneE164(dialCode, account) } : { email: account.trim() };
+    accountIsEmail() || channel !== 'phone'
+      ? { email: account.trim() }
+      : { phone: buildPhoneE164(dialCode, account) };
 
   /**
    * 切换区号。
@@ -444,6 +449,13 @@ export default function LoginPage() {
 
   const ensureAccount = (): boolean => {
     const v = account.trim();
+    if (accountIsEmail()) {
+      if (!EMAIL_RE.test(v)) {
+        setError(t('auth.errEmail'));
+        return false;
+      }
+      return true;
+    }
     if (channel === 'phone') {
       // 校验交给区号表驱动的 validateNational：位数区间按区号不同，
       // 中国大陆还额外校验 `/^1[3-9]\d{9}$/`（11 位、1 开头、第二位 3–9）。
@@ -462,10 +474,6 @@ export default function LoginPage() {
         return false;
       }
       return true;
-    }
-    if (!EMAIL_RE.test(v)) {
-      setError(t('auth.errEmail'));
-      return false;
     }
     return true;
   };
@@ -538,8 +546,10 @@ export default function LoginPage() {
   const submitPassword = async () => {
     if (busy) return;
     if (!ensureAccount()) return;
-    if (password.length < 8) {
-      setError(t('auth.errPassword'));
+    // 登录不校验长度：老账号可能存在 8 位以下的密码，本地拦下会让本人也登不进去。
+    // 只有注册 / 重置（设置新密码）才要求 8 位；正确性由服务端判定。
+    if (!password) {
+      setError(t('auth.errPasswordEmpty'));
       return;
     }
     clearMsg();
@@ -818,22 +828,27 @@ export default function LoginPage() {
           {channel === 'phone' ? (
             // 区号按钮 + 本地号码输入。两者分在两个字段里存，提交时才拼 E.164。
             <View className={styles.phoneRow}>
-              <View className={styles.dialBtn} onClick={() => setDialPickerOpen(true)}>
+              <View
+                className={styles.dialBtn}
+                style={accountIsEmail() ? { display: 'none' } : undefined}
+                onClick={() => setDialPickerOpen(true)}
+              >
                 <Text className={styles.dialText}>{`+${dialCode}`}</Text>
                 <Text className={styles.dialCaret}>▾</Text>
               </View>
               <Input
                 className={`${styles.input} ${styles.phoneInput}`}
-                type='number'
+                type='text'
                 value={account}
-                maxlength={15}
+                maxlength={64}
                 // 大陆用户看到「11 位手机号」最直观；其他国家只能提示「不含区号」，
                 // 否则用户会把 +852 再输一遍（区号已经由左侧按钮提供）。
                 placeholder={dialCode === '86' ? t('auth.phonePlaceholder') : t('auth.phoneIntlPlaceholder')}
                 onInput={(e) => {
-                  // `type='number'` 在 H5 仍可能放进 e / . / -，统一剥成数字，
-                  // 让 state 里只存在能直接拼进 E.164 的字符。
-                  setAccount(normalizeNational(String(e.detail.value || '')));
+                  const raw = String(e.detail.value || '');
+                  // 含 @ 视为邮箱账号：保留原样；否则按本地号码剥成纯数字，
+                  // 保证 E.164 拼接只有合法字符。
+                  setAccount(raw.includes('@') ? raw.trimStart() : normalizeNational(raw));
                   onAccountInput();
                 }}
               />

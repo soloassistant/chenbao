@@ -1414,6 +1414,7 @@ export const en: Record<LangKey, string> = {
   'auth.errEmail': 'This email looks incomplete — check the part before and after @',
   'auth.errPhone': 'Enter a valid phone number',
   'auth.errPhoneEmpty': 'Enter your phone number',
+  'auth.errPasswordEmpty': 'Enter your password',
   'auth.errPassword': 'Password must be at least 8 characters',
   'auth.errCodeNeeded': 'Get a code for this account first',
   'auth.errWrongCredentials': 'That account and password do not match. Check them once more, or switch to signing in with a code.',
