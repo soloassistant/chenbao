@@ -613,6 +613,10 @@ jobs:
           cache: yarn
       - name: 安装依赖
         run: yarn install --frozen-lockfile
+      - name: 确认 Chrome 可用
+        # 没有这一步，Chrome 不在就会走 exit 2 → 步骤按 SKIP 变绿，门禁从没跑过也看不出来。
+        run: test -x "$CHROME_BIN" && "$CHROME_BIN" --version
+
       - name: 构建 H5 产物
         # 真实渲染门禁需要 dist；checks 主任务不构建产物，这里单独构建（与发布构建同源的两步法）。
         env:
