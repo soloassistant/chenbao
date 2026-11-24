@@ -66,7 +66,8 @@ const BROWSER = new Map([
   ['verify:compress', 'cdp-probe 驱动真 Chrome 验头像压缩（canvas 位图，jsdom 测不了）'],
   ['verify:hotkeys-live', 'cdp-probe 驱动真 Chrome 在 dist 上按一遍快捷键（合成 keydown + 真实事件路径）'],
   ['verify:site-live', 'cdp-probe 驱动真 Chrome 量落地页的计算样式（CSS 级联覆盖只有渲染后才看得见）'],
-  ['verify:contrast-render', 'CDP 通道驱动真 Chrome，把 5 个公开页真实渲染后量每个文字元素「计算样式 + alpha 合成背景」对比度（WCAG 2.2 AA）']
+  ['verify:contrast-render', 'CDP 通道驱动真 Chrome，把 5 个公开页真实渲染后量每个文字元素「计算样式 + alpha 合成背景」对比度（WCAG 2.2 AA）'],
+  ['verify:theme-dark', 'cdp-probe 驱动真 Chrome，把 27 个路由 × 3 档视口在暗色主题下全渲染一遍']
 ]);
 // 会临时改写源码，必须排在所有只读门禁之后（否则后面的门禁验的是被变异过的代码）。
 const MUTATING = new Map([['verify:mutation', '临时改写源码跑变异测试']]);
@@ -153,6 +154,7 @@ const CI_EXEMPT = new Map([
   ['verify:compress', '同上（真 Chrome 验 canvas 压缩）'],
   ['verify:hotkeys-live', '同上（真 Chrome 在 dist 上按快捷键）'],
   ['verify:site-live', '同上（真 Chrome 量落地页计算样式）'],
+  ['verify:theme-dark', '同上（真 Chrome 跑暗色全路由巡检）'],
   ['verify:boards', '需外网（9 个热榜源），CI 明确不跑'],
   // 2026-10-29 新增：读 dist 产物 + git 历史（指纹是否过期、入口引用是否齐全、SDK 是否被复制）。
   // checks 工作流**不构建产物**，所以它在这里既没法跑也不该跑；它的执行位置是发布前
