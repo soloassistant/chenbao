@@ -149,12 +149,10 @@ function parseCounts(out) {
 const CI_EXEMPT = new Map([
   ['verify:all', '自身，CI 里没有递归跑的必要'],
   ['verify:layout', '需真 Chrome，CI 不跑浏览器门禁'],
-  ['verify:routes', '同上（真 Chrome 全路由渲染巡检）'],
   ['verify:visual', '同上'],
   ['verify:compress', '同上（真 Chrome 验 canvas 压缩）'],
   ['verify:hotkeys-live', '同上（真 Chrome 在 dist 上按快捷键）'],
   ['verify:site-live', '同上（真 Chrome 量落地页计算样式）'],
-  ['verify:theme-dark', '同上（真 Chrome 跑暗色全路由巡检）'],
   ['verify:boards', '需外网（9 个热榜源），CI 明确不跑'],
   // 2026-10-29 新增：读 dist 产物 + git 历史（指纹是否过期、入口引用是否齐全、SDK 是否被复制）。
   // checks 工作流**不构建产物**，所以它在这里既没法跑也不该跑；它的执行位置是发布前
