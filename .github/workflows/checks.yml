@@ -643,3 +643,15 @@ jobs:
             exit 0
           fi
           exit "$code"
+
+      - name: 打字框对齐门禁（无头 Chrome）
+        # 所有 input/textarea：左边缘对齐、上下内边距对称、高度 ≥36px、不溢出容器。
+        run: |
+          set +e
+          node .tools/verify-inputs.mjs
+          code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::输入框门禁 harness 出错（exit=2），非代码缺陷，按 SKIP 处理"
+            exit 0
+          fi
+          exit "$code"

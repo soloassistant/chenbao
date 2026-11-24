@@ -1302,5 +1302,13 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     /if \(s\) \{ setAuthed\(true\); return; \}/.test(app) && /setAuthed\(false\)/.test(app));
 }
 
+/* M75（2026-11-24）：打字框对齐必须有可执行门禁，且 CI 真的跑。 */
+{
+  const pkg = read('package.json');
+  const wf = read('.github/workflows/checks.yml');
+  ok('M75a 有独立入口 verify:inputs', pkg.includes('"verify:inputs"'));
+  ok('M75b CI 的 contrast-render 里真的调用', wf.includes('node .tools/verify-inputs.mjs'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
