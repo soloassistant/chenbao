@@ -197,6 +197,10 @@ function App(props: PropsWithChildren) {
   // 首次启动引导（设计稿 p19/p20）：只在 H5 且有真实账号体系时才有意义，
   // 看过一次就落库，不再骚扰（微信端直接视为已看过）。
   const [onboarded, setOnboarded] = useState(() => process.env.TARO_ENV !== 'h5' || hasOnboarded());
+  /** 是否已确认「有会话」：门禁异步查会话期间，引导不能抢在登录页前面出现。
+   *  2026-11-24 回归：冷启动首屏是 briefing，getSession 还在飞，onboarded=false
+   *  就先渲染了引导，用户先看到引导再被送到登录页。 */
+  const [authed, setAuthed] = useState(() => !needsAuthGate);
   // 当前会话的 uid：引导完成时按账号落库（见下方 effect 与 Onboarding 的 accountKey）
   const [onboardUid, setOnboardUid] = useState<string | null>(null);
   /**
@@ -536,7 +540,8 @@ function App(props: PropsWithChildren) {
       let gateRetries = 0;
       const runGateCheck = () => {
         getSession().then((s) => {
-          if (s) return;
+          if (s) { setAuthed(true); return; }
+          setAuthed(false);
           if (hasStoredSession() && gateRetries < 3) {
             gateRetries += 1;
             console.error(`[App] 会话恢复失败（第 ${gateRetries}/3 次重试）——本地凭据还在，不送登录页`);
@@ -592,7 +597,7 @@ function App(props: PropsWithChildren) {
           </Suspense>
           {/* 首启引导：必须等隐私同意之后再挂（两个全屏层叠在一起，用户会点不到下面那层），
               也必须等开屏退场（shellReady），否则引导藏在开屏下面等于没出现。 */}
-          {consentAgreed && shellReady && !onboarded ? (
+          {consentAgreed && shellReady && authed && !onboarded ? (
             // fallback=null：引导只在首启/换账号时出现，此刻 Splash 正盖在上面，占位会闪
             <Suspense fallback={null}>
               <Onboarding

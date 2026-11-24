@@ -1292,5 +1292,15 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     pkg.includes('verify:theme-dark') && pkg.includes('--theme=dark'));
 }
 
+/* M74（2026-11-24）：首启引导不得抢在登录门禁前面。
+ * 回归：冷启动首屏是 briefing，会话检查还没回来就渲染了引导。 */
+{
+  const app = read('src/app.tsx');
+  ok('M74a 引导渲染条件包含已确认会话（authed）',
+    /consentAgreed && shellReady && authed && !onboarded/.test(app));
+  ok('M74b 会话成功时置 authed=true，失败时置 false',
+    /if \(s\) \{ setAuthed\(true\); return; \}/.test(app) && /setAuthed\(false\)/.test(app));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
