@@ -3,7 +3,7 @@ import type { PropsWithChildren } from 'react';
 import Taro, { useDidShow } from '@tarojs/taro';
 import Splash from '@/components/Splash';
 // 引导标记读写（拆分后只取布尔/写入函数，不拉入整屏引导组件）
-import { hasOnboarded, hasOnboardedFor, markOnboardedFor } from '@/components/Onboarding/state';
+import { ONBOARD_PENDING_KEY, markOnboardedFor } from '@/components/Onboarding/state';
 import { HELP_EVENT, focusSearchBox, useGlobalHotkeys } from '@/hooks/useHotkeys';
 import { hotkeyRoute } from '@/utils/hotkeys';
 import type { HotkeyId } from '@/utils/hotkeys';
@@ -194,57 +194,40 @@ function App(props: PropsWithChildren) {
      小程序端不挂（没有物理键盘，挂上去只是白打代码）。 */
   const [helpOpen, setHelpOpen] = useState(false);
   const [shellReady, setShellReady] = useState(process.env.TARO_ENV !== 'h5');
-  // 首次启动引导（设计稿 p19/p20）：只在 H5 且有真实账号体系时才有意义，
-  // 看过一次就落库，不再骚扰（微信端直接视为已看过）。
-  const [onboarded, setOnboarded] = useState(() => process.env.TARO_ENV !== 'h5' || hasOnboarded());
-  /** 是否已确认「有会话」：门禁异步查会话期间，引导不能抢在登录页前面出现。
-   *  2026-11-24 回归：冷启动首屏是 briefing，getSession 还在飞，onboarded=false
-   *  就先渲染了引导，用户先看到引导再被送到登录页。 */
+  // 首启引导：只对「刚完成注册的新用户」弹一次。
+  // 2026-11-25 收口：以前按设备标记 + 账号标记在登录后补弹，老用户换设备/换账号
+  // 都会被再弹一次；产品口径改成「注册成功才弹」。
+  // 传递方式：注册成功时写 onboarding-pending，App 在离开登录页后消费。
+  const [onboarded, setOnboarded] = useState(process.env.TARO_ENV !== 'h5');
+  /** 是否已确认「有会话」：门禁异步查会话期间，引导不能抢在登录页前面出现。 */
   const [authed, setAuthed] = useState(() => !needsAuthGate);
-  // 当前会话的 uid：引导完成时按账号落库（见下方 effect 与 Onboarding 的 accountKey）
+  // 当前会话的 uid：引导完成时按账号落库
   const [onboardUid, setOnboardUid] = useState<string | null>(null);
-  /**
-   * 登录后补一次用户指导（2026-10-30，用户反馈「只有注册有、登录没有」）。
-   *
-   * 上面 useState 只在应用挂载时求值一次，读的是**设备级**标记 —— 于是：
-   *   · 老用户换设备登录 → 本地没标记，但那次挂载可能发生在登录页（不渲染引导），
-   *     登录成功切进来后 state 已定，不会重新判断 → 一次指导都看不到；
-   *   · 同设备换账号登录 → 设备标记还在 → 新账号也永远看不到。
-   * 这里在「离开登录页」时按**账号**再判一次，没看过就补上。
-   * 会话取不到时保持原判断（宁可少弹一次，也不要因为异常把人挡在门外）。
-   */
   useEffect(() => {
     if (process.env.TARO_ENV !== 'h5' || isLoginPage) return;
     let alive = true;
-    let tries = 0;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    // ⚠️ 2026-10-30 线上实测：这条判定**只跑一次**，而 getSession() 在「刚登录 / 刚刷新」
-    //    那一刻经常还是 null（SDK 的会话恢复有竞态）。一次拿不到就退化成设备级判断
-    //    （hasOnboardedFor(null) → 退回设备标记 true）→ 「登录后补引导」**永远不会弹**，
-    //    真账号 E2E 里 L4/L4b 都是 false 就是这个原因。
-    //    改成最多重试 10 次（约 7 秒）：拿到 uid 再决定，拿不到才沿用设备级。
-    const decide = () => {
-      getCloudUserId()
-        .then((uid) => {
-          if (!alive) return;
-          if (!uid && tries < 10) {
-            tries += 1;
-            timers.push(setTimeout(decide, 700));
-            return;
-          }
-          setOnboardUid(uid);
-          setOnboarded(hasOnboardedFor(uid));
-        })
-        .catch((err) => {
-          console.warn('[App] 引导的账号级判定失败，沿用设备级标记:', err);
-        });
-    };
-    decide();
+    let pending = false;
+    try {
+      pending = Taro.getStorageSync(ONBOARD_PENDING_KEY) === true;
+      if (pending) Taro.removeStorageSync(ONBOARD_PENDING_KEY);
+    } catch {
+      /* 存储不可用：不弹引导，不影响登录 */
+    }
+    if (!pending) return;
+    getCloudUserId()
+      .then((uid) => {
+        if (!alive) return;
+        setOnboardUid(uid);
+        setOnboarded(false);
+      })
+      .catch(() => {
+        if (alive) setOnboarded(false);
+      });
     return () => {
       alive = false;
-      timers.forEach((t) => clearTimeout(t));
     };
   }, [isLoginPage]);
+
   // 外壳左栏导航：H5 + ≥600px 挂载（手机继续用 Taro 底部 tabBar）。
   // 同时给 body 打类，让 app.scss 把 Taro tabBar 关掉并把内容列按断点右移（64/232/240）。
   // 断点从 1200 降到 600 的原因：Taro tabBar 最多 5 项，768 的 iPad 上记账/运动/省钱

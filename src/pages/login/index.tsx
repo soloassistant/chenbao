@@ -1,4 +1,5 @@
 import { pressableProps } from '@/utils/a11y';
+import { ONBOARD_PENDING_KEY } from '@/components/Onboarding/state';
 import React, { useEffect, useState } from 'react';
 import Taro from '@tarojs/taro';
 import { View, Text, Input } from '@tarojs/components';
@@ -551,6 +552,14 @@ export default function LoginPage() {
       return;
     }
     setPending(null);
+    // 只有「真的注册了新账号」才弹首启引导；老用户登录不弹。
+    if (isSignup) {
+      try {
+        Taro.setStorageSync(ONBOARD_PENDING_KEY, true);
+      } catch {
+        /* 存储不可用则不弹，不影响登录 */
+      }
+    }
     // 手机号通道登录成功 = 本机已持有手机号，落"已绑定"标记，避免之后邮箱登录再被强弹
     if (channel === 'phone') markPhoneBound();
     void afterLogin();

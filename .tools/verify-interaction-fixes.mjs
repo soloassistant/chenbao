@@ -1346,5 +1346,15 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M79d 登录链路桩补齐新导出', stub.includes('chatCloudStream') && stub.includes('getHotspotPayload'));
 }
 
+/* M80（2026-11-25）：首启引导只对「刚注册的新用户」弹一次。 */
+{
+  const app = read('src/app.tsx');
+  const login = read('src/pages/login/index.tsx');
+  ok('M80a App 只消费注册标记，不再按账号/设备补弹',
+    app.includes('ONBOARD_PENDING_KEY') && !app.includes('hasOnboardedFor('));
+  ok('M80b 注册成功才写标记（isSignup 分支内）',
+    /if \(isSignup\) \{[\s\S]{0,120}ONBOARD_PENDING_KEY/.test(login));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
