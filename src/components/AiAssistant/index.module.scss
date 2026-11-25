@@ -93,7 +93,11 @@
 .pageRoot {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  /* 必须是**有界**高度：min-height:100vh 会让内容把整页撑高，输入行被推到
+     视口之外（390×844 实测输入栏 y=849，点不到）。消息列表自己滚。 */
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: $color-bg-page;
 }
 

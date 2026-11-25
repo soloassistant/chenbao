@@ -1428,5 +1428,12 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M90 重叠门禁存在并按可见矩形判定', o.includes('visibleRect') && o.includes('overflowX'));
 }
 
+/* M91（2026-11-25）：AI 助手整页模式必须有界高度，输入行不能跑出视口。 */
+{
+  const ai = read('src/components/AiAssistant/index.module.scss');
+  const block = ai.slice(ai.indexOf('.pageRoot'), ai.indexOf('.pageRoot') + 400);
+  ok('M91 AI 整页高度有界（100dvh + overflow hidden）', block.includes('100dvh') && block.includes('overflow: hidden'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
