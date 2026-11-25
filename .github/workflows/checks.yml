@@ -268,6 +268,10 @@ jobs:
         #     并断言客户端**从不 SELECT** 这些表（否则收权会弄坏功能）。
         run: npm run verify:db-contract
 
+      - name: 图片 URL 改写与准入（纯函数）
+        # thumbUrl 的后缀/query/hash、isDroppableImage 的三条判据，全部行为断言。
+        run: npm run verify:image-url
+
       - name: 应用数据库线上探针（PG 函数存在与否 / 匿名读到的行数）
         # 必须真的去线上问一次「这个函数到底存不存在」—— 读源码只能证明「有人这么以为」。
         #   · PGRST202 = 不存在；42501 = 存在但匿名无权（**与不存在相反**，别混）。

@@ -967,6 +967,10 @@ async function pushNow(forceEmptyKeys: string[] = []): Promise<void> {
 }
 
 async function doPush(forceEmptyKeys: string[] = []): Promise<void> {
+  // 小程序端不开放跨设备同步（对外文案写死了这句）。这里的闸门以前只挂在 initCloudSync，
+  // 而 sport 页直接调 syncNow，pushNow/doPush 只靠「getSession 恰好为空」兜着 ——
+  // 一旦小程序端拿到会话就会开始上传。把闸门下沉到真正发请求的这一层。
+  if (process.env.TARO_ENV === 'weapp') return;
   const session = await getSession();
   const sessionOwner = session?.user?.id || null;
   if (!sessionOwner) return; // 未登录：跳过（不计失败）

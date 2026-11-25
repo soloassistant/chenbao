@@ -1387,5 +1387,14 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M85 有 --selftest-dark 且接进入口', r.includes('--selftest-dark') && r.includes('注入后') && pkg.includes('verify:dark-selftest'));
 }
 
+/* M86（2026-11-25）：SafeImage 文案必须走 i18n；图片规则必须有门禁。 */
+{
+  const si = read('src/components/SafeImage/index.tsx');
+  const pkg = read('package.json');
+  ok('M86a SafeImage 不再硬编码中文文案',
+    !si.includes('暂无配图') && !si.includes('配图加载失败') && si.includes("t('image.from'"));
+  ok('M86b 图片规则有独立门禁入口', pkg.includes('"verify:image-url"'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
