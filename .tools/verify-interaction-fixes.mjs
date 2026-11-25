@@ -1374,5 +1374,11 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M82 勾选态按同意行文本判定', c.includes('agreeGlyph') && !c.includes("document.body.innerText.includes('\\u2611')"));
 }
 
+/* M83（2026-11-25）：布局门禁要能识别「回退线上旧快照」，且不误判热点刷新。 */
+{
+  const l = read('.tools/verify-layout-pages.mjs');
+  ok('M83 用资源域名判回退，只拦脚本/样式', l.includes('offlineAssets') && l.includes('fetch|xmlhttprequest'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

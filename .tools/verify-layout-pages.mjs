@@ -302,7 +302,11 @@ function runProbe(port, page, vp, png, initFile) {
       container:g('.taro-tabbar__container'),panel:g('.taro-tabbar__panel'),page:g('.taro_page'),
       pageCount:document.querySelectorAll('.taro_page').length,
       scrollW:document.documentElement.scrollWidth,
-      bodyText:(document.body.innerText||'').replace(/\\s+/g,' ').slice(0,80)};
+      bodyText:(document.body.innerText||'').replace(/\\s+/g,' ').slice(0,80),
+      // 回退线上旧快照会打到 gh-pages 域名；用真实资源请求判定，比“渲染条数”可靠
+      resHosts:[...new Set(performance.getEntriesByType('resource').map(e=>{try{return new URL(e.name).host}catch{return ''}}).filter(Boolean))],
+      // 只有「应用代码/样式/文档」来自 gh-pages 才算回退；热点 JSON 的后台刷新不算
+      offlineAssets:performance.getEntriesByType('resource').filter(e=>{try{return /github\.io$/.test(new URL(e.name).host)&&!(/fetch|xmlhttprequest/.test(e.initiatorType)&&(e.name.indexOf('.json')>=0))}catch{return false}}).map(e=>e.name).slice(0,3)};
     const extra=(function(){${page.probeExtra}})();
     return JSON.stringify(Object.assign(base,extra));
   })()`;
@@ -480,6 +484,7 @@ async function main() {
         ['面板水平居中', Math.abs((v.panel?.x || 0) - expectX) <= 1, `panel.x=${v.panel?.x} 期望 ${expectX}`],
         ['页面宽度非 0', (v.page?.w || 0) > 0, `page=${v.page?.w}`],
         ['无横向溢出', (v.scrollW || 0) <= vp.w + 1, `scrollW=${v.scrollW} 期望 <=${vp.w}`],
+        ['未回退线上快照（脚本/样式不来自 gh-pages）', !(v.offlineAssets || []).length, `gh-pages 资源=${(v.offlineAssets || []).join(',') || '无'}；hosts=${(v.resHosts || []).join(',')}`],
         ['页面已绘制', !st.whiteScreen, `近白=${(st.nearWhite * 100).toFixed(1)}% 颜色数=${st.distinctColors}`],
         ['开屏已关闭（否则像素判据测的是遮罩）', v.splash === 'no-splash' || v.splashAfter === 'gone', `splash=${v.splash} 之后=${v.splashAfter}`],
         // 2026-10-27：合规同意层是**第二个**全屏遮罩，此前从未被点掉 ——
