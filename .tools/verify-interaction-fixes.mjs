@@ -1368,5 +1368,11 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M81 除 trade 外所有页面根都挂 themeModeClass', missing.length === 0);
 }
 
+/* M82（2026-11-25）：同意勾选态只能看同意行自己，不能拿全页文字判。 */
+{
+  const c = read('.tools/verify-login-consent.mjs');
+  ok('M82 勾选态按同意行文本判定', c.includes('agreeGlyph') && !c.includes("document.body.innerText.includes('\\u2611')"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
