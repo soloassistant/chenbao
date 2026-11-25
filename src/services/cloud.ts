@@ -402,6 +402,9 @@ export async function chatCloudStream(
  *  只在开发机存在，线上必然不可达 —— 因此它只是 ② 级兜底，不再是主路径。 */
 const LLM_PROXY_BASE = 'http://localhost:8138'
 async function callLocalAI<T>(name: string, data?: Record<string, unknown>): Promise<T | null> {
+  // 本地 LLM 代理只在开发机存在（localhost:8138）。生产 H5 打过去必然超时/被浏览器拦，
+  // 用户要多等一轮才看到降级；直接跳过，让上层立即走 mock + DemoDataHint（诚实降级）。
+  if (process.env.NODE_ENV !== 'development') return null
   try {
     const isExtract = name === 'extract'
     const url = isExtract ? `${LLM_PROXY_BASE}/extract` : `${LLM_PROXY_BASE}/`

@@ -1443,5 +1443,13 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     led.includes("t('ledger.budgetUnset')") && !/budgetVal\}>\s*\{\s*formatMoney\(todaySum\.expense\)/.test(led));
 }
 
+/* M93（2026-11-25）：生产 H5 不得打本地 LLM 代理（localhost:8138）。 */
+{
+  const c = read('src/services/cloud.ts');
+  const i = c.indexOf('async function callLocalAI');
+  const body = c.slice(i, i + 400);
+  ok('M93 callLocalAI 仅在开发态访问 8138', body.includes("NODE_ENV !== 'development'") && body.includes('return null'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
