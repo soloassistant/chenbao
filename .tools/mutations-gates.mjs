@@ -160,7 +160,7 @@ export default [
   {
     label: '首启同意按钮改回 --brand（每个新用户第一个按钮 2.59:1）',
     file: 'src/components/ConsentGate/index.module.scss',
-    from: 'background: var(--brand-strong, #{$color-primary-strong});',
+    from: 'background: var(--dm-brand-solid, var(--brand-strong, #{$color-primary-strong}));',
     to: 'background: var(--brand, #{$color-primary});',
     cmd: 'node .tools/verify-contrast-strong.mjs'
   },
