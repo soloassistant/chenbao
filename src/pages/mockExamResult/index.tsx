@@ -7,8 +7,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text } from '@tarojs/components';
 import Taro from '@tarojs/taro';
+import classnames from 'classnames';
 import { useT } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { appStorage } from '@/utils/appStorage';
 import { loadMockExamSession, gradeMockExam, type MockExamSession, type MockExamResult } from '@/data/mockExam';
 import { loadStoredReview, reviewWrongAnswers, saveStoredReview, type ReviewItem } from '@/services/mockReview';
@@ -20,6 +21,7 @@ import { pressableProps } from '@/utils/a11y';
 import styles from '@/pages/questionBank/shared.module.scss';
 
 export default function MockExamResultPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const { theme } = useThemeStore();
   const [session, setSession] = useState<MockExamSession | null>(null);
@@ -128,7 +130,7 @@ export default function MockExamResultPage() {
 
   if (missing || !session || !result) {
     return (
-      <View className={styles.page} style={brandVars(theme)}>
+      <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
         <View className={styles.state}>
           <Text className={styles.stateIcon}>📄</Text>
           <Text className={styles.stateTitle}>{t('mock.resultMissing')}</Text>
@@ -144,7 +146,7 @@ export default function MockExamResultPage() {
   const ss = String(usedSec % 60).padStart(2, '0');
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.header}>
         <View className={styles.back} onClick={back} {...pressableProps(t('mock.backToBank'))}>
           <Text className={styles.backIcon}>‹</Text>

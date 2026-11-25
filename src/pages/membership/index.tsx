@@ -4,7 +4,7 @@ import { View, Text, Button, Switch, Input, ScrollView } from '@tarojs/component
 import Taro, { useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import { useUserStore } from '@/store/user';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { useT, useLanguageStore, dict } from '@/store/language';
 import type { LangKey } from '@/store/language';
 import { apiCreateOrder, type CreateOrderPayload } from '@/services/api';
@@ -153,6 +153,7 @@ const FEATURE_LABEL_KEY: Record<FeatureKey, LangKey> = {
 };
 
 function MembershipPage() {
+  const { resolved } = useThemeMode();
   const { profile, usage, init } = useUserStore();
   const { theme } = useThemeStore();
   const t = useT();
@@ -740,7 +741,7 @@ function MembershipPage() {
   };
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       {/* H5 二级页返回入口（原生导航栏不渲染） */}
       <SubPageHeader />
       {/* ===== 订阅区（B-01 锁价文案 / B-02 涨价通知 / 三通道支付） ===== */}

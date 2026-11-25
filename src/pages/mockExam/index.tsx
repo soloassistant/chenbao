@@ -11,7 +11,7 @@ import { View, Text } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import classnames from 'classnames';
 import { useT } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { loadQuestionBank } from '@/data/questionBankQuery';
 import { createQuestionBankRepo } from '@/data/questionBankRepo';
 import { generateQuestions } from '@/services/paperGen';
@@ -29,6 +29,7 @@ function readParams(): Record<string, string> {
 }
 
 export default function MockExamPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const { theme } = useThemeStore();
   /* 只在挂载时读一次：路由参数进来就不会变，每次渲染新建对象会让 useEffect 依赖不稳定
@@ -201,7 +202,7 @@ export default function MockExamPage() {
 
   if (status === 'loading') {
     return (
-      <View className={styles.page} style={brandVars(theme)}>
+      <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
         <View className={styles.state}>
           <Text className={styles.stateTitle}>{t('mock.loading')}</Text>
         </View>
@@ -228,7 +229,7 @@ export default function MockExamPage() {
       });
     };
     return (
-      <View className={styles.page} style={brandVars(theme)}>
+      <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
         <View className={styles.header}>
           <View className={styles.back} onClick={back} {...pressableProps(t('common.back'))}>
             <Text className={styles.backIcon}>‹</Text>
@@ -257,7 +258,7 @@ export default function MockExamPage() {
 
   if (status === 'error' || !plan || !questions.length) {
     return (
-      <View className={styles.page} style={brandVars(theme)}>
+      <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
         <View className={styles.header}>
           <View className={styles.back} onClick={back} {...pressableProps(t('common.back'))}>
             <Text className={styles.backIcon}>‹</Text>
@@ -294,7 +295,7 @@ export default function MockExamPage() {
   const ss = String(left % 60).padStart(2, '0');
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.header}>
         <View className={styles.back} onClick={back} {...pressableProps(t('common.back'))}>
           <Text className={styles.backIcon}>‹</Text>

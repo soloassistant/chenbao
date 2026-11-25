@@ -7,7 +7,7 @@ import EmptyState from '@/components/EmptyState';
 import DemoDataHint from '@/components/DemoDataHint';
 import { apiExtract, apiConfirmItem, apiGetBriefing, apiChat, apiLedgerAdd, apiShoppingAdd, type WorkAction } from '@/services/api';
 import { useUserStore } from '@/store/user';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { fromNow } from '@/utils/date';
 import { detectConflicts, buildPlanProposal, type ConflictInfo, type PlanProposal, type PlanProposalRaw, type PlanApplyEvent } from '@/utils/schedule';
 import PlanProposalCard from '@/components/PlanProposalCard';
@@ -55,6 +55,7 @@ function fileToDataURL(file: File): Promise<string> {
 }
 
 function InboxPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const theme = useThemeStore((s) => s.theme);
   const [content, setContent] = useState('');
@@ -544,7 +545,7 @@ function InboxPage() {
   });
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.howTo}>
         <Text className={styles.howIcon}>💡</Text>
         <Text className={styles.howText}>

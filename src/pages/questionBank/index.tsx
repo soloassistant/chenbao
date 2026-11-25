@@ -10,9 +10,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Input } from '@tarojs/components';
 import Taro from '@tarojs/taro';
+import classnames from 'classnames';
 import { appStorage } from '@/utils/appStorage';
 import { useT } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import type { ExamSystem, Question } from '@/types/questionBank';
 import { filterQuestions, examSystemsOf, loadQuestionBank, subjectsOf } from '@/data/questionBankQuery';
 import { createQuestionBankRepo } from '@/data/questionBankRepo';
@@ -33,6 +34,7 @@ type ViewState =
 const NO_QUESTIONS: Question[] = [];
 
 export default function QuestionBankPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const { theme } = useThemeStore();
   const [view, setView] = useState<ViewState>({ status: 'loading' });
@@ -203,7 +205,7 @@ export default function QuestionBankPage() {
   );
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.header}>
         <View className={styles.back} onClick={handleBack}>
           <Text className={styles.backIcon}>‹</Text>

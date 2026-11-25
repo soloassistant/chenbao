@@ -3,6 +3,7 @@ import { ONBOARD_PENDING_KEY } from '@/components/Onboarding/state';
 import React, { useEffect, useState } from 'react';
 import Taro from '@tarojs/taro';
 import { View, Text, Input } from '@tarojs/components';
+import { themeModeClass, useThemeMode } from '@/store/theme';
 import { useT } from '@/store/language';
 import {
   needsAuthGate,
@@ -256,6 +257,7 @@ export default function LoginPage() {
   const [resetTicket, setResetTicket] = useState<{
     updateUser(input: { nonce: string; password: string }): Promise<{ error: { message?: string } | null }>;
   } | null>(null);
+  const { resolved } = useThemeMode();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -797,7 +799,7 @@ export default function LoginPage() {
 
   if (phase === 'checking') {
     return (
-      <View className={styles.screen}>
+      <View className={`${styles.screen} ${themeModeClass(resolved)}`}>
         <Text className={styles.checking}>{t('auth.checking')}</Text>
       </View>
     );
@@ -816,7 +818,7 @@ export default function LoginPage() {
   const tabs: Tab[] = baseTabs.filter((k) => IS_H5 || k !== 'forgot');
 
   return (
-    <View className={styles.screen}>
+    <View className={`${styles.screen} ${themeModeClass(resolved)}`}>
       <View className={styles.card}>
         {/* 品牌区：logo emoji + 应用标题 */}
         <View className={styles.brand}>

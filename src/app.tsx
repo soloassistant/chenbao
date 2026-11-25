@@ -198,7 +198,7 @@ function App(props: PropsWithChildren) {
   // 2026-11-25 收口：以前按设备标记 + 账号标记在登录后补弹，老用户换设备/换账号
   // 都会被再弹一次；产品口径改成「注册成功才弹」。
   // 传递方式：注册成功时写 onboarding-pending，App 在离开登录页后消费。
-  const [onboarded, setOnboarded] = useState(process.env.TARO_ENV !== 'h5');
+  const [onboarded, setOnboarded] = useState(true); // 默认已看过；只有注册标记会置 false
   /** 是否已确认「有会话」：门禁异步查会话期间，引导不能抢在登录页前面出现。 */
   const [authed, setAuthed] = useState(() => !needsAuthGate);
   // 当前会话的 uid：引导完成时按账号落库

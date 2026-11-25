@@ -4,7 +4,7 @@ import type { CommonEvent, PickerTimeProps } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import classnames from 'classnames';
 import { useUserStore } from '@/store/user';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { useT, useLanguageStore } from '@/store/language';
 import type { LangKey } from '@/store/language';
 import { disabledAttr } from '@/utils/buttonDisabled';
@@ -76,6 +76,7 @@ const TTS_VOICE_MODES: Array<{ id: TtsVoiceMode; labelKey: LangKey }> = [
 const isWeapp = process.env.TARO_ENV === 'weapp';
 
 function PrefsPage() {
+  const { resolved } = useThemeMode();
   const { profile, saveSettings } = useUserStore();
   const { theme } = useThemeStore();
   const t = useT();
@@ -334,7 +335,7 @@ function PrefsPage() {
   );
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <SubPageHeader />
       <View className={styles.card}>
         <Text className={styles.cardTitle}>{t('mine.settingGeneral')}</Text>

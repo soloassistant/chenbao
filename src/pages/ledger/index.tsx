@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
+import classnames from 'classnames';
 import { View, Text, Input, Button, ScrollView } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
 import { useSyncRefresh } from '@/hooks/useSyncRefresh';
 import EmptyState from '@/components/EmptyState';
 import PromptModal from '@/components/PromptModal';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { useT } from '@/store/language';
 import {
   apiLedgerAdd,
@@ -56,6 +57,7 @@ function budgetRatio(used: number, limit?: number): number {
  * 所以分类是横向 chip 一键选、预置 9 个常用项，备注收进「更多」而非必填。
  */
 function LedgerPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const { theme } = useThemeStore();
 
@@ -377,7 +379,7 @@ function LedgerPage() {
   );
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.backButton} onClick={handleBack}>
         <Text className={styles.backIcon}>‹</Text>
         <Text className={styles.backText}>{t('common.back')}</Text>

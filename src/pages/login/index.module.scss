@@ -424,3 +424,10 @@
     border-color: rgba(255, 255, 255, 0.12);
   }
 }
+
+/* 小程序端没有 html 兜底，主题类挂在页面根节点上（self class） */
+.screen:global(.theme-dark) {
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(255, 122, 69, 0.10) 0%, transparent 50%),
+    linear-gradient(160deg, #16130f 0%, #1c1712 50%, #141110 100%);
+}

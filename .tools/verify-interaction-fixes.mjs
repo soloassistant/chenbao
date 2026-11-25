@@ -1356,5 +1356,17 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     /if \(isSignup\) \{[\s\S]{0,120}ONBOARD_PENDING_KEY/.test(login));
 }
 
+/* M81（2026-11-25）：小程序端没有 html 兜底，页面根必须自带主题类。
+ * 例外只有 trade（固定深色终端配色，不随主题切换）。 */
+{
+  const dir = path.join(ROOT, 'src', 'pages');
+  const missing = fs.readdirSync(dir).filter((n) => {
+    if (n === 'trade') return false;
+    const f = path.join(dir, n, 'index.tsx');
+    return fs.existsSync(f) && !fs.readFileSync(f, 'utf8').includes('themeModeClass');
+  });
+  ok('M81 除 trade 外所有页面根都挂 themeModeClass', missing.length === 0);
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

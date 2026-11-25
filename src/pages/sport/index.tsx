@@ -11,11 +11,12 @@
  *   3. 距离：只有拿到 GPS 采样才算；定位被拒时记 source='timer'，界面只说时长。
  *   4. 恢复度/睡眠/HRV：一概没有。首页那张卡叫「本周完成度」，用真实跑量算。
  */
+import classnames from 'classnames';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Image } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
 import { useT } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import {
   DEFAULT_GOAL_KM,
   dayPeriod,
@@ -113,6 +114,7 @@ function paceCurveSvgUrl(samples: RunSample[]): string | null {
 }
 
 export default function SportPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const { theme } = useThemeStore();
   const [view, setView] = useState<ViewName>('home');
@@ -459,7 +461,7 @@ export default function SportPage() {
   const detailPaceUrl = useMemo(() => (detail ? paceCurveSvgUrl(detail.samples) : null), [detail]);
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       {view !== 'recording' ? (
         <View className={styles.backRow} onClick={handleBack}>
           <Text className={styles.backIcon}>‹</Text>

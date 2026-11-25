@@ -10,6 +10,7 @@ import SubPageHeader from '@/components/SubPageHeader';
 import { useT, useLanguageStore } from '@/store/language';
 import { pressableProps } from '@/utils/a11y';
 import { fromNow } from '@/utils/date';
+import { themeModeClass, useThemeMode } from '@/store/theme';
 import styles from './index.module.scss';
 
 /** H5：learnCommunityStore 在 SYNC_KEYS 里，会同步到用户自己的云端账号（RLS 隔离）；
@@ -112,6 +113,7 @@ function writeCommunity(store: CommunityStore) {
 }
 
 function LearnCommunityPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -174,7 +176,7 @@ function LearnCommunityPage() {
   };
 
   return (
-    <View className={styles.page}>
+    <View className={classnames(styles.page, themeModeClass(resolved))}>
       <SubPageHeader fallbackUrl='/pages/learn/index' />
       {/* 头部：学习身份 + 成就进度 */}
       <View className={styles.headCard} style={{ background: lang.accent }}>

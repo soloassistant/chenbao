@@ -958,7 +958,7 @@ export const en: Record<LangKey, string> = {
   'report.ledgerIn': "Week balance (in − out)",
   'report.ledgerOut': "Outspent income by",
   'report.weekKeywords': "Top words",
-  'report.unitItems': "",
+  'report.unitItems': 'items',
   'report.unitDays': " days",
   'report.unitTimes': " times",
   'report.archiveTitle': "Briefing archive (last 7 days)",

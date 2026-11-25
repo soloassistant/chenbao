@@ -3,12 +3,13 @@
  * 本笔只做「答题 + 判分 + 结果」，不写进度/错题本（下一笔接入）。
  * 读取失败仍走独立失败态 + 重试；题目被删是「不存在」而不是「出错」。
  */
+import classnames from 'classnames';
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, Input } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import { appStorage } from '@/utils/appStorage';
 import { useT } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import type { Question } from '@/types/questionBank';
 import { loadQuestionBank } from '@/data/questionBankQuery';
 import { createQuestionBankProgress } from '@/data/questionBankProgress';
@@ -32,6 +33,7 @@ function initialResponse(q: Question): UserResponse {
 }
 
 export default function QuestionBankAnswerPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const { theme } = useThemeStore();
   const router = useRouter();
@@ -208,7 +210,7 @@ export default function QuestionBankAnswerPage() {
   };
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.header}>
         <View className={styles.back} onClick={backToList}>
           <Text className={styles.backIcon}>‹</Text>

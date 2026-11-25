@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 import { View, Text, Input, ScrollView } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
+import classnames from 'classnames';
 import EmptyState from '@/components/EmptyState';
 import PromptModal from '@/components/PromptModal';
 import DemoDataHint from '@/components/DemoDataHint';
-import { brandVars, useThemeMode, useThemeStore } from '@/store/theme';
+import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import { useT } from '@/store/language';
 import PartnerEntry, { PartnerSectionHeader } from '@/components/PartnerEntry';
 import { SXM_ENTRY_URL } from '@/config/partners';
@@ -267,7 +268,7 @@ function ShoppingPage() {
   }, []);
 
   return (
-    <View className={styles.page} style={brandVars(theme, resolved)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.backButton} onClick={handleBack}>
         <Text className={styles.backIcon}>‹</Text>
         <Text className={styles.backText}>{t('common.back')}</Text>
