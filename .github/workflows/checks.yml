@@ -628,6 +628,10 @@ jobs:
         run: |
           node node_modules/@tarojs/cli/bin/taro build --type h5
           node .tools/copy-assets.js dist
+      - name: 启动性能门禁（含变异自检）
+        # 2026-11-25：本门禁此前的 CI 豁免到期条件已满足（本 job 会构建 H5 产物）。
+        run: npm run verify:startup-perf
+
       - name: 文字两两重叠（papers / library）
         # 对比度门禁发现不了「文字被另一个元素盖住」；这里按可见矩形判，滚动容器裁掉的部分不算。
         run: npm run verify:overlap
