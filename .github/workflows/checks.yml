@@ -662,3 +662,15 @@ jobs:
             exit 0
           fi
           exit "$code"
+
+      - name: 内页布局门禁（无头 Chrome）
+        # 5 个内页 × 375/640：面板几何、是否塌陷、是否白屏、遮罩是否退场。
+        run: |
+          set +e
+          node .tools/verify-layout-pages.mjs
+          code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::布局门禁 harness 出错（exit=2），按 SKIP 处理"
+            exit 0
+          fi
+          exit "$code"

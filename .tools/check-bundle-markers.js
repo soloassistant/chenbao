@@ -14,21 +14,17 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 const JS_DIR = path.join(ROOT, 'dist', 'js');
 
-// 取最新构建的 app bundle（文件名带内容 hash，按 mtime 排序最稳）
-const cands = fs
-  .readdirSync(JS_DIR)
-  .filter((f) => /^app\..*\.js$/.test(f))
-  .map((f) => ({ f, t: fs.statSync(path.join(JS_DIR, f)).mtimeMs }))
-  .sort((a, b) => b.t - a.t);
-
-if (!cands.length) {
-  console.log('FAIL dist/js 下找不到 app.*.js，请先 npm run build:h5');
+// 扫**全部** js chunk：src/data/* 是动态 import，会被拆到独立 chunk。
+// 只读 app.*.js 会把「已经打进产物」的标记判成缺失（2026-11-25 实测 8 条假阴性）。
+const files = fs.readdirSync(JS_DIR).filter((f) => f.endsWith('.js'));
+if (!files.length) {
+  console.log('FAIL dist/js 下没有任何 js 产物，请先 npm run build:h5');
   process.exit(1);
 }
-
-const bundle = cands[0].f;
-const src = fs.readFileSync(path.join(JS_DIR, bundle), 'utf8');
-console.log(`产物: js/${bundle}  ${src.length} B\n`);
+const chunks = files.map((f) => ({ f, text: fs.readFileSync(path.join(JS_DIR, f), 'utf8') }));
+const src = chunks.map((c) => c.text).join('\n');
+const totalBytes = chunks.reduce((n, c) => n + c.text.length, 0);
+console.log(`产物: ${files.length} 个 js chunk，共 ${totalBytes} B（全量扫描）\n`);
 
 /** 源码文本：**只给「产物里按设计就不该存在」的判据用**。
  *  典型是裸语句形式的 console.*（见下方「外链拒绝日志」那条）——

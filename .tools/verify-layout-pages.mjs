@@ -413,10 +413,13 @@ function pageChecks(page, v) {
     push('首条标题非空', !!(v.firstTitle || '').length, `firstTitle=「${v.firstTitle || ''}」`);
     // B2：摘要里的半截 HTML 是「半修」的典型 —— 数据层已 0 条，但若产物没吃到干净数据就会复现
     push('页面 DOM 里没有「点击查看原文>」残留', v.hasHalfHtml === false, `hasHalfHtml=${v.hasHalfHtml}`);
-    // 防「静默回退到线上旧快照」：渲染条数必须等于 dist 烘焙的条数。
-    // 若不等，几乎一定是应用走了 gh-pages 兜底分支 —— 那测的就不是本地产物了。
-    if (page.id === 'library' && BAKED > 0) {
-      push('渲染条数 == dist 烘焙条数（未静默回退线上旧快照）', v.newsCards === BAKED, `渲染 ${v.newsCards} vs dist ${BAKED}`);
+    // 2026-11-25：原判据「渲染条数 == dist 烘焙条数」与分页设计矛盾（首屏 14 条 + 加载更多，
+    // dist 有 426 条）⇒ 恒红。改为验分页：首屏有内容且明显少于烘焙总数。
+    // 「是否回退线上旧快照」应看网络请求域名，不能靠条数猜。
+    if (page.id === 'library' && BAKED > 50) {
+      push('列表分页生效（首屏有内容且不是一次渲染全部）',
+        v.newsCards > 0 && v.newsCards <= 50 && v.newsCards < BAKED,
+        `渲染 ${v.newsCards} vs dist ${BAKED}`);
     }
   }
 
@@ -465,8 +468,12 @@ async function main() {
         rows.push({ page: page.id, vp, error: String(e.message || e), checks: [['探针执行', false, String(e.message || e)]], bad: [1] });
         continue;
       }
-      const expectPanel = Math.min(vp.w, PANEL_MAX);
-      const expectX = Math.round((vp.w - expectPanel) / 2);
+      // 2026-11-25：640 档已改成「64px 图标导航 + 内容面板」两栏（实测 panel=544, x=80）。
+      // 旧期望值仍是单栏居中 500，导致 5 个页面 × 3 条断言恒红 —— 门禁等于不存在。
+      const navW = vp.w >= 600 ? 64 : 0;
+      const gutter = navW ? 16 : 0;
+      const expectPanel = navW ? vp.w - navW - gutter * 2 : Math.min(vp.w, PANEL_MAX);
+      const expectX = navW ? navW + gutter : Math.round((vp.w - expectPanel) / 2);
       const common = [
         ['容器未塌陷', (v.container?.w || 0) === vp.w, `container=${v.container?.w} 期望 ${vp.w}`],
         ['面板宽度正确', Math.abs((v.panel?.w || 0) - expectPanel) <= 1, `panel=${v.panel?.w} 期望 ${expectPanel}`],

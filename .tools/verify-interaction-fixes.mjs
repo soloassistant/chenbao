@@ -1334,5 +1334,17 @@ if (typeof feedMod.feedRetryDelay === 'function') {
       login.includes('requestPasswordResetByPhone(buildPhoneE164'));
 }
 
+/* M79（2026-11-25）：四条「不可信门禁」修好后不许回退。 */
+{
+  const bundle = read('.tools/check-bundle-markers.js');
+  ok('M79a 产物标记扫描覆盖全部 chunk', bundle.includes('全量扫描') && !bundle.includes("filter((f) => /^app\\..*\\.js$/"));
+  const layout = read('.tools/verify-layout-pages.mjs');
+  ok('M79b 640 档按「导航 64 + 面板」判几何', layout.includes('vp.w - navW - gutter * 2'));
+  const visual = read('.tools/visual-pass.mjs');
+  ok('M79c 页面未渲染时 visual-pass 判红', visual.includes("chrome-error://") && visual.includes('pageEls === 0'));
+  const stub = read('.tools/verify-h5-login-path.cjs');
+  ok('M79d 登录链路桩补齐新导出', stub.includes('chatCloudStream') && stub.includes('getHotspotPayload'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

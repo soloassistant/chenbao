@@ -205,6 +205,20 @@ function cleanup(code) {
   }
 
   console.log(JSON.stringify({ browser: ver.Browser, results }, null, 2));
+
+  // 2026-11-25：以前无论页面有没有真渲染都 exit 0，调用方只看 bodyOk 会得到假绿。
+  // 判据改成：URL 不是错误页、页面有 taro 节点、正文非空，任一不满足就红。
+  const bad = results.filter((r) => !r.href
+    || String(r.href).startsWith('chrome-error://')
+    || r.pageEls === 0
+    || r.bodyLen === 0);
+  if (bad.length) {
+    console.error(`\nFAIL ${bad.length}/${results.length}：页面未真正渲染`);
+    for (const b of bad) console.error(`  · ${b.name}: href=${b.href} pageEls=${b.pageEls} bodyLen=${b.bodyLen}`);
+    cleanup(1);
+    return;
+  }
+  console.log(`\nPASS ${results.length}/${results.length}：所有页面已渲染`);
   cleanup(0);
 })().catch((err) => {
   console.log(JSON.stringify({ error: String(err && err.message ? err.message : err) }, null, 2));
