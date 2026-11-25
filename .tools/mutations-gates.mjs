@@ -158,6 +158,13 @@ export default [
     cmd: 'node .tools/verify-contrast-strong.mjs'
   },
   {
+    label: 'thumbUrl 丢掉 hash（注释承诺保留）',
+    file: 'src/utils/imageUrl.ts',
+    from: 'return `${base}@${w}w_${h}h_1c.webp${query}${hash}`;',
+    to: 'return `${base}@${w}w_${h}h_1c.webp${query}`;',
+    cmd: 'node .tools/verify-image-url.mjs'
+  },
+  {
     label: '首启同意按钮改回 --brand（每个新用户第一个按钮 2.59:1）',
     file: 'src/components/ConsentGate/index.module.scss',
     from: 'background: var(--dm-brand-solid, var(--brand-strong, #{$color-primary-strong}));',
