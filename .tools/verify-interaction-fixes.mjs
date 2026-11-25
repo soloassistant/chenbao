@@ -1409,5 +1409,18 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M88 暗色默认扫 app.config 全量路由', c.includes('ALL_PAGES') && c.includes("THEME === 'dark' ? ALL_PAGES"));
 }
 
+/* M89（2026-11-25）：工具脚本不得硬编码本机用户路径；E2E 截图不落项目目录。 */
+{
+  const fs2 = fs;
+  const dir = path.join(ROOT, '.tools');
+  const NEEDLE = 'C:' + String.fromCharCode(92) + 'Users' + String.fromCharCode(92);
+  const offenders = fs2.readdirSync(dir)
+    .filter((f) => /\.(mjs|js|cjs)$/.test(f))
+    .filter((f) => fs2.readFileSync(path.join(dir, f), 'utf8').includes(NEEDLE));
+  ok('M89a .tools 下无硬编码本机用户路径', offenders.length === 0, offenders.join(','));
+  const e2e = read('.tools/_e2e-internal-login.mjs');
+  ok('M89b E2E 截图写系统临时目录且先建目录', e2e.includes("os.tmpdir()") && e2e.includes('mkdirSync(SHOT_DIR'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
