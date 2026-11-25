@@ -37,6 +37,7 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 const NO_BROWSER = process.argv.includes('--no-browser');
 const SELF_TEST = process.argv.includes('--self-test');
+const THEME = (process.argv.find((a) => a.startsWith('--theme=')) || '--theme=light').split('=')[1];
 const vpArg = (process.argv.find((a) => a.startsWith('--viewport=')) || '--viewport=1280x900').split('=')[1];
 const [VW, VH] = vpArg.split('x').map(Number);
 const isWin = process.platform === 'win32';
@@ -50,6 +51,148 @@ function assert(name, cond, detail = '') {
   if (cond) pass++;
   else fail++;
 }
+
+/* ─── 颜色解析器（注入页面后提供 window.__dsRGBA） ─── */
+function COLOR_INIT() {
+  let cx = null;
+  const memo = new Map();
+  window.__dsRGBA = (s) => {
+    if (!s) return null;
+    if (s === 'transparent') return [0, 0, 0, 0];
+    const rgb = /^rgba?\(([^)]*)\)$/.exec(s);
+    if (rgb) {
+      const p = rgb[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
+      if (p.length >= 3 && p.every((n) => !Number.isNaN(n))) return [p[0], p[1], p[2], p[3] === undefined ? 1 : p[3]];
+    }
+    if (memo.has(s)) return memo.get(s);
+    let out = null;
+    const m = /^([a-z-]+)\((.*)\)$/i.exec(s.trim());
+    if (m) {
+      const [body, alpha] = m[2].split('/');
+      let a = 1;
+      if (alpha !== undefined) a = alpha.trim().endsWith('%') ? parseFloat(alpha) / 100 : parseFloat(alpha);
+      if (!cx) { const cv = document.createElement('canvas'); cv.width = cv.height = 1; cx = cv.getContext('2d', { willReadFrequently: true }); }
+      const sentinel = '#010203';
+      cx.fillStyle = sentinel;
+      cx.fillStyle = `${m[1]}(${body.trim()})`;
+      if (cx.fillStyle !== sentinel && !Number.isNaN(a)) {
+        cx.clearRect(0, 0, 1, 1);
+        cx.fillRect(0, 0, 1, 1);
+        const d = cx.getImageData(0, 0, 1, 1).data;
+        out = [d[0], d[1], d[2], a];
+      }
+    }
+    memo.set(s, out);
+    return out;
+  };
+}
+const COLOR_INIT_SRC = `(${COLOR_INIT.toString()})();`;
+
+/* ─── 页面内测量函数（返回未达标的文字元素列表） ─── */
+function measurePage() {
+  const toRGBA = (s) => window.__dsRGBA(s);
+  const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const L = (c) => 0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2]);
+  const ratio = (a, b) => { const l1 = L(a), l2 = L(b), hi = Math.max(l1, l2), lo = Math.min(l1, l2); return (hi + 0.05) / (lo + 0.05); };
+  // 沿 DOM 向上合成背景；遇渐变（background-image）则按「最差档」估算——
+  // 文字可能压在渐变任一位置，故取与文字对比度最低的那一档 stop，避免漏报真问题。
+  // ⚠️ 只读 backgroundColor 会漏掉渐变按钮（文字实际压在 background-image 上），
+  // 上游 measure_render.mjs 也有此局限；这里补上渐变解析。
+  /** 把「上→下」的一串背景层叠成最终底色。
+   *  ⚠️ 2026-11-11 修一个**合成顺序** bug：原来每层都用「当前层压已有 base」叠，
+   *  而遍历是从元素自身**往上**走 ⇒ 祖先那层不透明底色把子层的半透明底直接盖掉了。
+   *  实测后果：视频时长标签 `rgba(0,0,0,.62)` 的深色底被祖先的 #faf6f0 覆盖，
+   *  门禁报 1.08:1 —— 而真实渲染里白字压在深底上是 6.4:1，完全可读 ⇒ **假红**。
+   *  现在改成：先把链上的层收集起来（元素自身在最上），再**从最底层往上叠**。
+   */
+  const compose = (stack) => {
+    let base = [255, 255, 255];
+    for (let i = stack.length - 1; i >= 0; i--) {
+      const c = stack[i];
+      base = [c[0] * c[3] + base[0] * (1 - c[3]), c[1] * c[3] + base[1] * (1 - c[3]), c[2] * c[3] + base[2] * (1 - c[3])];
+    }
+    return base;
+  };
+  function bgContrast(textCol, el) {
+    const stack = [];
+    let n = el;
+    while (n) {
+      const cs = getComputedStyle(n);
+      const bi = cs.backgroundImage;
+      if (bi && bi !== 'none' && /gradient/.test(bi)) {
+        const stops = (bi.match(/rgba?\([^)]*\)/g) || []).map(toRGBA).filter(Boolean)
+          .concat((bi.match(/#[0-9a-f]{3,8}/gi) || []).map(toRGBA).filter(Boolean));
+        if (stops.length) {
+          const base = compose(stack);
+          let worst = Infinity;
+          let worstBase = base;
+          for (const s of stops) {
+            const comp = [s[0] * s[3] + base[0] * (1 - s[3]), s[1] * s[3] + base[1] * (1 - s[3]), s[2] * s[3] + base[2] * (1 - s[3])];
+            const r = ratio(textCol, comp);
+            if (r < worst) { worst = r; worstBase = comp; }
+          }
+          return { ratio: worst, base: worstBase }; // 渐变不透明，向上不再看
+        }
+      }
+      const c = toRGBA(cs.backgroundColor);
+      if (c && c[3] > 0) {
+        stack.push(c);
+        if (c[3] >= 1) break;
+      }
+      n = n.parentElement;
+    }
+    const base = compose(stack);
+    return { ratio: ratio(textCol, base), base };
+  }
+  const out = [];
+  for (const el of document.querySelectorAll('*')) {
+    const tag = el.tagName;
+    if (['SCRIPT', 'STYLE', 'SVG', 'PATH', 'USE'].includes(tag)) continue;
+    if (el.closest('[disabled], [aria-disabled="true"], [data-contrast-ignore]')) continue;
+    const direct = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length);
+    if (!direct) continue;
+    // 纯 emoji 不适用 color 对比度（字形自带颜色），继续按 color 判会产生假阳性
+    if (/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+$/u.test((el.textContent || '').trim())) continue;
+    const cs = getComputedStyle(el);
+    if (cs.visibility === 'hidden' || +cs.opacity === 0) continue;
+    const box = el.getBoundingClientRect();
+    if (box.width <= 2 && box.height <= 2) continue; // sr-only
+    if (!el.offsetParent && cs.position !== 'fixed') continue; // 不可见
+    const col = toRGBA(cs.color);
+    if (!col) continue;
+    const px = parseFloat(cs.fontSize);
+    const bold = parseInt(cs.fontWeight, 10) >= 700;
+    const need = px >= 24 || (px >= 18.66 && bold) ? 3.0 : 4.5;
+    const bgInfo = bgContrast(col, el);
+    const r = bgInfo.ratio;
+    if (r < need) {
+      const cls = typeof el.className === 'string' ? el.className.split(' ')[0] : '';
+      out.push({
+        tag: (tag + (cls ? '.' + cls : '')).slice(0, 44),
+        text: (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 24),
+        r: +r.toFixed(2),
+        need,
+        color: col.slice(0, 3).map(Math.round),
+        bg: bgInfo.base.map(Math.round),
+        px: +px.toFixed(1),
+        bold,
+      });
+    }
+  }
+  return out;
+}
+const MEASURE_SRC = `(${measurePage.toString()})()`;
+
+/* ─── 默认测量页：tabBar 5 个公开页（免登录墙），全局 DesktopNav 对比度在这几页都暴露 ─── */
+const DEFAULT_PAGES = [
+  'pages/briefing/index',
+  'pages/inbox/index',
+  'pages/library/index',
+  'pages/calendar/index',
+  'pages/mine/index',
+];
+const TARGET_PAGES = (process.env.CONTRAST_PAGES || DEFAULT_PAGES.join(',')).split(',').map((s) => s.trim()).filter(Boolean);
+
 
 const CHROME = resolveChrome();
 if (!CHROME || !fs.existsSync(CHROME)) {
@@ -138,7 +281,7 @@ try {
   await send('Emulation.setDeviceMetricsOverride', { width: VW, height: VH, deviceScaleFactor: 1, mobile: VW < 600 });
   await send('Page.addScriptToEvaluateOnNewDocument', { source: COLOR_INIT_SRC });
   await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: `try{localStorage.setItem('onboarded-v2', JSON.stringify({data:true}));localStorage.setItem('privacy-consent', JSON.stringify({data:true}));}catch(e){}`,
+    source: `try{localStorage.setItem('onboarded-v2', JSON.stringify({data:true}));localStorage.setItem('privacy-consent', JSON.stringify({data:true}));localStorage.setItem('theme-mode', JSON.stringify({data:'${THEME}'}));}catch(e){}`,
   });
 
   const BASE = `http://127.0.0.1:${port}`;

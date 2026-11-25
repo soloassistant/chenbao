@@ -380,6 +380,8 @@ ok(
 ok('E3d 撤回只清同意键、不删已有运动记录（撤回 ≠ 删用户数据）',
   !/withdrawHealthConsent[\s\S]{0,240}removeRun/.test(healthSrc));
 ok('E3e 隐私政策披露了运动/健康数据及其撤回入口', PRIVACY.includes('运动与健康数据') && PRIVACY.includes('撤回'));
+ok('E3f 隐私政策披露了腾讯云验证码（天御），并注明当前未启用',
+  PRIVACY.includes('腾讯云验证码（天御）') && PRIVACY.includes('当前未启用'));
 
 console.log('──────────────────────────────────────────────────────────');
 console.log(`PASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);

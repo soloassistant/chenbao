@@ -77,7 +77,7 @@
   // 就算把内联色去掉也没救：白字压这层粉只有 3.53:1。所以底色必须换掉 ——
   // 改成用**该语种自己的 accent 填底**（.tsx 内联注入，白字），data 里三个 accent
   // 本来就是按"白字压它 ≥5.2"选的：#2F6DB5 5.28 / #C7394A 5.2 / #5B4FC4 5.6。
-  background: var(--brand-strong, $color-primary-strong); // 无内联时的兜底，同样 5.26
+  background: var(--dm-brand-solid, var(--brand-strong, $color-primary-strong)); // 无内联时的兜底，同样 5.26
   border-color: transparent;
   color: #fff;
   // 阴影跟强调色走（原来还是紫的，底色已换成 accent，阴影留在原地会发紫）
@@ -202,7 +202,7 @@
   min-height: 44PX;
   padding: 8rpx 20rpx;
   border-radius: $radius-round;
-  background: var(--brand-strong, $color-secondary-strong); // 白字 5.26:1（原 --brand 白字 3.23:1）
+  background: var(--dm-brand-solid, var(--brand-strong, $color-secondary-strong)); // 白字 5.26:1（原 --brand 白字 3.23:1）
   transition: all $transition-fast;
 
   &:active {

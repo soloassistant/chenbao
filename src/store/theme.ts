@@ -71,8 +71,12 @@ export function brandVars(theme: ThemePreset, resolved: ResolvedTheme = 'light')
       // 预先与暗底混成不透明色，视觉一致且不会破坏渐变判定。
       '--brand-soft': mixWithDark(theme.color, 0.18),
       '--brand-deep': theme.onDark,
+      // --brand-strong 在暗色下用于「深底上的品牌文字」，必须是浅色；
+      // 需要「品牌底+白字」的按钮改用 --dm-brand-solid（实心色）。
       '--brand-strong': theme.onDark,
-      '--dm-brand-strong': theme.onDark,
+      // dm-brand-strong 同时被 SCSS 当「实心底色」用（$color-primary-strong），
+      // 暗色下必须是实心深色；文字用的浅色走 --brand-deep / --brand-strong。
+      '--dm-brand-strong': theme.solid,
       '--dm-brand-solid': theme.solid
     } as React.CSSProperties;
   }

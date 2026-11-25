@@ -927,7 +927,7 @@
   width: auto;
   height: $button-height-md;
   border-radius: $radius-button;
-  background: var(--brand-strong, #{$color-primary-strong});
+  background: var(--dm-brand-solid, var(--brand-strong, #{$color-primary-strong}));
   font-size: $font-size-md;
   font-weight: $font-weight-medium;
   line-height: $button-height-md;

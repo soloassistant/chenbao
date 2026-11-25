@@ -431,3 +431,21 @@
     radial-gradient(ellipse at 10% 0%, rgba(255, 122, 69, 0.10) 0%, transparent 50%),
     linear-gradient(160deg, #16130f 0%, #1c1712 50%, #141110 100%);
 }
+
+/* 深色：页签选中态与区号按钮原本写死 #fff，暗色下是白底白字 */
+:global(.theme-dark) {
+  .brand,
+  .privacyBox {
+    color: var(--brand-deep, #ffb59a);
+  }
+
+  .tabActive {
+    background: #2a2119;
+    box-shadow: none;
+  }
+
+  .dialBtn {
+    background: #221c17;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+}

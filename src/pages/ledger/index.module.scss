@@ -357,7 +357,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--brand-strong, #{$color-primary-strong}); // 白字 4.95:1
+  background: var(--dm-brand-solid, var(--brand-strong, #{$color-primary-strong})); // 白字 4.95:1
   color: #fff;
   font-size: 20rpx;
   font-weight: $font-weight-semibold;
