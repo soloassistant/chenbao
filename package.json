@@ -93,6 +93,7 @@
     "verify:routes": "node .tools/verify-routes.mjs",
     "verify:theme-dark": "node .tools/verify-routes.mjs --theme=dark",
     "verify:inputs": "node .tools/verify-inputs.mjs",
+    "verify:dark-selftest": "node .tools/verify-routes.mjs --selftest-dark",
     "verify:layout-pages": "node .tools/verify-layout-pages.mjs",
     "verify:deploy-fresh": "node .tools/verify-deploy-fresh.mjs dist",
     "verify:ai-quota": "node .tools/verify-ai-quota.mjs",

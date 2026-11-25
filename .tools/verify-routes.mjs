@@ -207,12 +207,78 @@ async function main() {
     source: `try{localStorage.setItem('onboarded-v2', JSON.stringify({data:true}));localStorage.setItem('onboarded-v2:probe-user-0001', JSON.stringify({data:true}));localStorage.setItem('privacy-consent', JSON.stringify({data:true}));localStorage.setItem('theme-mode', JSON.stringify({data:'${THEME}'}));}catch(e){}`
   });
 
+  /** 暗色底色测量：截图 → 页面内 canvas 解码 → 网格中位数。 */
+  async function measureDark() {
+    await ev(`(()=>{const s=document.querySelector('[class*="__splash__"]')||document.querySelector('[class*="splash"]');if(s)s.click();const c=document.querySelector('[class*="consentAgree"]');if(c)c.click();return 1})()`);
+    await new Promise((r) => setTimeout(r, 600));
+    const darkClass = await ev(`document.documentElement.classList.contains('theme-dark')`);
+    const shot = await send('Page.captureScreenshot', { format: 'png' });
+    const b64 = shot && shot.data;
+    if (b64 && process.env.DARK_SHOT_DIR) {
+      try {
+        fs.mkdirSync(process.env.DARK_SHOT_DIR, { recursive: true });
+        fs.writeFileSync(path.join(process.env.DARK_SHOT_DIR, `${THEME}-${CURRENT_VP}-${CURRENT_ROUTE}.png`), Buffer.from(b64, 'base64'));
+      } catch { /* 调试产物失败不影响门禁 */ }
+    }
+    if (!b64) return { darkClass, error: `截图失败：${JSON.stringify(shot).slice(0, 160)}` };
+    const px = JSON.parse(String(await ev(`(async () => {
+      var img = new Image();
+      img.src = 'data:image/png;base64,${b64}';
+      await img.decode();
+      var c = document.createElement('canvas');
+      c.width = img.width; c.height = img.height;
+      var g = c.getContext('2d');
+      g.drawImage(img, 0, 0);
+      var pts = [];
+      var rows = [0.10, 0.35, 0.60, 0.85];
+      var cols = [0.10, 0.30, 0.50, 0.70, 0.90];
+      for (var r=0;r<rows.length;r++) for (var c2=0;c2<cols.length;c2++) pts.push([cols[c2], rows[r], r === 0 ? 'top' : 'body']);
+      var out = [];
+      for (var i=0;i<pts.length;i++) {
+        var x = Math.min(img.width-1, Math.max(0, Math.round(pts[i][0]*img.width)));
+        var y = Math.min(img.height-1, Math.max(0, Math.round(pts[i][1]*img.height)));
+        var d = g.getImageData(x, y, 1, 1).data;
+        out.push({ at: pts[i][0] + ',' + pts[i][1], zone: pts[i][2], rgb: [d[0],d[1],d[2]] });
+      }
+      return JSON.stringify(out);
+    })()`)));
+    const lum = ([r, g, b]) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    const median = (arr) => {
+      const v = arr.map((p) => lum(p.rgb)).sort((a, b) => a - b);
+      return v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+    };
+    return { darkClass, pageLum: median(px), topLum: median(px.filter((p) => p.zone === 'top')) };
+  }
+
+  // U-11（2026-11-25）：自测像素分支真的会红 —— 挂上 theme-dark 再铺一层全屏白，
+  // 门禁必须判「浅色」。不做这一步，像素判据只有「平时全绿」这一半证据。
+  if (process.argv.includes('--selftest-dark')) {
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/#/pages/login/index` });
+    await new Promise((r) => setTimeout(r, 4000));
+    await ev(`document.documentElement.classList.add('theme-dark')`);
+    await new Promise((r) => setTimeout(r, 500));
+    const before = await measureDark();
+    if (!before.darkClass) { console.log('SKIP 自测：页面没挂上 theme-dark'); process.exit(2); }
+    if (before.pageLum > 0.6) { console.log(`SKIP 自测：基线本身就是浅色（${before.pageLum.toFixed(2)}），无法隔离注入`); process.exit(2); }
+    await ev(`(()=>{var d=document.createElement('div');d.id='__dark_selftest__';d.style.cssText='position:fixed;inset:0;background:#fff;z-index:2147483647';document.body.appendChild(d);return 1})()`);
+    await new Promise((r) => setTimeout(r, 300));
+    const after = await measureDark();
+    const caught = after.pageLum > 0.6;
+    console.log(`自测：白屏注入前 ${before.pageLum.toFixed(2)} / 注入后 ${after.pageLum.toFixed(2)} → ${caught ? 'PASS（判红）' : 'FAIL（未判红）'}`);
+    ws.close(); try { child.kill(); } catch {} server.close();
+    process.exit(caught ? 0 : 1);
+  }
+
   const rows = [];
   const BUDGET_MS = 12000;
 
+  let CURRENT_VP = 0;
+  let CURRENT_ROUTE = '';
   for (const vp of VIEWPORTS) {
+    CURRENT_VP = vp.w;
     await send('Emulation.setDeviceMetricsOverride', { width: vp.w, height: vp.h, deviceScaleFactor: 1, mobile: vp.w < 600 });
     for (const route of routes) {
+      CURRENT_ROUTE = route;
       // 每个路由最多试 2 次：上一页的跳转（含应用自身的 redirect）还在飞的时候
       // 发新导航，Chrome 会把 Document 请求标成 ERR_ABORTED、节点读到 0。
       // 那是**工具的竞态**，不是页面没渲染 —— 不重试的话这条会随机红。
@@ -303,61 +369,11 @@ async function main() {
         // 但要在汇总里明说，不能悄悄跳过。
         attempt.darkWarn = '登录页（品牌入口）不纳入暗色底色判定';
       } else if (THEME === 'dark') {
-        // 断言前先关掉开屏/隐私遮罩：否则量到的是遮罩。
-        await ev(`(()=>{const s=document.querySelector('[class*="__splash__"]')||document.querySelector('[class*="splash"]');if(s)s.click();const c=document.querySelector('[class*="consentAgree"]');if(c)c.click();return 1})()`);
-        await new Promise((r) => setTimeout(r, 600));
-
-        const darkClass = await ev(`document.documentElement.classList.contains('theme-dark')`);
-        const shot = await send('Page.captureScreenshot', { format: 'png' });
-        const b64 = shot && shot.data;
-        if (b64 && process.env.DARK_SHOT_DIR) {
-          try {
-            fs.mkdirSync(process.env.DARK_SHOT_DIR, { recursive: true });
-            fs.writeFileSync(path.join(process.env.DARK_SHOT_DIR, `${THEME}-${vp.w}-${route}.png`), Buffer.from(b64, 'base64'));
-          } catch { /* 调试产物失败不影响门禁 */ }
-        }
-        if (!darkClass) {
-          attempt.darkBad = 'html 未挂 theme-dark';
-        } else if (!b64) {
-          attempt.darkBad = `截图失败：${JSON.stringify(shot).slice(0, 160)}`;
-        } else {
-          // 用页面自身的 canvas 解码截图并取像素：CSS 采样会被渐变 / 伪元素 / 透明层骗过，
-          // 截图像素才是用户真正看到的颜色。
-          const px = JSON.parse(String(await ev(`(async () => {
-            var img = new Image();
-            img.src = 'data:image/png;base64,${b64}';
-            await img.decode();
-            var c = document.createElement('canvas');
-            c.width = img.width; c.height = img.height;
-            var g = c.getContext('2d');
-            g.drawImage(img, 0, 0);
-            // 网格采样 + 顶部横带：单点会被白色小卡片带偏，整页中位数才代表页面主色。
-            var pts = [];
-            var rows = [0.10, 0.35, 0.60, 0.85];
-            var cols = [0.10, 0.30, 0.50, 0.70, 0.90];
-            for (var r=0;r<rows.length;r++) for (var c=0;c<cols.length;c++) pts.push([cols[c], rows[r], r === 0 ? 'top' : 'body']);
-            var out = [];
-            for (var i=0;i<pts.length;i++) {
-              var x = Math.min(img.width-1, Math.max(0, Math.round(pts[i][0]*img.width)));
-              var y = Math.min(img.height-1, Math.max(0, Math.round(pts[i][1]*img.height)));
-              var d = g.getImageData(x, y, 1, 1).data;
-              out.push({ at: pts[i][0] + ',' + pts[i][1], zone: pts[i][2], rgb: [d[0],d[1],d[2]] });
-            }
-            return JSON.stringify(out);
-          })()`)));
-          const lum = ([r, g, b]) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-          const median = (arr) => {
-            const v = arr.map((p) => lum(p.rgb)).sort((a, b) => a - b);
-            return v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
-          };
-          const pageLum = median(px);
-          const topLum = median(px.filter((p) => p.zone === 'top'));
-          if (pageLum > 0.6) {
-            attempt.darkBad = `整页主色仍为浅色（中位亮度 ${pageLum.toFixed(2)}）`;
-          } else if (topLum > 0.85) {
-            attempt.darkBad = `顶部横带仍为浅色（中位亮度 ${topLum.toFixed(2)}）`;
-          }
-        }
+        const d = await measureDark();
+        if (!d.darkClass) attempt.darkBad = 'html 未挂 theme-dark';
+        else if (d.error) attempt.darkBad = d.error;
+        else if (d.pageLum > 0.6) attempt.darkBad = `整页主色仍为浅色（中位亮度 ${d.pageLum.toFixed(2)}）`;
+        else if (d.topLum > 0.85) attempt.darkBad = `顶部横带仍为浅色（中位亮度 ${d.topLum.toFixed(2)}）`;
       }
 
       // 关掉开屏/隐私层后再量溢出（否则量的是遮罩）

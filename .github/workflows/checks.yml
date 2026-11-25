@@ -639,6 +639,18 @@ jobs:
           fi
           exit "$code"
 
+      - name: 暗色像素判据自测（注入白屏必须判红）
+        # 只跑「平时全绿」不算证明：挂上 theme-dark 再铺全屏白，门禁必须报浅色。
+        run: |
+          set +e
+          node .tools/verify-routes.mjs --selftest-dark
+          code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::自测基线不可用（exit=2），按 SKIP 处理"
+            exit 0
+          fi
+          exit "$code"
+
       - name: 深色全路由门禁（无头 Chrome）
         # 与对比度共用同一份 dist；27 个路由 × 3 档视口，断言页面底色不是浅色。
         # 退出码约定同上：2 = harness 出错按 SKIP，1 = 真有页面没挂主题（应红）。

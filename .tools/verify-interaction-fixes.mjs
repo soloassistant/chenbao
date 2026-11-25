@@ -1380,5 +1380,12 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M83 用资源域名判回退，只拦脚本/样式', l.includes('offlineAssets') && l.includes('fetch|xmlhttprequest'));
 }
 
+/* M85（2026-11-25）：暗色像素判据必须能自证会红（U-11）。 */
+{
+  const r = read('.tools/verify-routes.mjs');
+  const pkg = read('package.json');
+  ok('M85 有 --selftest-dark 且接进入口', r.includes('--selftest-dark') && r.includes('注入后') && pkg.includes('verify:dark-selftest'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
