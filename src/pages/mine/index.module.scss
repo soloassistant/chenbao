@@ -1689,3 +1689,9 @@
   font-size: $font-size-sm;
   color: $color-text-tertiary;
 }
+
+/* 深色：白色胶囊按钮 + 浅色品牌文字 = 1.7:1；改实心品牌底 + 白字 */
+:global(.theme-dark) .subButton {
+  background: var(--dm-brand-solid, #a82c13);
+  color: #fff;
+}

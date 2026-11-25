@@ -305,8 +305,9 @@ export default function LoginPage() {
         /* 由下面的 getSession 统一收口 */
       });
     // 2026-11-24：会话检查没有超时，后端慢时用户会一直看着「稍等，先看看你是不是登录过」
-    // （本机实测超过 12s）。2.5s 内没结果就先放行到表单，让用户能开始输入；
-    // 晚到的有效会话不再把人拽走，避免用户正在输入时页面突然跳转。
+    // （本机实测超过 12s）。2.5s 内没结果就先放行到表单，让用户能开始输入。
+    // 2026-11-25 修：超时后晚到的**有效会话不能被吞掉** —— 之前的 settled 早退会让
+    // 慢后端用户永久停在登录表单、被要求重输账号密码。现在晚到的会话照常进应用。
     let settled = false;
     const release = () => {
       if (!alive || settled) return;
@@ -316,11 +317,16 @@ export default function LoginPage() {
     const timer = setTimeout(release, 2500);
     getSession()
       .then((s) => {
-        if (!alive || settled) return;
-        settled = true;
         clearTimeout(timer);
-        if (s) goToApp();
-        else setPhase('form');
+        if (!alive) return;
+        if (s) {
+          settled = true;
+          goToApp();
+          return;
+        }
+        if (settled) return;
+        settled = true;
+        setPhase('form');
       })
       .catch(() => {
         clearTimeout(timer);

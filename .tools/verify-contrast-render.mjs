@@ -191,7 +191,19 @@ const DEFAULT_PAGES = [
   'pages/calendar/index',
   'pages/mine/index',
 ];
-const TARGET_PAGES = (process.env.CONTRAST_PAGES || DEFAULT_PAGES.join(',')).split(',').map((s) => s.trim()).filter(Boolean);
+// 暗色默认扫**全部路由**：浅色只挑 5 页控时间，但暗色是整站风险（2026-11-25
+// 实测 27 页里有 14 页的按钮/卡片用的是「白底+白字」，只扫 5 页漏掉 40+ 处）。
+const ALL_PAGES = (() => {
+  try {
+    const cfg = fs.readFileSync(path.join(ROOT, 'src', 'app.config.ts'), 'utf8');
+    return [...cfg.matchAll(/'pages\/([A-Za-z0-9]+)\/index'/g)].map((m) => `pages/${m[1]}/index`);
+  } catch {
+    return DEFAULT_PAGES;
+  }
+})();
+const TARGET_PAGES = (
+  process.env.CONTRAST_PAGES || (THEME === 'dark' ? ALL_PAGES.join(',') : DEFAULT_PAGES.join(','))
+).split(',').map((s) => s.trim()).filter(Boolean);
 
 
 const CHROME = resolveChrome();

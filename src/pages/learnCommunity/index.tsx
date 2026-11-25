@@ -112,6 +112,16 @@ function writeCommunity(store: CommunityStore) {
   }
 }
 
+/** 深色下把数据里的深色 accent 提亮（原值是按白底挑的） */
+function tagAccent(hex: string, dark: boolean): string {
+  if (!dark) return hex;
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * 0.55);
+  return `#${[mix((n >> 16) & 255), mix((n >> 8) & 255), mix(n & 255)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
 function LearnCommunityPage() {
   const { resolved } = useThemeMode();
   const t = useT();
@@ -234,7 +244,7 @@ function LearnCommunityPage() {
           onInput={(e) => setDraft(e.detail.value)}
         />
         <View className={styles.postActions}>
-          <Text className={styles.postLangTag} style={{ color: lang.accent, borderColor: lang.accent }}>
+          <Text className={styles.postLangTag} style={{ color: tagAccent(lang.accent, resolved === 'dark'), borderColor: tagAccent(lang.accent, resolved === 'dark') }}>
             {lang.name}
           </Text>
           <Button className={styles.postButton} onClick={submitPost}>

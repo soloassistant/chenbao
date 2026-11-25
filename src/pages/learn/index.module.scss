@@ -554,3 +554,10 @@
   }
 }
 
+
+/* 深色：打卡统计卡用的是浅橙 wash，暗色下浅底浅字 */
+:global(.theme-dark) .statsCard {
+  background: #2a2119;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}

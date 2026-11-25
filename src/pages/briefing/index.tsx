@@ -1902,15 +1902,15 @@ function BriefingPage() {
           仅 H5 渲染（weapp 无 GBK 解码器，云函数代理又卡部署凭据 —— 隐藏而非假数据）。
           红涨绿跌：A 股习惯，三市场统一，注释钉死避免后人"顺手国际化"。 */}
       {isH5 ? (
-        <View style={{ margin: `0 ${r2r(32)} ${r2r(24)}`, background: 'var(--bg-card, #fff)', border: '1rpx solid var(--card-border, rgba(29,33,41,0.06))', borderRadius: r2r(24), padding: r2r(24) }}>
+        <View style={{ margin: `0 ${r2r(32)} ${r2r(24)}`, background: 'var(--dm-bg-card, #fff)', border: '1rpx solid var(--card-border, rgba(29,33,41,0.06))', borderRadius: r2r(24), padding: r2r(24) }}>
           <View style={{ display: 'flex', alignItems: 'center', gap: r2r(12) }}>
             <Text style={{ fontSize: r2r(32), fontWeight: '600', flex: 1 }}>{t('briefing.quoteTitle')}</Text>
-            <Text style={{ fontSize: r2r(24), color: '#c7371a' }} onClick={() => setQuoteOpen(!quoteOpen)}>
+            <Text style={{ fontSize: r2r(24), color: 'var(--brand-strong, #c7371a)' }} onClick={() => setQuoteOpen(!quoteOpen)}>
               {quoteOpen ? t('briefing.quoteManageClose') : t('briefing.quoteManage')}
             </Text>
           </View>
           {quotes.length === 0 ? (
-            <Text style={{ fontSize: r2r(26), color: '#657080', display: 'block', marginTop: r2r(12) }}>
+            <Text style={{ fontSize: r2r(26), color: 'var(--dm-text-secondary, #657080)', display: 'block', marginTop: r2r(12) }}>
               {t('briefing.quoteEmpty')}
             </Text>
           ) : (
@@ -1918,7 +1918,7 @@ function BriefingPage() {
               <View key={`${q.code}-${idx}`} style={{ display: 'flex', alignItems: 'baseline', gap: r2r(12), marginTop: r2r(12) }}>
                 <Text style={{ fontSize: r2r(28), fontWeight: '500', flex: 1 }}>
                   {q.name}
-                  <Text style={{ fontSize: r2r(22), color: '#657080' }}> {q.code}</Text>
+                  <Text style={{ fontSize: r2r(22), color: 'var(--dm-text-secondary, #657080)' }}> {q.code}</Text>
                 </Text>
                 <Text style={{ fontSize: r2r(28) }}>{q.price.toFixed(2)}</Text>
                 <Text style={{ fontSize: r2r(26), color: q.changePct >= 0 ? '#c7371a' : '#00b42a', minWidth: r2r(110), textAlign: 'right' }}>
@@ -1930,7 +1930,7 @@ function BriefingPage() {
                         data-testid 在真实 DOM 里不落地，自动化一律按稳定 className 选。 */}
                     <Text
                       className='watch-remove-btn'
-                      style={{ fontSize: r2r(26), color: '#657080', padding: `${r2r(8)} ${r2r(12)}` }}
+                      style={{ fontSize: r2r(26), color: 'var(--dm-text-secondary, #657080)', padding: `${r2r(8)} ${r2r(12)}` }}
                       onClick={() => void handleRemoveStock(q.code)}
                     >
                       ✕
@@ -1958,7 +1958,7 @@ function BriefingPage() {
             </View>
           ) : null}
           {quotes.length > 0 && quotes[0].timeText ? (
-            <Text style={{ fontSize: r2r(22), color: '#657080', display: 'block', marginTop: r2r(8) }}>
+            <Text style={{ fontSize: r2r(22), color: 'var(--dm-text-secondary, #657080)', display: 'block', marginTop: r2r(8) }}>
               {t('briefing.quoteAsOf', { time: quotes[0].timeText })} · {t('briefing.quoteSource')}
             </Text>
           ) : null}
@@ -1968,8 +1968,8 @@ function BriefingPage() {
       {/* 💾 每日回顾（竞品倒推 2026-10-25，flomo/Readwise 模式）：随机回望 ≥30 天前的旧收藏，
           把「存了就忘」变「存了会回」。点击查看原文（openExternalPage 与热点页同语义）。 */}
       {memoryFlash ? (
-        <View style={{ margin: `0 ${r2r(32)} ${r2r(24)}`, background: 'var(--bg-card, #fff)', border: '1rpx solid var(--card-border, rgba(29,33,41,0.06))', borderRadius: r2r(24), padding: r2r(24) }}>
-          <Text style={{ fontSize: r2r(26), color: '#657080' }}>{t('briefing.memoryFlashTitle')}</Text>
+        <View style={{ margin: `0 ${r2r(32)} ${r2r(24)}`, background: 'var(--dm-bg-card, #fff)', border: '1rpx solid var(--card-border, rgba(29,33,41,0.06))', borderRadius: r2r(24), padding: r2r(24) }}>
+          <Text style={{ fontSize: r2r(26), color: 'var(--dm-text-secondary, #657080)' }}>{t('briefing.memoryFlashTitle')}</Text>
           <Text style={{ fontSize: r2r(30), fontWeight: '600', display: 'block', marginTop: r2r(8) }}>
             {memoryFlash.title}
           </Text>

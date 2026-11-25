@@ -1396,5 +1396,18 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M86b 图片规则有独立门禁入口', pkg.includes('"verify:image-url"'));
 }
 
+/* M87（2026-11-25）：登录页 2.5s 超时后，晚到的有效会话必须进应用。 */
+{
+  const login = read('src/pages/login/index.tsx');
+  ok('M87 超时后晚到会话不被 settled 吞掉',
+    /if \(s\) \{[\s\S]{0,80}settled = true;[\s\S]{0,80}goToApp\(\)/.test(login));
+}
+
+/* M88（2026-11-25）：暗色对比度默认扫全部路由，不只 5 页。 */
+{
+  const c = read('.tools/verify-contrast-render.mjs');
+  ok('M88 暗色默认扫 app.config 全量路由', c.includes('ALL_PAGES') && c.includes("THEME === 'dark' ? ALL_PAGES"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

@@ -224,7 +224,7 @@
   justify-content: center;
   border-radius: $radius-md;
   // 白字压浅橙 #ff7a45 仅 2.59:1（未达 AA）；改用 strong 变体 #c7371a（5.26:1），与全站主按钮同源。
-  background: $color-primary-strong;
+  background: $color-brand-solid;
   transition: transform $transition-fast, opacity $transition-fast;
 
   &:active {
