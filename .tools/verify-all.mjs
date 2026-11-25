@@ -69,7 +69,8 @@ const BROWSER = new Map([
   ['verify:contrast-render', 'CDP 通道驱动真 Chrome，把 5 个公开页真实渲染后量每个文字元素「计算样式 + alpha 合成背景」对比度（WCAG 2.2 AA）'],
   ['verify:theme-dark', 'cdp-probe 驱动真 Chrome，把 27 个路由 × 3 档视口在暗色主题下全渲染一遍'],
   ['verify:inputs', 'cdp-probe 驱动真 Chrome，量所有输入框的左边缘/内边距/高度/溢出'],
-  ['verify:layout-pages', 'cdp-probe 驱动真 Chrome，逐页量 5 个内页的面板几何与像素']
+  ['verify:layout-pages', 'cdp-probe 驱动真 Chrome，逐页量 5 个内页的面板几何与像素'],
+  ['verify:overlap', 'cdp-probe 驱动真 Chrome，量文字可见矩形并检查两两重叠（papers / library）']
 ]);
 // 会临时改写源码，必须排在所有只读门禁之后（否则后面的门禁验的是被变异过的代码）。
 const MUTATING = new Map([['verify:mutation', '临时改写源码跑变异测试']]);
