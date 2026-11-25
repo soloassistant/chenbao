@@ -110,9 +110,11 @@ const PAGE_EXPR = `(() => {
     const r = el.getBoundingClientRect();
     return { w: Math.round(r.width * 100) / 100, h: Math.round(r.height * 100) / 100 };
   };
-  const addBar = byMod('addBar');
-  const addInput = byMod('addInput');
-  const addBtns = byModAll('addBtn');
+  // 2026-11-25：类名早已从 addBar/addInput/addBtn 改为 entryCard/entryInput/entryCatBtn，
+  // 门禁仍按旧名查 → 永远 count=0。这里跟随真实类名，并把提交 FAB 算作第二个按钮。
+  const addBar = byMod('entryCard');
+  const addInput = byMod('entryInput');
+  const addBtns = [byMod('entryCatBtn'), byMod('fab')].filter(Boolean);
   const text = (document.body && document.body.innerText) || '';
   return JSON.stringify({
     ready: document.readyState,
@@ -176,7 +178,7 @@ async function main() {
 
   const checks = [
     { name: '页面真的加载了（有正文）', pass: d.bodyLen > 50, got: `bodyLen=${d.bodyLen}` },
-    { name: '录入条 addBar 存在且可见', pass: !!d.hasAddBar && !!d.addBarRect && d.addBarRect.h > 0, got: JSON.stringify(d.addBarRect) },
+    { name: '录入卡 entryCard 存在且可见', pass: !!d.hasAddBar && !!d.addBarRect && d.addBarRect.h > 0, got: JSON.stringify(d.addBarRect) },
     { name: '金额输入框可见且未被挤没', pass: !!d.addInputVisible && !!d.addInputRect && d.addInputRect.w > 60, got: JSON.stringify(d.addInputRect) },
     { name: '录入按钮非零宽（防 taro-button-core width:100% 回归）', pass: !d.anyZeroWidthBtn, got: d.anyZeroWidthBtn ? '有按钮宽度为 0' : 'ok' },
     { name: '两个录入按钮都在且可见', pass: d.addBtnCount >= 2 && d.addBtnsAllVisible, got: `count=${d.addBtnCount} allVisible=${d.addBtnsAllVisible}` },

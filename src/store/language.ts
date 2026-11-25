@@ -1027,6 +1027,7 @@ const zh = {
   'ledger.income': '收入',
   'ledger.lastMonth': '上月支出',
   'ledger.dailyBudget': '日预算',
+  'ledger.budgetUnset': '未设置',
   'ledger.monthlyBudget': '月预算',
   'ledger.budgetDailyTitle': '设置每日预算上限',
   'ledger.budgetMonthlyTitle': '设置每月预算上限',

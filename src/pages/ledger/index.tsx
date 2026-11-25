@@ -433,8 +433,7 @@ function LedgerPage() {
           >
             <Text className={styles.budgetCap}>{t('ledger.dailyBudget')}</Text>
             <Text className={styles.budgetVal}>
-              {formatMoney(todaySum.expense)}
-              {budget.daily !== undefined ? ` / ${formatMoney(budget.daily)}` : ''}
+              {budget.daily !== undefined ? formatMoney(budget.daily) : t('ledger.budgetUnset')}
             </Text>
             {budget.daily !== undefined ? (
               <View className={styles.bar}>
@@ -452,8 +451,7 @@ function LedgerPage() {
           >
             <Text className={styles.budgetCap}>{t('ledger.monthlyBudget')}</Text>
             <Text className={styles.budgetVal}>
-              {formatMoney(monthSum.expense)}
-              {budget.monthly !== undefined ? ` / ${formatMoney(budget.monthly)}` : ''}
+              {budget.monthly !== undefined ? formatMoney(budget.monthly) : t('ledger.budgetUnset')}
             </Text>
             {budget.monthly !== undefined ? (
               <View className={styles.bar}>
@@ -587,7 +585,7 @@ function LedgerPage() {
                 <Button
                   key={c.id}
                   className={pickedCategory === c.id ? `${styles.catChip} ${styles.catChipActive}` : styles.catChip}
-                  onClick={() => setPickedCategory(c.id)}
+                  onClick={() => { setPickedCategory(c.id); setSheetOpen(false); }}
                 >
                   {c.icon} {c.name}
                 </Button>

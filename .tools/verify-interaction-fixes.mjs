@@ -1435,5 +1435,13 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M91 AI 整页高度有界（100dvh + overflow hidden）', block.includes('100dvh') && block.includes('overflow: hidden'));
 }
 
+/* M92（2026-11-25）：记账选分类后必须关弹层；预算 chip 不得显示成支出。 */
+{
+  const led = read('src/pages/ledger/index.tsx');
+  ok('M92a 选中分类即关闭弹层', /setPickedCategory\(c\.id\);\s*setSheetOpen\(false\)/.test(led));
+  ok('M92b 预算 chip 显示预算或「未设置」，不再拿支出顶上',
+    led.includes("t('ledger.budgetUnset')") && !/budgetVal\}>\s*\{\s*formatMoney\(todaySum\.expense\)/.test(led));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

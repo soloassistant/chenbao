@@ -511,9 +511,13 @@ function CalendarPage() {
               {t('calendar.icsExport')}
             </Button>
           )}
-          <Button className={styles.syncButton} onClick={handleWriteSystemCalendar}>
-            {t('calendar.writeToPhone')}
-          </Button>
+          {/* F-07：H5 没有系统日历通道，这个按钮点了只会弹「微信端可写入」——
+              隐藏而不是留一个假按钮；H5 的出口是左边的 .ics 导出。 */}
+          {isWeapp ? (
+            <Button className={styles.syncButton} onClick={handleWriteSystemCalendar}>
+              {t('calendar.writeToPhone')}
+            </Button>
+          ) : null}
         </View>
 
         <View className={styles.quickAdd}>

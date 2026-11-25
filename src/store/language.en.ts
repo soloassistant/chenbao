@@ -978,6 +978,7 @@ export const en: Record<LangKey, string> = {
   'ledger.income': 'income',
   'ledger.lastMonth': 'Last month',
   'ledger.dailyBudget': 'Daily budget',
+  'ledger.budgetUnset': 'Not set',
   'ledger.monthlyBudget': 'Monthly budget',
   'ledger.budgetDailyTitle': 'Set daily budget cap',
   'ledger.budgetMonthlyTitle': 'Set monthly budget cap',
