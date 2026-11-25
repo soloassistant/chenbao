@@ -630,7 +630,8 @@ jobs:
         # 2 = harness 自身出错（如 Chrome 没起来）→ 按 SKIP 处理，不阻断 CI（非代码缺陷）。
         run: |
           set +e
-          node .tools/verify-contrast-render.mjs
+          # npm 入口是 light + dark 连跑（暗色不可读是 C-4 的复发点）
+          npm run verify:contrast-render
           code=$?
           if [ "$code" -eq 2 ]; then
             echo "::warning::对比度门禁 harness 出错（exit=2），非代码缺陷，按 SKIP 处理"
@@ -674,3 +675,20 @@ jobs:
             exit 0
           fi
           exit "$code"
+
+  # 2026-11-25：暗色覆盖曾只修 H5、小程序端 16 页漏挂主题类，而 CI 从不构建 weapp。
+  # 这里只验「小程序产物能构建」，视觉覆盖由 M81 静态门禁守（除 trade 外每页必须有 themeModeClass）。
+  weapp-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - name: 安装依赖
+        run: yarn install --frozen-lockfile
+      - name: 构建小程序产物
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: node node_modules/@tarojs/cli/bin/taro build --type weapp
