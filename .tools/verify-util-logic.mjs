@@ -561,6 +561,14 @@ assert(
     /process\.env\.TARO_ENV === 'weapp'[\s\S]{0,200}data\.vaultNote/.test(prefsSrc)
 );
 
+assert(
+  'I6 跨端/保险箱说明不承诺互通、不上传云端（中英一致）',
+  D.zh['data.crossEndNote'].includes('不互通') &&
+    D.zh['data.vaultNote'].includes('不会上传云端') &&
+    D.en['data.crossEndNote'].includes('not shared') &&
+    D.en['data.vaultNote'].includes('never uploaded')
+);
+
 /* ================================================================== */
 /* K. 「今日已读完」必须按本地日算（UTC 日会让北京 00:00–08:00 丢徽章）   */
 /* ================================================================== */
