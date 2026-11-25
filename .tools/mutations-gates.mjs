@@ -262,7 +262,7 @@ export default [
     // 哪条变红：J22。
     label: '空态主行动按钮底色改回 $color-primary（白字 2.59）',
     file: 'src/components/EmptyState/index.module.scss',
-    from: '  background: $color-primary-strong;',
+    from: '  background: $color-brand-solid;',
     to: '  background: $color-primary;',
     cmd: 'node .tools/verify-contrast-strong.mjs'
   },
