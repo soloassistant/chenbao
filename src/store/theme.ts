@@ -66,7 +66,10 @@ export function brandVars(theme: ThemePreset, resolved: ResolvedTheme = 'light')
   if (resolved === 'dark') {
     return {
       '--brand': theme.color,
-      '--brand-soft': hexToRgba(theme.color, 0.18),
+      // 暗色下 --brand-soft 不能是「半透明浅橙」：它会叠在页面渐变的最上层，
+      // 半透明色标在深色底上仍显浅，门禁实测留一条 100px 浅带。
+      // 预先与暗底混成不透明色，视觉一致且不会破坏渐变判定。
+      '--brand-soft': mixWithDark(theme.color, 0.18),
       '--brand-deep': theme.onDark,
       '--brand-strong': theme.onDark,
       '--dm-brand-strong': theme.onDark,
@@ -82,11 +85,18 @@ export function brandVars(theme: ThemePreset, resolved: ResolvedTheme = 'light')
   } as React.CSSProperties;
 }
 
-function hexToRgba(hex: string, alpha: number): string {
+/** 把主题色按 alpha 压到暗底 #16130f 上，返回不透明 rgb() */
+function mixWithDark(hex: string, alpha: number): string {
   const v = hex.replace('#', '');
   const n = parseInt(v.length === 3 ? v.split('').map((c) => c + c).join('') : v, 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  const base = { r: 0x16, g: 0x13, b: 0x0f };
+  const mix = (c: number, d: number) => Math.round(c * alpha + d * (1 - alpha));
+  return `rgb(${mix(r, base.r)}, ${mix(g, base.g)}, ${mix(b, base.b)})`;
 }
+
 
 // ============================================
 // 显示模式：跟随系统 / 浅色 / 深色（2026-11-20）

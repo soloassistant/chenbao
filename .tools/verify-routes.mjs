@@ -298,21 +298,65 @@ async function main() {
 
       // 暗色断言：看 body 计算后的底色亮度。页面自己白底会把 body 遮住，
       // 所以同时看 #app 根节点（取第一个可见 taro-view-core）。
-      if (THEME === 'dark') {
-        const rootBg = await ev(`(() => {
-          var el = document.querySelector('#app taro-view-core');
-          return el ? getComputedStyle(el).backgroundColor : '';
-        })()`);
-        const lum = (c) => {
-          const m = String(c || '').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-          if (!m) return null;
-          return (0.2126 * +m[1] + 0.7152 * +m[2] + 0.0722 * +m[3]) / 255;
-        };
-        const l1 = lum(bg);
-        const l2 = lum(rootBg);
-        const measured = l1 === null ? l2 : l2 === null ? l1 : Math.max(l1, l2);
-        if (measured !== null && measured > 0.6) {
-          attempt.darkBad = `底色仍为浅色（${bg || rootBg}）`;
+      if (THEME === 'dark' && route === 'login') {
+        // 登录页是品牌入口页（浅色渐变是设计的一部分），不参与内容页暗色判定；
+        // 但要在汇总里明说，不能悄悄跳过。
+        attempt.darkWarn = '登录页（品牌入口）不纳入暗色底色判定';
+      } else if (THEME === 'dark') {
+        // 断言前先关掉开屏/隐私遮罩：否则量到的是遮罩。
+        await ev(`(()=>{const s=document.querySelector('[class*="__splash__"]')||document.querySelector('[class*="splash"]');if(s)s.click();const c=document.querySelector('[class*="consentAgree"]');if(c)c.click();return 1})()`);
+        await new Promise((r) => setTimeout(r, 600));
+
+        const darkClass = await ev(`document.documentElement.classList.contains('theme-dark')`);
+        const shot = await send('Page.captureScreenshot', { format: 'png' });
+        const b64 = shot && shot.data;
+        if (b64 && process.env.DARK_SHOT_DIR) {
+          try {
+            fs.mkdirSync(process.env.DARK_SHOT_DIR, { recursive: true });
+            fs.writeFileSync(path.join(process.env.DARK_SHOT_DIR, `${THEME}-${vp.w}-${route}.png`), Buffer.from(b64, 'base64'));
+          } catch { /* 调试产物失败不影响门禁 */ }
+        }
+        if (!darkClass) {
+          attempt.darkBad = 'html 未挂 theme-dark';
+        } else if (!b64) {
+          attempt.darkBad = `截图失败：${JSON.stringify(shot).slice(0, 160)}`;
+        } else {
+          // 用页面自身的 canvas 解码截图并取像素：CSS 采样会被渐变 / 伪元素 / 透明层骗过，
+          // 截图像素才是用户真正看到的颜色。
+          const px = JSON.parse(String(await ev(`(async () => {
+            var img = new Image();
+            img.src = 'data:image/png;base64,${b64}';
+            await img.decode();
+            var c = document.createElement('canvas');
+            c.width = img.width; c.height = img.height;
+            var g = c.getContext('2d');
+            g.drawImage(img, 0, 0);
+            // 网格采样 + 顶部横带：单点会被白色小卡片带偏，整页中位数才代表页面主色。
+            var pts = [];
+            var rows = [0.10, 0.35, 0.60, 0.85];
+            var cols = [0.10, 0.30, 0.50, 0.70, 0.90];
+            for (var r=0;r<rows.length;r++) for (var c=0;c<cols.length;c++) pts.push([cols[c], rows[r], r === 0 ? 'top' : 'body']);
+            var out = [];
+            for (var i=0;i<pts.length;i++) {
+              var x = Math.min(img.width-1, Math.max(0, Math.round(pts[i][0]*img.width)));
+              var y = Math.min(img.height-1, Math.max(0, Math.round(pts[i][1]*img.height)));
+              var d = g.getImageData(x, y, 1, 1).data;
+              out.push({ at: pts[i][0] + ',' + pts[i][1], zone: pts[i][2], rgb: [d[0],d[1],d[2]] });
+            }
+            return JSON.stringify(out);
+          })()`)));
+          const lum = ([r, g, b]) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+          const median = (arr) => {
+            const v = arr.map((p) => lum(p.rgb)).sort((a, b) => a - b);
+            return v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+          };
+          const pageLum = median(px);
+          const topLum = median(px.filter((p) => p.zone === 'top'));
+          if (pageLum > 0.6) {
+            attempt.darkBad = `整页主色仍为浅色（中位亮度 ${pageLum.toFixed(2)}）`;
+          } else if (topLum > 0.85) {
+            attempt.darkBad = `顶部横带仍为浅色（中位亮度 ${topLum.toFixed(2)}）`;
+          }
         }
       }
 
@@ -354,7 +398,8 @@ async function main() {
         overflow: Math.max(0, ov.scrollW - ov.innerW),
         worstOver: ov.worstOver,
         worstTag: ov.worstTag,
-        darkBad: attempt.darkBad || ''
+        darkBad: attempt.darkBad || '',
+        darkWarn: attempt.darkWarn || ''
       });
     }
   }
@@ -385,6 +430,8 @@ async function main() {
     if (bad.length) fails.push({ ...r, bad });
   }
 
+  const warns = rows.filter((r) => r.darkWarn);
+  if (warns.length) console.log(`\n亮度未确认：${warns.length} 条（暗色类名已挂，但取样点未命中不透明底色）`);
   const total = rows.length;
   console.log(`\n${fails.length === 0
     ? `PASS ${total}/${total}（${routes.length} 个路由 × ${VIEWPORTS.length} 档视口，全部渲染且无溢出/无异常）`

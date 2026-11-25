@@ -625,3 +625,8 @@
   font-size: $font-size-xs;
   color: $color-text-tertiary;
 }
+
+/* 深色：顶部「怎么用」提示条用的是浅色 voice 底，暗色下是一块奶油白 */
+:global(.theme-dark) .howTo {
+  background: #2a2119;
+}

@@ -4,7 +4,7 @@ import Taro, { useDidShow } from '@tarojs/taro';
 import EmptyState from '@/components/EmptyState';
 import PromptModal from '@/components/PromptModal';
 import DemoDataHint from '@/components/DemoDataHint';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeMode, useThemeStore } from '@/store/theme';
 import { useT } from '@/store/language';
 import PartnerEntry, { PartnerSectionHeader } from '@/components/PartnerEntry';
 import { SXM_ENTRY_URL } from '@/config/partners';
@@ -66,6 +66,9 @@ function toPricedItem(item: ShoppingItem): PricedItem {
 function ShoppingPage() {
   const t = useT();
   const { theme } = useThemeStore();
+  // 暗色下必须把 resolved 传进 brandVars，否则 --brand-soft 仍是浅色 theme.soft，
+  // 页面顶部渐变会留一条浅色带（2026-11-24 暗色门禁实测）。
+  const { resolved } = useThemeMode();
   const [list, setList] = useState<ShoppingItem[]>([]);
   /** 加载失败态（2026-10-24 审计）：与「真空清单」区分 —— 原来 load 失败只 console.error，
    *  list 保持 []，页面渲染「购物清单还是空的」，把「拉取失败」伪装成「真的没数据」。 */
@@ -264,7 +267,7 @@ function ShoppingPage() {
   }, []);
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={styles.page} style={brandVars(theme, resolved)}>
       <View className={styles.backButton} onClick={handleBack}>
         <Text className={styles.backIcon}>‹</Text>
         <Text className={styles.backText}>{t('common.back')}</Text>
