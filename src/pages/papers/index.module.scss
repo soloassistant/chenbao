@@ -211,7 +211,10 @@ $paper-active-ink: #a82c13;
   display: flex;
   align-items: center;
   gap: 12rpx;
-  min-width: 0;
+  /* 2026-11-25：min-width:0 不够 —— 行内文字不会自动收缩，变体标签会溢出到
+     右侧 CTA 底下（实测 32×18px 100% 覆盖）。必须真正裁切 + 允许收缩。 */
+  flex: 1 1 0;
+  overflow: hidden;
 }
 
 .rowDate {
@@ -220,6 +223,8 @@ $paper-active-ink: #a82c13;
 }
 
 .variantTag {
+  flex: 0 0 auto;
+  white-space: nowrap;
   padding: 2rpx 10rpx;
   border-radius: $radius-xs;
   background: rgba(199, 55, 26, 0.1);

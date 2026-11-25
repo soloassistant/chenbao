@@ -1422,5 +1422,11 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M89b E2E 截图写系统临时目录且先建目录', e2e.includes("os.tmpdir()") && e2e.includes('mkdirSync(SHOT_DIR'));
 }
 
+/* M90（2026-11-25）：文字重叠门禁存在，且按可见矩形判（裁掉的不算）。 */
+{
+  const o = read('.tools/verify-overlap.mjs');
+  ok('M90 重叠门禁存在并按可见矩形判定', o.includes('visibleRect') && o.includes('overflowX'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

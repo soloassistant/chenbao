@@ -396,15 +396,18 @@
 .filterBar {
   padding: 0 $page-padding $spacing-md;
   white-space: nowrap;
-  display: flex;
+  /* flex 下 ScrollView 的宽度按内容算，chip 会钻到右侧「来源」按钮底下（实测 84% 覆盖）。
+     grid 的 minmax(0,1fr) 才是真正的「占满剩余宽度」约束。 */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: $spacing-sm;
 }
 
 .chipScroll {
-  flex: 1;
   min-width: 0;
-  width: auto;
+  width: 100%;
+  overflow: hidden;
 }
 
 /* J9：筛选条右侧的「来源 ⚙」一键入口 */
