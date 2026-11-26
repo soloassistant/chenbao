@@ -18,6 +18,7 @@ import { useT } from '@/store/language';
 import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import { PAPER_BOARDS, PAPERS_SOURCE, groupUnits, totalPapers, type SessionRow } from '@/data/papers';
 import { bindingForSubject, bindingForUnit, type PaperExamBinding } from '@/data/paperExamMap';
+import type { Board, Level } from '@/types/questionBank';
 import { openExternalPage } from '@/utils/externalLink';
 import { pressableProps } from '@/utils/a11y';
 import styles from '@/pages/papers/index.module.scss';
@@ -40,6 +41,9 @@ export interface PaperLibraryProps {
     title: string;
     /** 该单元覆盖的考点（组卷用） */
     tags: string[];
+    /** 考试局/层级：交给出题元数据，避免 A-Level 被写成 other */
+    board?: Board;
+    level?: Level;
   }) => void;
   /** 点某套真题的「开考」：带原卷 PDF 进模拟考（2026-11-16）。
    *  与 onStartMock 的区别：那个是按考点从本地题库组卷，用户没导入题就开不了；
@@ -50,6 +54,8 @@ export interface PaperLibraryProps {
     ms: string;
     examSystem: string;
     subject: string;
+    board?: Board;
+    level?: Level;
   }) => void;
 }
 
@@ -67,9 +73,16 @@ export default function PaperLibrary({ showHeader = true, onStartMock, onStartPa
   const groups = useMemo(() => groupUnits(subject), [subject]);
 
   const [unitBase, setUnitBase] = useState(groups[0].base);
+  // 已知考试局/层级就往下传；不认识的值不猜，交给 resolveGenMetadata 兜底
+  const boardMeta = (['cie', 'edexcel', 'aqa', 'ocr', 'collegeboard', 'ibo', 'china_moe'].includes(board.id)
+    ? board.id
+    : undefined) as Board | undefined;
   // 换考试局/科目后旧单元可能不存在 —— 派生兜底，不用 effect 去「修正状态」
   const activeBase = groups.some((g) => g.base === unitBase) ? unitBase : groups[0].base;
   const active = groups.find((g) => g.base === activeBase) || groups[0];
+  const levelMeta = (['hl', 'sl', 'as', 'a2', 'foundation', 'higher', 'standard', 'na'].includes(String(activeBase).toLowerCase())
+    ? String(activeBase).toLowerCase()
+    : undefined) as Level | undefined;
 
   const yearGroups = useMemo(() => {
     const out: { year: number; rows: SessionRow[] }[] = [];
@@ -132,7 +145,9 @@ export default function PaperLibrary({ showHeader = true, onStartMock, onStartPa
     onStartMock({
       binding: mockBinding,
       title: `${board.name} ${subject.name} · ${active.label || active.base}`,
-      tags: mockBinding.tags
+      tags: mockBinding.tags,
+      board: boardMeta,
+      level: levelMeta
     });
   };
 
@@ -244,7 +259,9 @@ export default function PaperLibrary({ showHeader = true, onStartMock, onStartPa
                           ms: row.ms || '',
                           // 真实体系/学科：AI 出题要用它去匹配题库闭集（alevel 的数学是 'mathematics' 不是 'maths'）
                           examSystem: (bindingForUnit(board.id, subject.id, active.base) || mockBinding)?.examSystem || 'alevel',
-                          subject: (bindingForUnit(board.id, subject.id, active.base) || mockBinding)?.subject || 'mathematics'
+                          subject: (bindingForUnit(board.id, subject.id, active.base) || mockBinding)?.subject || 'mathematics',
+                          board: boardMeta,
+                          level: levelMeta
                         })
                       }
                       {...pressableProps(`${t('papers.mockStart')}：${row.code} ${row.y}-${row.m}`)}

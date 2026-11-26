@@ -10,6 +10,7 @@
  * 刻意不 import @tarojs/taro：存储能力由调用方注入（页面层传 Taro 兼容对象），
  * 本层因此是纯逻辑，可用假存储跑断言。不碰 cloudSync / SYNC_KEYS / 任何页面。
  */
+import { validateQuestion } from '@/utils/questionBank';
 import type { LangCode, Question } from '../types/questionBank';
 import { findDuplicates, stemHash } from '../utils/questionBank';
 
@@ -108,6 +109,15 @@ export function createQuestionBankRepo(
       }
       // 指纹始终由当前 stem 重算，不接受调用方传进来的旧值
       const row: Question = { ...question, stemHash: stemHash(question.stem) };
+      // 2026-11-26：领域校验必须在仓储层跑一次 —— 之前页面注释说「repo.add 会校验」，
+      // 实际只查重复 ID，默认知识点「AI 生成」这类非大纲值会直接进库。
+      const verdict = validateQuestion(row);
+      if (!verdict.ok) {
+        throw new QuestionBankError(
+          'questionBank.invalid',
+          `题目未通过校验：${verdict.errors.map((e) => e.message).join('；')}`
+        );
+      }
       save([...doc.questions, row]);
       return row;
     },

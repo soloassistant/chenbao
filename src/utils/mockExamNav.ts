@@ -6,7 +6,7 @@
  * 跳转参数拼法必须一致，否则两处会拼出不同的 URL（口径分叉的老毛病）。
  */
 import Taro from '@tarojs/taro';
-import type { ExamSystem } from '@/types/questionBank';
+import type { Board, ExamSystem, Level } from '@/types/questionBank';
 
 export interface MockExamLaunch {
   /** 卷面标题，例如「Edexcel 数学 · 纯数 1」 */
@@ -19,6 +19,10 @@ export interface MockExamLaunch {
   examSystem: ExamSystem;
   /** 题库里的学科 */
   subject: string;
+  /** 考试局；真题/组卷入口已知时必须传，否则 A-Level 会被写成 other */
+  board?: Board;
+  /** 层级（as/a2/hl/…）；同上 */
+  level?: Level;
   /** 该真题单元覆盖的考点 */
   tags: string[];
 }
@@ -29,7 +33,9 @@ export function mockExamUrl(launch: MockExamLaunch): string {
     `/pages/mockExam/index?examSystem=${q(launch.examSystem)}` +
     `&subject=${q(launch.subject)}` +
     `&tags=${q(launch.tags.join('|'))}` +
-    `&title=${q(launch.title)}`;
+    `&title=${q(launch.title)}` +
+    (launch.board ? `&board=${q(launch.board)}` : '') +
+    (launch.level ? `&level=${q(launch.level)}` : '');
   // 真题模式的两个参数：没有就不拼，避免空串被当成"有 qp 但为空"
   const qp = launch.paperQp ? `&qp=${q(launch.paperQp)}` : '';
   const ms = launch.paperMs ? `&ms=${q(launch.paperMs)}` : '';

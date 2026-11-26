@@ -17,7 +17,7 @@ import { createQuestionBankRepo } from '@/data/questionBankRepo';
 import { generateQuestions } from '@/services/paperGen';
 import { appStorage } from '@/utils/appStorage';
 import { buildMockExam, saveMockExamSession, type MockExamPlan } from '@/data/mockExam';
-import type { ExamSystem, Question } from '@/types/questionBank';
+import type { Board, ExamSystem, Level, Question } from '@/types/questionBank';
 import type { UserResponse } from '@/utils/questionBankGrading';
 import { pressableProps } from '@/utils/a11y';
 import { openExternalPage } from '@/utils/externalLink';
@@ -37,6 +37,9 @@ export default function MockExamPage() {
   const params = useMemo(() => readParams(), []);
   const examSystem = (params.examSystem || 'alevel') as ExamSystem;
   const subject = decodeURIComponent(params.subject || '');
+  // 真题/组卷入口带上来的考试局与层级；缺省不猜（由 resolveGenMetadata 按体系兜底）
+  const board = params.board ? (decodeURIComponent(params.board) as Board) : undefined;
+  const level = params.level ? (decodeURIComponent(params.level) as Level) : undefined;
   const tagsKey = decodeURIComponent(params.tags || '');
   const tags = useMemo(() => tagsKey.split('|').filter(Boolean), [tagsKey]);
   const title = decodeURIComponent(params.title || '');
@@ -158,6 +161,8 @@ export default function MockExamPage() {
         tags,
         count: 6,
         examSystem,
+        board,
+        level,
         subject: subject || undefined
       });
       if (!r.ok) {
@@ -194,7 +199,7 @@ export default function MockExamPage() {
       setGenState('fail');
       setGenMsg(t('mock.genFailed'));
     }
-  }, [genState, title, subject, tags, examSystem, t]);
+  }, [genState, title, subject, tags, examSystem, board, level, t]);
 
   const back = useCallback(() => {
     Taro.navigateBack().catch(() => Taro.reLaunch({ url: '/pages/questionBank/index' }));

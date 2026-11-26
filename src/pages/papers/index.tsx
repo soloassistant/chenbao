@@ -21,15 +21,15 @@ export default function PapersPage() {
     <View className={themeModeClass(resolved)} style={brandVars(theme, resolved)}>
       <PaperLibrary
         showHeader
-        onStartMock={({ binding, title, tags }) =>
+        onStartMock={({ binding, title, tags, board, level }) =>
           startMockExam(
-            { title, examSystem: binding.examSystem, subject: binding.subject, tags },
+            { title, examSystem: binding.examSystem, subject: binding.subject, tags, board, level },
             t('mock.startFailed')
           )
         }
-        onStartPaper={({ title, qp, ms, examSystem, subject }) =>
+        onStartPaper={({ title, qp, ms, examSystem, subject, board, level }) =>
           startMockExam(
-            { title, examSystem: examSystem as ExamSystem, subject, tags: [], paperQp: qp, paperMs: ms },
+            { title, examSystem: examSystem as ExamSystem, subject, tags: [], paperQp: qp, paperMs: ms, board, level },
             t('mock.startFailed')
           )
         }
