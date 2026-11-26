@@ -1516,5 +1516,12 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M100b dist 缺失 → exit 2 且说明原因', /dist\/index\.html 不存在[\s\S]{0,80}process\.exit\(2\)/.test(c));
 }
 
+/* M101（2026-11-26）：开发者类目接入 GitHub Trending（HTML 解析，与豆瓣同构）。 */
+{
+  const b = read('.tools/boards-core.js');
+  ok('M101a 注册 github 板块（开源 tag）', b.includes("id: 'github'") && b.includes("url: 'https://github.com/trending"));
+  ok('M101b 有独立 HTML 解析器', b.includes('function parseGithubTrending'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

@@ -378,6 +378,15 @@ const ROUTES = [
     parse: parseBaidu
   },
   {
+    id: 'github',
+    label: 'GitHub 趋势',
+    tag: '开源',
+    url: 'https://github.com/trending?since=daily',
+    accept: ACCEPT_HTML,
+    kind: 'html',
+    parse: parseGithubTrending
+  },
+  {
     id: 'douban-movie',
     label: '豆瓣电影',
     tag: '影视',
@@ -387,6 +396,44 @@ const ROUTES = [
     parse: parseDouban
   }
 ];
+
+
+/**
+ * GitHub Trending（2026-11-26 新增，开发者类目）
+ *
+ * 官方没有 Trending API，但 /trending 是**服务端渲染 HTML**，结构稳定（article.Box-row）。
+ * 与 GitHub Blog 不同：后者要 RSS、源已死；Trending 是活页。
+ * 解析：每个 Box-row 取仓库链接（第一个 <h2> 下的 a）、描述、语言、今日 star。
+ * 不做 star 数抓取（页面是 "N stars today" 文案，不是总数）——hot 只放今日增量。
+ */
+function parseGithubTrending(text) {
+  const chunks = String(text).split(/<article\s+class="Box-row"/).slice(1);
+  const out = [];
+  for (const chunk of chunks) {
+    const seg = chunk.slice(0, 6000); // 行内定长窗口，避免跨行误抓
+    const h2 = seg.match(/<h2[^>]*>[\s\S]{0,400}?<a[^>]*href="\/([^"\/]+)\/([^"\/]+)"/);
+    if (!h2) continue;
+    const repo = h2[1] + '/' + h2[2];
+    const descRaw = (seg.match(/<p[^>]*class="[^"]*color-fg-muted[^"]*"[^>]*>([\s\S]*?)<\/p>/) || [])[1] || '';
+    const desc = descRaw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const lang = (seg.match(/itemprop="programmingLanguage"[^>]*>([^<]+)</) || [])[1] || '';
+    const today = (seg.match(/([\d,]+)\s+stars today/) || [])[1] || '';
+    const parts = [];
+    if (lang) parts.push(lang);
+    if (today) parts.push('+' + today + ' stars today');
+    out.push({
+      title: repo,
+      url: 'https://github.com/' + repo,
+      mobileUrl: 'https://github.com/' + repo,
+      hot: today.replace(/,/g, ''),
+      desc: desc || parts.join(' · '),
+      // 描述里已有语言时仍补一句增量，便于卡片区分「今日热度」
+      summary: desc,
+      extra: parts.join(' · ')
+    });
+  }
+  return out;
+}
 
 /** 公开板块清单：[{ id, label, tag }] */
 const BOARDS = ROUTES.map((b) => ({ id: b.id, label: b.label, tag: b.tag }));
