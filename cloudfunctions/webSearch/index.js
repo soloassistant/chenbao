@@ -320,6 +320,29 @@ function stripHtml(s) {
     .trim();
 }
 
+/** 去跟踪参数：与 .tools/fetch-data.js 同一口径（utm_ 前缀、spm、fr、from、ref、scene 等）。
+ *  2026-11-26：此前只清洗了 fetch-data 链路，云函数这条**主链路**直接用原始链接算 id，
+ *  同一篇文章带不同 utm 会生成两个 id → 伪重复。 */
+function cleanUrl(u) {
+  const str = String(u || '');
+  const q = str.indexOf('?');
+  if (q < 0) return str;
+  const base = str.slice(0, q);
+  if (!base) return str;
+  const kept = str
+    .slice(q + 1)
+    .split('&')
+    .filter((kv) => {
+      const k = kv.split('=')[0].toLowerCase();
+      return (
+        k !== '' &&
+        !k.startsWith('utm_') &&
+        !['spm', 'fr', 'from', 'ref', 'scene', 'share_from', 'share_token', 'nsukey'].includes(k)
+      );
+    });
+  return kept.length ? `${base}?${kept.join('&')}` : base;
+}
+
 /** 短 hash：由链接生成稳定 id */
 function shortHash(s) {
   let h = 5381;
@@ -332,7 +355,7 @@ function parseFeed(xml, sourceName, tag) {
   const blocks = xml.match(/<item[\s\S]*?<\/item>/gi) || xml.match(/<entry[\s\S]*?<\/entry>/gi) || [];
   return blocks.slice(0, 12).map((b) => {
     const title = stripHtml(pickTag(b, 'title'));
-    const link = pickLink(b);
+    const link = cleanUrl(pickLink(b));
     const image = pickImage(b);
     let summary = stripHtml(
       pickTag(b, 'description') || pickTag(b, 'summary') || pickTag(b, 'content')
@@ -1287,11 +1310,11 @@ async function summarize(weather, newsItems) {
         role: 'system',
         content:
           '你是私人晨报编辑。基于给定天气与资讯素材，输出两样东西：' +
-          '① items：3-5 条「今日情报」短句，每条 ≤40 字，说清事件与对用户的实际影响或建议，source 标注该条来源媒体名（必须来自素材）；' +
+          '① items：3-5 条「今日情报」短句，每条 ≤40 字，说清事件与对用户的实际影响或建议，source 标注该条来源媒体名（必须来自素材），ref 填该条依据的素材编号（1-8）；' +
           '② groups：2-4 个主题分组，每组含 title（主题名，≤12 字）、lead（1-2 句导语，≤60 字，说明该主题下的整体态势）、' +
           'items（该组下的资讯条目，每条含 text ≤40 字与 source）。' +
           '导语 lead 中如需引用本组条目，必须用 [n] 标记（n 为本组 items 的 1-based 序号，如 [1]、[2]），不得引用不存在的序号。' +
-          '输出 JSON：{"items":[{"text":"...","source":"来源名"}],"groups":[{"title":"...","lead":"...","items":[{"text":"...","source":"来源名"}]}]}。' +
+          '输出 JSON：{"items":[{"text":"...","source":"来源名","ref":1}],"groups":[{"title":"...","lead":"...","items":[{"text":"...","source":"来源名"}]}]}。' +
           '不得编造素材里没有的信息。'
       },
       { role: 'user', content: material }
@@ -1337,7 +1360,17 @@ async function summarize(weather, newsItems) {
   const items = parsed.items
     .filter((it) => it && it.text)
     .slice(0, 5)
-    .map((it) => ({ text: clampSummary(it.text, INTEL_ITEM_TEXT_MAX), source: String(it.source || '综合') }));
+    .map((it) => {
+      // ref 是模型声明的素材编号（1-based）；越界/缺失就不给 url，绝不猜一条链接贴上去
+      const ref = Number(it.ref);
+      const src = Number.isInteger(ref) && ref >= 1 && ref <= newsItems.length ? newsItems[ref - 1] : null;
+      const url = src && src.url ? cleanUrl(src.url) : undefined;
+      return {
+        text: clampSummary(it.text, INTEL_ITEM_TEXT_MAX),
+        source: String(it.source || '综合'),
+        ...(url ? { url } : {})
+      };
+    });
   if (!items.length) throw new Error('LLM output empty');
   // 分组为**可选增强**：LLM 未按结构返回时降级为 []（前端会走本地兜底），不影响 intelItems 主链路
   const groups = normalizeLlmGroups(parsed.groups);

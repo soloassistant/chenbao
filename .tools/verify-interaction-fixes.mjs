@@ -514,7 +514,7 @@ ok('Q3 H5 晨报映射透传可解析的 createTime（缺失不补当前时间�
   /\.\.\.\(createTime \? \{ createTime \} : \{\}\)/.test(h5IntelMap[1]));
 const briefTypes = stripComments(read('src/types/index.ts'));
 ok('Q3b BriefingIntel.intelItems 契约含可选 createTime',
-  /intelItems: Array<\{ text: string; source: string; createTime\?: string \}>/.test(briefTypes));
+  /intelItems: Array<\{ text: string; source: string; createTime\?: string; url\?: string; image\?: string \}>/.test(briefTypes));
 
 /** 用 vm + Proxy 桩加载 webSearch 云函数（无 wx-server-sdk 也能跑），取 __internals */
 function loadWebSearchExports() {
@@ -1496,6 +1496,17 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   const lib = read('src/components/PaperLibrary/index.tsx');
   ok('M98c 真题/组卷回调带上 board/level', lib.includes('board: boardMeta') && lib.includes('level: levelMeta'));
   ok('M98d repo.add 接入 validateQuestion', read('src/data/questionBankRepo.ts').includes('validateQuestion(row)'));
+}
+
+/* M99（2026-11-26）：跨日去重 / 情报溯源 / URL 清洗进主链路。 */
+{
+  const ws = read('cloudfunctions/webSearch/index.js');
+  ok('M99a 云函数解析 RSS 时清洗链接（id 不再基于原始 URL）', ws.includes('const link = cleanUrl(pickLink(b))'));
+  ok('M99b AI 情报按 ref 回填原文 url', ws.includes('const ref = Number(it.ref)') && ws.includes('...(url ? { url } : {})'));
+  const bf = read('src/pages/briefing/index.tsx');
+  ok('M99c 晨报通知按内容指纹去重（不再按日期）',
+    bf.includes('const contentKey') && bf.includes('dedupeKey: `briefing:${contentKey}`') && !bf.includes('briefing:${todayKey}'));
+  ok('M99d 情报契约允许 url/image', read('src/types/index.ts').includes('createTime?: string; url?: string; image?: string'));
 }
 
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);

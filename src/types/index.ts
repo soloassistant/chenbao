@@ -59,7 +59,7 @@ export interface BriefingIntel {
    *  createTime：发布时间（ISO 串）。2026-10-26 起由 RSS pubDate 经热点契约透传，
    *  供突发识别的 24h 时效闸判定。缺失表示源未提供时间（热榜板块、或经 LLM 改写的
    *  1:N 摘要条目），消费侧**保守放行**，不伪造当前时间。 */
-  intelItems: Array<{ text: string; source: string; createTime?: string }>;
+  intelItems: Array<{ text: string; source: string; createTime?: string; url?: string; image?: string }>;
   /** true = **本该有 AI 却没拿到**的降级内容（LLM 失败 / 限额耗尽 / 无内容）。
    *
    *  ⚠️ 语义边界：不要用它表达「本档位没有 AI」。免费档按设计没有 AI，

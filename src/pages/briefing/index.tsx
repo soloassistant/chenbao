@@ -570,19 +570,27 @@ function BriefingPage() {
     };
   }, []);
 
-  // 站内通知：晨报真正拿到数据才记一条（一天一条，dedupeKey 带日期）。
-  // 放在独立 effect 里而不是塞进 loadBriefing：loadBriefing 是 useCallback，
-  // 把 t 拖进依赖会让它每次切语言都重建（连带重新拉晨报）。
+  // 站内通知：晨报真正拿到数据才记一条。
+  // 2026-11-26：去重键从「日期」改成**内容指纹** —— 原来跨日一律重推，
+  // 同一批日程/情报连着几天推 N 遍（外部对标 OPT-01）。现在同内容只记一次，
+  // 内容变了（新增日程/情报）才会再提醒。指纹只取可读标题，不含时间戳。
   useEffect(() => {
     if (!briefing) return;
-    const d = new Date();
-    const todayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const parts = [
+      ...(briefing.events || []).map((e) => e.title),
+      ...(briefing.todos || []).map((td) => td.title),
+      ...(briefing.intel?.intelItems || []).map((it) => it.text)
+    ];
+    let h = 5381;
+    const raw = parts.join('\u0001');
+    for (let i = 0; i < raw.length; i++) h = ((h << 5) + h + raw.charCodeAt(i)) & 0x7fffffff;
+    const contentKey = h.toString(36);
     const n = (briefing.events || []).length;
     pushNotify({
       kind: 'briefing',
       title: t('notify.briefingTitle'),
       desc: n > 0 ? t('notify.briefingDesc', { n }) : t('notify.briefingDescEmpty'),
-      dedupeKey: `briefing:${todayKey}`
+      dedupeKey: `briefing:${contentKey}`
     });
     // t 故意不进依赖：它每次渲染都可能换引用，进依赖会让这个 effect 反复跑。
     // eslint-disable-next-line react-hooks/exhaustive-deps
