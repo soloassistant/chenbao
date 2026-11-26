@@ -23,7 +23,7 @@
  *       CHROME_BIN=/path/to/chrome                                # 显式指定 Chrome
  * 退出码: 0 = 全绿（或环境不足 SKIP）；1 = 有对比度未达标；2 = harness 自身出错
  *
- * 环境不足时 SKIP（exit 0，不伪造红）：--no-browser / 没有 dist / 找不到 Chrome。
+ * 环境不足时 SKIP（exit 2，不伪造绿）：--no-browser / 没有 dist / 找不到 Chrome。
  * CI 步骤负责装好 Chrome + 构建 dist，使这扇门真正生效。
  */
 import fs from 'node:fs';
@@ -37,6 +37,11 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 const NO_BROWSER = process.argv.includes('--no-browser');
 const SELF_TEST = process.argv.includes('--self-test');
+// 产物缺失：显式 SKIP（exit 2），不要把 ENOENT 抛成一屏栈
+if (!NO_BROWSER && !fs.existsSync(path.join(ROOT, 'dist', 'index.html'))) {
+  console.log('SKIP：dist/index.html 不存在，先构建再跑（exit 2）');
+  process.exit(2);
+}
 const THEME = (process.argv.find((a) => a.startsWith('--theme=')) || '--theme=light').split('=')[1];
 const vpArg = (process.argv.find((a) => a.startsWith('--viewport=')) || '--viewport=1280x900').split('=')[1];
 const [VW, VH] = vpArg.split('x').map(Number);
@@ -263,7 +268,14 @@ for (let i = 0; i < 80; i++) {
   } catch { /* 端口还没起 */ }
   await sleep(300);
 }
-if (!wsUrl) { console.log('（CDP 端点未就绪，Chrome 没能起来：跳过。）'); server.close(); child.kill('SIGKILL'); process.exit(0); }
+if (!wsUrl) {
+  // 2026-11-26：跳过不能再 exit 0 —— 那会让「Chrome 没起来」在 CI/verify-all 里显示成通过。
+  // 退出码 2 = SKIP（未判定），verify-all 会标 SKIP 而不是 PASS。
+  console.log('（CDP 端点未就绪，Chrome 没能起来：SKIP，exit 2）');
+  server.close();
+  child.kill('SIGKILL');
+  process.exit(2);
+}
 
 const ws = new WebSocket(wsUrl);
 await new Promise((r) => (ws.onopen = r));
