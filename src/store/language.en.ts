@@ -62,6 +62,7 @@ export const en: Record<LangKey, string> = {
   'mine.payRetry': 'Payment didn\'t go through — you can try again',
   'mine.payOrderFail': 'Couldn\'t create the order. Network or service unavailable, try later',
   'inbox.addedShot': 'Screenshot added',
+  'inbox.pasteHintTouch': 'Paste text, or tap below to add screenshots',
   'inbox.pasteHintH5': 'Paste text, or Ctrl+V a screenshot',
   'inbox.pasteHint': 'Paste text or add a screenshot first',
   'inbox.parsing': 'Parsing…',

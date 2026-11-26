@@ -762,7 +762,10 @@ export async function apiAiNewsFilter(
     } catch (err) {
       console.warn('[Cloud] aiFilter via cloud.llm failed, try local endpoint:', err);
     }
-    // 最后兜底：本地 static-server 预览路径（开发态）。生产环境纯静态托管 ⇒ 该路由不存在 ⇒ 404 ⇒ null。
+    // 最后兜底：本地 static-server 预览路径，**仅开发态**。
+    // 生产是纯静态托管，这个路由不存在：实测 POST 回 405，而且用户要白等一轮。
+    // 直接返回 null，让调用方立刻弹失败提示（诚实降级）。
+    if (process.env.NODE_ENV !== 'development') return null;
     try {
       const res = await fetch('/api/news/ai-filter', {
         method: 'POST',

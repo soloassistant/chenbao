@@ -1476,5 +1476,15 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M96 宫格用 grid + 窄屏 4 列', grid.includes('display: grid') && grid.includes('repeat(4, minmax(0, 1fr))'));
 }
 
+/* M97（2026-11-26）：走查 P1 批次（F-03/F-11/F-12/F-20）。 */
+{
+  const c = read('src/services/cloud.ts');
+  const seg = c.slice(c.indexOf('async function apiAiNewsFilter'));
+  ok('M97a 生产不再打 /api/news/ai-filter', seg.includes("NODE_ENV !== 'development') return null"));
+  ok('M97b 个性化关闭时隐藏「为你精选」', read('src/pages/library/index.tsx').includes('aiFilterEnabled && personalOn'));
+  ok('M97c 触屏不提示 Ctrl+V', read('src/pages/inbox/index.tsx').includes("matchMedia('(pointer: fine)')"));
+  ok('M97d 语音额度单位统一为「条」', read('src/store/language.ts').includes("'mine.quotaShort': '语音 {used}/{quota} 条'"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

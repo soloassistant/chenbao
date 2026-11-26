@@ -69,6 +69,7 @@ const zh = {
   'mine.payOrderFail': '没能下单，网络或服务暂时不通，稍后再试',
   'inbox.addedShot': '已添加截图',
   'inbox.pasteHintH5': '粘贴文字，或 Ctrl+V 粘贴截屏',
+  'inbox.pasteHintTouch': '粘贴文字，或点下方添加截图',
   'inbox.pasteHint': '先粘贴内容或添加截图',
   'inbox.parsing': '正在解析…',
   'inbox.parseBtn': '开始解析',
@@ -1299,7 +1300,7 @@ const zh = {
   'mine.subStatusExpiring': '还剩 {n} 天',
   'mine.subStatusExpired': '已过期 {n} 天',
   'mine.subStatusToday': '今天到期',
-  'mine.quotaShort': '语音 {used}/{quota} 次',
+  'mine.quotaShort': '语音 {used}/{quota} 条',
 
   /* ---- 键盘快捷键（2026-10-27，桌面端 H5） ----
      这些 key 由 src/utils/hotkeys.ts 的 HOTKEYS[].labelKey 直接引用，

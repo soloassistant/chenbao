@@ -1466,7 +1466,8 @@ function LibraryPage() {
             </View>
           ) : null}
           {/* 竞品分析 L2：aiFilterEnabled=false 时不渲染 AI 精选面板（不展示 AI 筛选标记，列表即全部） */}
-          {!searchMode && aiFilterEnabled ? (
+          {/* 个性化关掉后「为你精选」必须一起收：否则文案写着按兴趣、开关却已关（F-11） */}
+          {!searchMode && aiFilterEnabled && personalOn ? (
             <View className={styles.aiPanel}>
               <View className={styles.aiHead}>
                 <Text className={styles.aiHeadIcon}>✨</Text>
