@@ -1523,5 +1523,13 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M101b 有独立 HTML 解析器', b.includes('function parseGithubTrending'));
 }
 
+/* M102（2026-11-26）：免费档无偏好时中文源优先，H5 与云端同口径。 */
+{
+  const ps = read('src/utils/prefSelect.ts');
+  ok('M102a H5 无偏好走 cjkFirst', ps.includes('cjkFirst(sorted).slice(0, max)') && ps.includes('CJK_RE'));
+  const ws = read('cloudfunctions/webSearch/index.js');
+  ok('M102b 云端 selectForUser 同口径', ws.includes('cjkFirst(sorted).slice(0, max)'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
