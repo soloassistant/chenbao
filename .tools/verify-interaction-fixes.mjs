@@ -1509,5 +1509,12 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M99d 情报契约允许 url/image', read('src/types/index.ts').includes('createTime?: string; url?: string; image?: string'));
 }
 
+/* M100（2026-11-26）：对比度门禁的「跳过」必须是 SKIP（exit 2），不能 exit 0。 */
+{
+  const c = read('.tools/verify-contrast-render.mjs');
+  ok('M100a Chrome 未就绪 → exit 2', /CDP 端点未就绪[\s\S]{0,120}process\.exit\(2\)/.test(c));
+  ok('M100b dist 缺失 → exit 2 且说明原因', /dist\/index\.html 不存在[\s\S]{0,80}process\.exit\(2\)/.test(c));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
