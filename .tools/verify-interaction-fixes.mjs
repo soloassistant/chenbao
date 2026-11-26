@@ -1469,5 +1469,12 @@ if (typeof feedMod.feedRetryDelay === 'function') {
     cal.includes('dayEvents.length === 0 && dayTodos.length === 0') && cal.includes("t('calendar.icsFailed')"));
 }
 
+/* M96（2026-11-26）：我的页宫格不得再用 7 等分 flex 挤一行。 */
+{
+  const m = read('src/pages/mine/index.module.scss');
+  const grid = m.slice(m.indexOf('.featureGrid'), m.indexOf('.featureGrid') + 400);
+  ok('M96 宫格用 grid + 窄屏 4 列', grid.includes('display: grid') && grid.includes('repeat(4, minmax(0, 1fr))'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

@@ -1549,22 +1549,30 @@
 /* ===== 功能宫格（2026-10-25）：高频功能一等入口 =====
    flex 五等分（不用 grid：旧基础库兼容面更稳）；图上文下两行 tile。 */
 .featureGrid {
-  display: flex;
-  align-items: stretch;
+  /* 2026-11-26：7 个入口挤一行时，每格约 50px，4 字标签换行数不同，
+     每个 tile 各自垂直居中 ⇒ 图标高低错落（截图实测「购物清单」「省心买」下沉）。
+     栅格化 + 统一 tile 最小高度，窄屏 4 列 × 2 行，宽屏 7 列一行。 */
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: $spacing-xs 0;
   margin-top: $spacing-md;
   background: $color-bg-card;
   border: 1rpx solid $color-card-border;
   border-radius: $radius-xl;
   box-shadow: $shadow-card;
   padding: $spacing-sm $spacing-xs;
+
+  @media (min-width: 600PX) {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
 }
 
 .featureTile {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  min-height: 96PX;
   padding: $spacing-sm 0;
   border-radius: $radius-md;
   transition: background $transition-fast;
@@ -1582,6 +1590,10 @@
 .featureLabel {
   margin-top: $spacing-xs;
   font-size: $font-size-xs;
+  line-height: 1.25;
+  /* 预留两行：同排里 3 字/4 字标签换行不同，不留高度就会把图标挤成高低不一 */
+  min-height: 2.5em;
+  text-align: center;
   color: $color-text-secondary;
 }
 
