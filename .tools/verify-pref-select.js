@@ -64,9 +64,17 @@ ok('夹具可用（60 条真实抓取）', POOL.length >= 50 && POOL.some((i) =>
 const plain = selectByPreference(POOL, [], 10);
 ok('无偏好 → 返回 limit 条', plain.length === 10);
 const tsSorted = POOL.slice().sort((a, b) => itemTs(b) - itemTs(a));
+// 2026-11-26 口径更新：无偏好时**中文源优先**，组内仍时间倒序（免费档可读性）
+const CJK = /[\u3400-\u9fff]/;
+const zhFirst = (arr) => {
+  const zh = arr.filter((it) => CJK.test(sourceOf(it)));
+  const other = arr.filter((it) => !CJK.test(sourceOf(it)));
+  return zh.concat(other);
+};
+const expectedPlain = zhFirst(tsSorted).slice(0, 10);
 ok(
-  '无偏好 → 顺序等于全池时间倒序（不引入任何"偏好命中"假逻辑）',
-  plain.every((it, i) => it === tsSorted[i])
+  '无偏好 → 中文源在前、组内时间倒序',
+  plain.every((it, i) => it === expectedPlain[i])
 );
 
 // ⚠️ 上面这条在**夹具本身已按时间倒序存放**时是空转的：把 `sorted` 那行排序整个删掉，
@@ -92,8 +100,8 @@ ok(
 );
 const plainShuffled = selectByPreference(POOL_SHUFFLED, [], 10);
 ok(
-  '无偏好 + 打乱输入 → 仍返回时间倒序前 10（抓住"删掉排序"这类变异）',
-  plainShuffled.length === 10 && plainShuffled.every((it, i) => it === tsSorted[i])
+  '无偏好 + 打乱输入 → 仍返回「中文优先 + 时间倒序」前 10',
+  plainShuffled.length === 10 && plainShuffled.every((it, i) => it === expectedPlain[i])
 );
 
 /* ===================== 2. 有偏好：偏好条目确实靠前 ===================== */

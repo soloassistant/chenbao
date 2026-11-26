@@ -6,7 +6,7 @@
 //
 // 本脚本用**冻结的真实池夹具**（.tools/fixtures/pref-pool.json，来自一次真实 fetchAllSources）
 // 钉住下面这些性质，避免网络抖动导致 CI 不稳定：
-//   1) 无偏好/非法偏好 → 纯时间倒序，取前 10（口径不变）；
+//   1) 无偏好/非法偏好 → 中文源优先、组内时间倒序，取前 10（2026-11-26 口径）；
 //   2) prefs=['科学'] → 科学 ≥ 3 且首条为科学；
 //   3) prefs=['健康'] → 健康 ≥ 1（改动前恒为 0）；
 //   4) 老缓存只有 10 条也能跑，不抛错、不重复；
@@ -92,11 +92,21 @@ const tsSorted = (list) => list.slice().sort((a, b) => Date.parse(b.createTime) 
 
 const noPref = selectForUser(FIXTURE, undefined, LIMIT);
 
-/* ---------- 1. 无偏好 / 非法偏好：退化为时间倒序 ---------- */
+/* ---------- 1. 无偏好 / 非法偏好：中文源优先 + 组内时间倒序 ---------- */
 check('无偏好(undefined) 返回 10 条', () => (noPref.length === LIMIT ? true : 'got ' + noPref.length));
-check('无偏好输出严格时间倒序', () => (isTsDesc(noPref) ? true : 'order broken'));
-check('无偏好 = 全池时间倒序前 10 条', () =>
-  idsOf(noPref) === idsOf(tsSorted(FIXTURE).slice(0, LIMIT)) ? true : 'set/order mismatch'
+const CJK = /[\u3400-\u9fff]/;
+const zhFirst = (list) => {
+  const zh = list.filter((it) => CJK.test(String(it.source || '')));
+  const other = list.filter((it) => !CJK.test(String(it.source || '')));
+  return zh.concat(other);
+};
+check('无偏好输出组内时间倒序', () => {
+  const zh = noPref.filter((it) => CJK.test(String(it.source || '')));
+  const other = noPref.filter((it) => !CJK.test(String(it.source || '')));
+  return isTsDesc(zh) && isTsDesc(other) ? true : 'order broken';
+});
+check('无偏好 = 「中文优先 + 时间倒序」前 10 条', () =>
+  idsOf(noPref) === idsOf(zhFirst(tsSorted(FIXTURE)).slice(0, LIMIT)) ? true : 'set/order mismatch'
 );
 check('空数组偏好与 undefined 同结果', () =>
   idsOf(selectForUser(FIXTURE, [], LIMIT)) === idsOf(noPref) ? true : 'mismatch'

@@ -1124,6 +1124,15 @@ function itemTs(it) {
  * 无偏好（undefined / 非数组 / 空数组 / 全非法元素）→ 纯时间倒序取前 limit 条。
  * 老缓存只有 10 条甚至更少时同样可用：各轮都按实际供给取，不做「池一定够宽」的假设。
  */
+/** 来源名含中日韩统一表意文字 → 视为中文源（与 H5 prefSelect 同口径） */
+const CJK_RE = /[\u3400-\u9fff]/;
+function cjkFirst(sorted) {
+  const zh = [];
+  const other = [];
+  for (const it of sorted) (CJK_RE.test(String((it && it.source) || '')) ? zh : other).push(it);
+  return zh.concat(other);
+}
+
 function selectForUser(poolItems, prefs, limit) {
   const max = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : HOTSPOT_ITEMS_LIMIT;
   const pool = (Array.isArray(poolItems) ? poolItems : []).filter(Boolean);
@@ -1138,7 +1147,8 @@ function selectForUser(poolItems, prefs, limit) {
       if (tag && !prefTags.includes(tag)) prefTags.push(tag);
     }
   }
-  if (!prefTags.length) return sorted.slice(0, max);
+  // 无偏好：中文源优先，同组内保持时间倒序（与 H5 prefSelect 同口径）
+  if (!prefTags.length) return cjkFirst(sorted).slice(0, max);
 
   const buckets = new Map();
   for (const it of sorted) {
@@ -1147,7 +1157,8 @@ function selectForUser(poolItems, prefs, limit) {
     buckets.get(tag).push(it);
   }
   const hitTags = prefTags.filter((t) => buckets.has(t)); // 池里真有货的偏好 tag，保持 prefs 顺序
-  if (!hitTags.length) return sorted.slice(0, max);
+  // 偏好标签在池里没有货：等价于无偏好，同样走中文优先（不能退回纯时间序）
+  if (!hitTags.length) return cjkFirst(sorted).slice(0, max);
 
   const picked = [];
   const pickedSet = new Set();
