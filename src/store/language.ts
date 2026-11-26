@@ -982,6 +982,7 @@ const zh = {
   'briefing.watchNoLink': '（无原文链接）',
   'calendar.icsExport': "导出 .ics",
   'calendar.icsNothing': "还没有可导出的日程或待办",
+  'calendar.icsFailed': '导出失败，请稍后重试',
   'calendar.icsSaved': "已导出，去系统日历导入",
   // fix(calendar-edit)：日程编辑入口与表单
   'calendar.edit': '编辑',

@@ -1461,5 +1461,13 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M94b 不再有 @include hit-expand(rpx) 调用', !joined.includes('@include hit-expand('));
 }
 
+/* M95（2026-11-26）：favicon 不再 404；.ics 导出按选中日判空并兜异常。 */
+{
+  ok('M95a index.html 有内联 favicon', read('src/index.html').includes('rel="icon"'));
+  const cal = read('src/pages/calendar/index.tsx');
+  ok('M95b .ics 按选中日判空且有失败提示',
+    cal.includes('dayEvents.length === 0 && dayTodos.length === 0') && cal.includes("t('calendar.icsFailed')"));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

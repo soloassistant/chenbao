@@ -934,6 +934,7 @@ export const en: Record<LangKey, string> = {
   'briefing.watchNoLink': ' (no source link)',
   'calendar.icsExport': "Export .ics",
   'calendar.icsNothing': "Nothing to export yet",
+  'calendar.icsFailed': 'Export failed, please try again',
   'calendar.icsSaved': "Exported — import it in your calendar app",
   'calendar.edit': 'Edit',
   'calendar.editTitle': 'Edit event',
