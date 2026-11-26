@@ -104,7 +104,8 @@ export function selectByPreference<T extends PrefSelectItem>(
 
   // 池里真有货的偏好 tag，保持 prefs 顺序
   const hitTags = prefTags.filter((t) => buckets.has(t));
-  if (!hitTags.length) return sorted.slice(0, max);
+  // 偏好标签在池里没有货：等价于无偏好，同样走中文优先（不能退回纯时间序）
+  if (!hitTags.length) return cjkFirst(sorted).slice(0, max);
 
   const picked: T[] = [];
   const pickedSet = new Set<T>();

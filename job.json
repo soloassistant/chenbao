@@ -1,0 +1,660 @@
+{
+  "id": 139767944570,
+  "run_id": 45778505308,
+  "workflow_name": "checks",
+  "head_branch": "feat/zh-first",
+  "run_url": "https://api.github.com/repos/soloassistant/chenbao/actions/runs/45778505308",
+  "run_attempt": 1,
+  "node_id": "CR_kwDOUSYk8c8AAAAgitGVeg",
+  "head_sha": "fafb29770cec56cec4416c5da4fe6b4bd802a167",
+  "url": "https://api.github.com/repos/soloassistant/chenbao/actions/jobs/139767944570",
+  "html_url": "https://github.com/soloassistant/chenbao/actions/runs/45778505308/job/139767944570",
+  "status": "completed",
+  "conclusion": "failure",
+  "created_at": "2026-11-26T07:51:58Z",
+  "started_at": "2026-11-26T07:52:00Z",
+  "completed_at": "2026-11-26T07:54:06Z",
+  "name": "checks",
+  "steps": [
+    {
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 1,
+      "started_at": "2026-11-26T07:52:01Z",
+      "completed_at": "2026-11-26T07:52:02Z"
+    },
+    {
+      "name": "Run actions/checkout@v4",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 2,
+      "started_at": "2026-11-26T07:52:02Z",
+      "completed_at": "2026-11-26T07:52:06Z"
+    },
+    {
+      "name": "Run actions/setup-node@v4",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 3,
+      "started_at": "2026-11-26T07:52:06Z",
+      "completed_at": "2026-11-26T07:52:22Z"
+    },
+    {
+      "name": "安装依赖",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 4,
+      "started_at": "2026-11-26T07:52:22Z",
+      "completed_at": "2026-11-26T07:52:48Z"
+    },
+    {
+      "name": "类型检查",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 5,
+      "started_at": "2026-11-26T07:52:48Z",
+      "completed_at": "2026-11-26T07:52:53Z"
+    },
+    {
+      "name": "ESLint",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 6,
+      "started_at": "2026-11-26T07:52:53Z",
+      "completed_at": "2026-11-26T07:52:57Z"
+    },
+    {
+      "name": "自检（全量验收断言）",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 7,
+      "started_at": "2026-11-26T07:52:57Z",
+      "completed_at": "2026-11-26T07:53:01Z"
+    },
+    {
+      "name": "去重规则回归（96 对基准集）",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 8,
+      "started_at": "2026-11-26T07:53:01Z",
+      "completed_at": "2026-11-26T07:53:01Z"
+    },
+    {
+      "name": "资讯阈值回归（离线夹具）",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 9,
+      "started_at": "2026-11-26T07:53:01Z",
+      "completed_at": "2026-11-26T07:53:01Z"
+    },
+    {
+      "name": "外链门禁回归（isSafeExternalUrl）",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 10,
+      "started_at": "2026-11-26T07:53:01Z",
+      "completed_at": "2026-11-26T07:53:01Z"
+    },
+    {
+      "name": "信任过滤接线回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 11,
+      "started_at": "2026-11-26T07:53:01Z",
+      "completed_at": "2026-11-26T07:53:01Z"
+    },
+    {
+      "name": "交互结构回归（返回键 / 订阅分叉 / tab 新鲜窗口）",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 12,
+      "started_at": "2026-11-26T07:53:01Z",
+      "completed_at": "2026-11-26T07:53:02Z"
+    },
+    {
+      "name": "云端 LLM 超时与熔断回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 13,
+      "started_at": "2026-11-26T07:53:02Z",
+      "completed_at": "2026-11-26T07:54:02Z"
+    },
+    {
+      "name": "记账聚合口径回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 14,
+      "started_at": "2026-11-26T07:54:02Z",
+      "completed_at": "2026-11-26T07:54:02Z"
+    },
+    {
+      "name": "周报/ics/追踪/保险箱 纯逻辑回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 15,
+      "started_at": "2026-11-26T07:54:02Z",
+      "completed_at": "2026-11-26T07:54:02Z"
+    },
+    {
+      "name": "H5 注销清偿契约回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 16,
+      "started_at": "2026-11-26T07:54:02Z",
+      "completed_at": "2026-11-26T07:54:02Z"
+    },
+    {
+      "name": "AI 动作执行回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 17,
+      "started_at": "2026-11-26T07:54:02Z",
+      "completed_at": "2026-11-26T07:54:02Z"
+    },
+    {
+      "name": "资讯来源开关回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 18,
+      "started_at": "2026-11-26T07:54:02Z",
+      "completed_at": "2026-11-26T07:54:02Z"
+    },
+    {
+      "name": "防茧房探索位回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 19,
+      "started_at": "2026-11-26T07:54:02Z",
+      "completed_at": "2026-11-26T07:54:03Z"
+    },
+    {
+      "name": "话题聚类回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 20,
+      "started_at": "2026-11-26T07:54:03Z",
+      "completed_at": "2026-11-26T07:54:03Z"
+    },
+    {
+      "name": "热点抓取回归闸判定回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 21,
+      "started_at": "2026-11-26T07:54:03Z",
+      "completed_at": "2026-11-26T07:54:03Z"
+    },
+    {
+      "name": "记账导出回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 22,
+      "started_at": "2026-11-26T07:54:03Z",
+      "completed_at": "2026-11-26T07:54:03Z"
+    },
+    {
+      "name": "登录绑定门禁回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 23,
+      "started_at": "2026-11-26T07:54:03Z",
+      "completed_at": "2026-11-26T07:54:03Z"
+    },
+    {
+      "name": "省心买决策纯逻辑回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 24,
+      "started_at": "2026-11-26T07:54:03Z",
+      "completed_at": "2026-11-26T07:54:03Z"
+    },
+    {
+      "name": "同步冲突回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 25,
+      "started_at": "2026-11-26T07:54:03Z",
+      "completed_at": "2026-11-26T07:54:03Z"
+    },
+    {
+      "name": "同步轮询先拉版本号回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 26,
+      "started_at": "2026-11-26T07:54:03Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "撤回健康同意后停止上传轨迹回归",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 27,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "偏好选位回归",
+      "status": "completed",
+      "conclusion": "failure",
+      "number": 28,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "登录态接线回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 29,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "付费权益回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 30,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "首屏骨架门禁（静态组）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 31,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "首屏关键路径门禁",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 32,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "线上 H5 通路门禁",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 33,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "H5 功能覆盖面门禁（跨端同步覆盖 / 降级诚实性 / 横幅不串台）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 34,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "应用数据库契约门禁（白名单真伪 / 匿名访问面 / 收紧迁移）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 35,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "图片 URL 改写与准入（纯函数）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 36,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "应用数据库线上探针（PG 函数存在与否 / 匿名读到的行数）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 37,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "键盘可达性门禁（机制与采纳）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 38,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "AI 对话额度闸门",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 39,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "AI 新入口闸门（出题 / 讲解 / 外链 / 注销日志）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 40,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "身份体系与注销链路门禁",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 41,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "登录错误分流门禁",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 42,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "上市前整改回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 43,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "分享 AI 标识回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 44,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "假数据 / 假能力诚实性回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 45,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "AI 入口面回归（全站只有一个对话入口）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 46,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "题库 / 模拟考 行为回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 47,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "键盘快捷键门禁（真值表 + 表自洽 + 接线）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 48,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "官网落地页门禁（与主题同源 + 不乱承诺）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 49,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "待办状态确定性写入回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 50,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "崩溃上报回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 51,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "H5 客户端偏好选位回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 52,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "登录页国际区号回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 53,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "云函数离线门禁",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 54,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "云函数日志脱敏门禁",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 55,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "提示注入门禁（长期记忆不得被提升为指令）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 56,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "云函数部署预检分支回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 57,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "云函数业务逻辑行为回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 58,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "退款幂等行为回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 59,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "refund_attempts 清理策略回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 60,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "H5 支付网关回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 61,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "权益回滚失败对账回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 62,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "晨报首屏结构与状态机回归",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 63,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "按钮 disabled 静态门禁",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 64,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "showModal 按钮文案上限门禁",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 65,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "定位失败文案分类门禁",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 66,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "对比度静态门禁（109 条）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 67,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "交互契约门禁（49 条）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 68,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "工具逻辑门禁（29 条）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 69,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "功能记账 + 续费管理门禁（62 条）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 70,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "法务条文 ↔ 实现数据流门禁（34 条）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 71,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "文档与现实一致性门禁（12 条）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 72,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "学习模块整合（静态，3 条）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 73,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "门禁自身的变异覆盖审计（7 条）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 74,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "门禁入口与 CI 的一致性（静态，3 条）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 75,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "断言判别力元验证（变异测试）",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 76,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "Post Run actions/setup-node@v4",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 151,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "Post Run actions/checkout@v4",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 152,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    },
+    {
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 153,
+      "started_at": "2026-11-26T07:54:04Z",
+      "completed_at": "2026-11-26T07:54:04Z"
+    }
+  ],
+  "check_run_url": "https://api.github.com/repos/soloassistant/chenbao/check-runs/139767944570",
+  "labels": [
+    "ubuntu-latest"
+  ],
+  "runner_id": 1000004742,
+  "runner_name": "GitHub Actions 1000004742",
+  "runner_group_id": 0,
+  "runner_group_name": "GitHub Actions"
+}

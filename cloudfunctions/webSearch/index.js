@@ -1157,7 +1157,8 @@ function selectForUser(poolItems, prefs, limit) {
     buckets.get(tag).push(it);
   }
   const hitTags = prefTags.filter((t) => buckets.has(t)); // 池里真有货的偏好 tag，保持 prefs 顺序
-  if (!hitTags.length) return sorted.slice(0, max);
+  // 偏好标签在池里没有货：等价于无偏好，同样走中文优先（不能退回纯时间序）
+  if (!hitTags.length) return cjkFirst(sorted).slice(0, max);
 
   const picked = [];
   const pickedSet = new Set();
