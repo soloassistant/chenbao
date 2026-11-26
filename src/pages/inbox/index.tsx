@@ -217,7 +217,12 @@ function InboxPage() {
   const handleExtract = async () => {
     const text = content.trim();
     if (!text && images.length === 0) {
-      Taro.showToast({ title: t(isH5 ? 'inbox.pasteHintH5' : 'inbox.pasteHint'), icon: 'none' });
+      // 触屏设备没有 Ctrl+V：只在有物理指针（桌面）时才教快捷键
+      const canPasteImage = isH5 && typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
+      Taro.showToast({
+        title: t(isH5 ? (canPasteImage ? 'inbox.pasteHintH5' : 'inbox.pasteHintTouch') : 'inbox.pasteHint'),
+        icon: 'none'
+      });
       return;
     }
     if (extracting) return;
