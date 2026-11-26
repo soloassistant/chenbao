@@ -71,7 +71,22 @@ const zhFirst = (arr) => {
   const other = arr.filter((it) => !CJK.test(sourceOf(it)));
   return zh.concat(other);
 };
-const expectedPlain = zhFirst(tsSorted).slice(0, 10);
+
+const diversify = (list, max) => {
+  const out = [];
+  const seen = new Set();
+  for (const it of list) {
+    if (out.length >= max) break;
+    const src = String(it.source || '');
+    if (seen.has(src)) continue;
+    seen.add(src);
+    out.push(it);
+  }
+  if (out.length < max) for (const it of list) { if (out.length >= max) break; if (!out.includes(it)) out.push(it); }
+  return out;
+};
+
+const expectedPlain = diversify(zhFirst(tsSorted), 10);
 ok(
   '无偏好 → 中文源在前、组内时间倒序',
   plain.every((it, i) => it === expectedPlain[i])
@@ -151,8 +166,8 @@ ok(
 // 偏好标签池里没有货 → 不假装命中
 const empty = selectByPreference(POOL, ['不存在的类目'], 3);
 ok(
-  '偏好标签在池里没货 → 退化为时间倒序（不造假命中）',
-  empty.length === 3 && empty.every((it, i) => it === tsSorted[i])
+  '偏好标签在池里没货 → 退化为「中文优先 + 同源去重」（不造假命中）',
+  empty.length === 3 && empty.every((it, i) => it === diversify(zhFirst(tsSorted), 3)[i])
 );
 
 /* ===================== 3. 多样性：同一来源最多 3 条 ===================== */

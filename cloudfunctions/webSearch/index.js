@@ -1133,6 +1133,27 @@ function cjkFirst(sorted) {
   return zh.concat(other);
 }
 
+/** 多样性取位：同源最多 1 席；不足再按原序补满（与 H5 prefSelect 同口径） */
+function diversify(list, max) {
+  const out = [];
+  const seen = new Set();
+  for (const it of list) {
+    if (out.length >= max) break;
+    const src = String((it && it.source) || '');
+    if (seen.has(src)) continue;
+    seen.add(src);
+    out.push(it);
+  }
+  if (out.length < max) {
+    for (const it of list) {
+      if (out.length >= max) break;
+      if (out.includes(it)) continue;
+      out.push(it);
+    }
+  }
+  return out;
+}
+
 function selectForUser(poolItems, prefs, limit) {
   const max = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : HOTSPOT_ITEMS_LIMIT;
   const pool = (Array.isArray(poolItems) ? poolItems : []).filter(Boolean);
@@ -1148,7 +1169,7 @@ function selectForUser(poolItems, prefs, limit) {
     }
   }
   // 无偏好：中文源优先，同组内保持时间倒序（与 H5 prefSelect 同口径）
-  if (!prefTags.length) return cjkFirst(sorted).slice(0, max);
+  if (!prefTags.length) return diversify(cjkFirst(sorted), max);
 
   const buckets = new Map();
   for (const it of sorted) {
@@ -1158,7 +1179,7 @@ function selectForUser(poolItems, prefs, limit) {
   }
   const hitTags = prefTags.filter((t) => buckets.has(t)); // 池里真有货的偏好 tag，保持 prefs 顺序
   // 偏好标签在池里没有货：等价于无偏好，同样走中文优先（不能退回纯时间序）
-  if (!hitTags.length) return cjkFirst(sorted).slice(0, max);
+  if (!hitTags.length) return diversify(cjkFirst(sorted), max);
 
   const picked = [];
   const pickedSet = new Set();

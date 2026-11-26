@@ -94,6 +94,21 @@ const noPref = selectForUser(FIXTURE, undefined, LIMIT);
 
 /* ---------- 1. 无偏好 / 非法偏好：中文源优先 + 组内时间倒序 ---------- */
 check('无偏好(undefined) 返回 10 条', () => (noPref.length === LIMIT ? true : 'got ' + noPref.length));
+
+const diversify = (list, max) => {
+  const out = [];
+  const seen = new Set();
+  for (const it of list) {
+    if (out.length >= max) break;
+    const src = String(it.source || '');
+    if (seen.has(src)) continue;
+    seen.add(src);
+    out.push(it);
+  }
+  if (out.length < max) for (const it of list) { if (out.length >= max) break; if (!out.includes(it)) out.push(it); }
+  return out;
+};
+
 const CJK = /[\u3400-\u9fff]/;
 const zhFirst = (list) => {
   const zh = list.filter((it) => CJK.test(String(it.source || '')));
@@ -106,7 +121,7 @@ check('无偏好输出组内时间倒序', () => {
   return isTsDesc(zh) && isTsDesc(other) ? true : 'order broken';
 });
 check('无偏好 = 「中文优先 + 时间倒序」前 10 条', () =>
-  idsOf(noPref) === idsOf(zhFirst(tsSorted(FIXTURE)).slice(0, LIMIT)) ? true : 'set/order mismatch'
+  idsOf(noPref) === idsOf(diversify(zhFirst(tsSorted(FIXTURE)), LIMIT)) ? true : 'set/order mismatch'
 );
 check('空数组偏好与 undefined 同结果', () =>
   idsOf(selectForUser(FIXTURE, [], LIMIT)) === idsOf(noPref) ? true : 'mismatch'

@@ -5,8 +5,8 @@ export default [
     // 直接忽略偏好：这样「科学/文化」选项又变成"能点但没效果"
     label: 'selectByPreference 忽略偏好，直接按时间倒序取前 N 条',
     file: 'src/utils/prefSelect.ts',
-    from: '  if (!prefTags.length) return cjkFirst(sorted).slice(0, max);',
-    to: "  if (!prefTags.length) return cjkFirst(sorted).slice(0, max);\n  return cjkFirst(sorted).slice(0, max); // 变异：忽略偏好",
+    from: '  if (!prefTags.length) return diversify(cjkFirst(sorted), max);',
+    to: "  if (!prefTags.length) return diversify(cjkFirst(sorted), max);\n  return diversify(cjkFirst(sorted), max); // 变异：忽略偏好",
     cmd: 'node .tools/verify-pref-select.js'
   },
   {

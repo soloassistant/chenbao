@@ -50,6 +50,29 @@ function cjkFirst<T extends PrefSelectItem>(sorted: T[]): T[] {
   return zh.concat(other);
 }
 
+/** 多样性取位：同一来源最多占 1 席（不足时再放宽到 maxPerSource，最后兜底按序补满）。
+ *  免费档只取 3 条，若不做这一步会变成「同一条源连占 3 席」。 */
+function diversify<T extends PrefSelectItem>(list: T[], max: number): T[] {
+  const out: T[] = [];
+  const perSource = new Map<string, number>();
+  for (const it of list) {
+    if (out.length >= max) break;
+    const src = String(it.source || '');
+    const n = perSource.get(src) || 0;
+    if (n >= 1) continue;
+    perSource.set(src, n + 1);
+    out.push(it);
+  }
+  if (out.length < max) {
+    for (const it of list) {
+      if (out.length >= max) break;
+      if (out.includes(it)) continue;
+      out.push(it);
+    }
+  }
+  return out;
+}
+
 /** 条目时间戳：createTime 为 ISO 串，解析失败按最旧处理（与云端 itemTs 一致） */
 export function itemTs(it: PrefSelectItem | null | undefined): number {
   const ts = Date.parse((it && it.createTime) || '');
@@ -93,7 +116,7 @@ export function selectByPreference<T extends PrefSelectItem>(
   // 2026-11-26（外部对标 OPT：免费档可读性）：免费 3 条此前被 Billboard 等英文源占满，
   // 中文用户打开晨报看不到能读的内容。中文 RSS 大面积下线后，中文可读性主要来自
   // 热榜板块（果壳/豆瓣/数字尾巴/B站…）——这些 source 名含中文，用字符集判定，不维护白名单。
-  if (!prefTags.length) return cjkFirst(sorted).slice(0, max);
+  if (!prefTags.length) return diversify(cjkFirst(sorted), max);
 
   const buckets = new Map<string, T[]>();
   for (const it of sorted) {
@@ -105,7 +128,7 @@ export function selectByPreference<T extends PrefSelectItem>(
   // 池里真有货的偏好 tag，保持 prefs 顺序
   const hitTags = prefTags.filter((t) => buckets.has(t));
   // 偏好标签在池里没有货：等价于无偏好，同样走中文优先（不能退回纯时间序）
-  if (!hitTags.length) return cjkFirst(sorted).slice(0, max);
+  if (!hitTags.length) return diversify(cjkFirst(sorted), max);
 
   const picked: T[] = [];
   const pickedSet = new Set<T>();
