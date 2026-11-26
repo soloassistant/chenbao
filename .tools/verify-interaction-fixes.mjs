@@ -1486,5 +1486,17 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M97d 语音额度单位统一为「条」', read('src/store/language.ts').includes("'mine.quotaShort': '语音 {used}/{quota} 条'"));
 }
 
+/* M98（2026-11-26）：同步裁决不靠墙上时钟；出题元数据与仓储校验闭环。 */
+{
+  const sync = read('src/services/cloudSync.ts');
+  ok('M98a 保留本机版本取 max(now, 远端+1, 本机历史+1)',
+    sync.includes('remoteTs + 1') && sync.includes('maxLocalTs + 1'));
+  const mock = read('src/pages/mockExam/index.tsx');
+  ok('M98b 模拟考页读取 board/level 并传给生成', mock.includes('params.board') && mock.includes('board,'));
+  const lib = read('src/components/PaperLibrary/index.tsx');
+  ok('M98c 真题/组卷回调带上 board/level', lib.includes('board: boardMeta') && lib.includes('level: levelMeta'));
+  ok('M98d repo.add 接入 validateQuestion', read('src/data/questionBankRepo.ts').includes('validateQuestion(row)'));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);

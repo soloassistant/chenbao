@@ -1223,7 +1223,8 @@ function applyRemoteData(remote: KvRow[]): number {
  * - `remote`：把云端版本落到本机。**会放弃该键在本机未上传的修改**（这正是按钮的语义），
  *   云端值取拉取时记录的快照，并尽量重新拉一次最新值——设备 B 在提示挂起期间可能又写过，
  *   用过期快照落地会「复活」旧版本。
- * - `local`：保留本机版本。把 meta 抬到当前时间，下一次推送必能盖过云端旧版本。
+ * - `local`：保留本机版本。版本取 max(当前时间, 云端版本+1, 本机历史+1)，
+ *   不依赖设备墙上时钟是否准确（时钟回拨也能盖过云端）。
  *
  * keys 省略 = 处理全部冲突。未裁决前该键不推送（collectLocal 跳过），
  * 因此冲突会一直挂着直到用户选择——这是有意的：宁停同步，不静默丢数据。
@@ -1254,9 +1255,13 @@ export async function resolveSyncConflicts(choice: 'local' | 'remote', keys?: st
       confirm[c.key] = valueHash(value);
     }
   } else {
+    // 本机历史最大版本：即使设备时钟被往回拨，也不能让「保留本机」推出版本更小的值
+    const maxLocalTs = Object.values(meta).reduce((m, v) => Math.max(m, Number(v) || 0), 0);
     for (const c of targets) {
-      // 抬到最新：下一次推送的 ts 必大于云端已存版本，服务端新者赢会放行
-      meta[c.key] = now;
+      // 三个来源取最大：当前时间 / 云端版本+1 / 本机历史+1。
+      // 前两个解决「设备时钟落后于云端」，第三个解决「设备时钟被回拨」。
+      const remoteTs = Number(c.remoteTs) || 0;
+      meta[c.key] = Math.max(now, remoteTs + 1, maxLocalTs + 1);
     }
   }
 

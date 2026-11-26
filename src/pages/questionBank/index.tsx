@@ -287,15 +287,15 @@ export default function QuestionBankPage() {
       ) : (
         <PaperLibrary
           showHeader={false}
-          onStartMock={({ binding, title, tags }) =>
+          onStartMock={({ binding, title, tags, board, level }) =>
             startMockExam(
-              { title, examSystem: binding.examSystem, subject: binding.subject, tags },
+              { title, examSystem: binding.examSystem, subject: binding.subject, tags, board, level },
               t('mock.startFailed')
             )
           }
-          onStartPaper={({ title, qp, ms, examSystem, subject: paperSubject }) =>
+          onStartPaper={({ title, qp, ms, examSystem, subject: paperSubject, board, level }) =>
             startMockExam(
-              { title, examSystem: examSystem as ExamSystem, subject: paperSubject, tags: [], paperQp: qp, paperMs: ms },
+              { title, examSystem: examSystem as ExamSystem, subject: paperSubject, tags: [], paperQp: qp, paperMs: ms, board, level },
               t('mock.startFailed')
             )
           }
