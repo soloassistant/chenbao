@@ -92,7 +92,7 @@ export default [
     //   只在通过它之后才会执行，改别处都绕不开它。
     label: 'selectForUser 忽略偏好（退回纯时间倒序）',
     file: 'cloudfunctions/webSearch/index.js',
-    from: '  if (!prefTags.length) return cjkFirst(sorted).slice(0, max);',
+    from: '  if (!prefTags.length) return diversify(cjkFirst(sorted), max);',
     to: '  return sorted.slice(0, max);',
     cmd: 'node .tools/verify-pref-selection.js'
   },
