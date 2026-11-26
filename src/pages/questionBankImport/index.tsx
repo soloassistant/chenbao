@@ -9,9 +9,10 @@
 import { useCallback, useState } from 'react';
 import { View, Text, Textarea, Button } from '@tarojs/components';
 import Taro from '@tarojs/taro';
+import classnames from 'classnames';
 import { appStorage } from '@/utils/appStorage';
 import { useT, type LangKey } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { disabledAttr } from '@/utils/buttonDisabled';
 import { createQuestionBankRepo } from '@/data/questionBankRepo';
 import { importQuestionBank, type ImportDuplicate, type ImportProgress, type ImportResult } from '@/data/questionBankImport';
@@ -24,6 +25,7 @@ type Phase = { kind: 'input' } | { kind: 'confirm'; text: string; preview: Impor
   | { kind: 'importing'; progress: ImportProgress | null } | { kind: 'done'; result: ImportResult };
 
 export default function QuestionBankImportPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const { theme } = useThemeStore();
   const [text, setText] = useState('');
@@ -194,7 +196,7 @@ export default function QuestionBankImportPage() {
   );
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.header}>
         <View className={styles.back} onClick={backToList}>
           <Text className={styles.backIcon}>‹</Text>

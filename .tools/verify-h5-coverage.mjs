@@ -50,7 +50,7 @@ function assert(name, cond, detail = '') {
 const CROSS_DEVICE_KEYS = [
   'shoppingList', 'dailyPlanStore', 'browseHistory', 'newsFeedback', 'news-interests',
   'news-interests-custom', 'activity-log', 'learnStore', 'ai-memory', 'user-settings',
-  'user-city', 'collectionStore', 'usage-voice', 'feature-usage', 'briefingChatLog',
+  'user-city', 'collectionStore', 'usage-voice', 'feature-usage',
   'aiAssistantLog', 'brand-theme', 'app-lang', 'ui-scale', 'user-avatar', 'ledgerEntries',
   'ledger-categories', 'ledgerBudget', 'watchlist', 'sportRuns', 'sport-goal-km',
   // 2026-10-30 补齐的 16 个
@@ -71,6 +71,9 @@ const DEVICE_ONLY_KEYS = {
   // 2026-11-20：外观显示模式（跟随系统/浅色/深色）是设备级偏好 ——
   //   同一账号在手机与桌面可能想要不同明暗；换设备时按本机系统重新解析更合理。
   'theme-mode': '外观显示模式（设备级偏好，跟随本机系统；跨设备同步会覆盖各端环境差异）',
+  // 2026-11-22：促销码已用账本仅防本机重复兑换；权益真值在 orders 表（服务端回放），
+  // 同步到别的设备反而会与云端权益打架。
+  'promo-redeemed': '本机促销码已用账本（权益以服务端订单为准，设备级）',
   'burst-banner-dismissed': '弹窗关闭状态（设备级）',
   'sxm-phone-bind-done': '绑定引导状态（设备级）',
   'sxm-phone-bind-dismissed': '绑定引导状态（设备级）',
@@ -115,7 +118,11 @@ const DEVICE_ONLY_KEYS = {
   //    到期处置必须显式做，二选一：① 删掉这两条并挪进 CROSS_DEVICE_KEYS；
   //    ② 复核后确认仍属本机语义，则在 EXPIRING_DEVICE_ONLY 里显式续期并写明理由。
   'mb-last-delete-at': '本机专用键，云端同步反而错（注销完成时间只对本机有意义，同步会把「已注销」带到别的设备）',
-  'mb-support-tickets': '本机专用键，云端同步反而错（注销工单留档供本机补提/查询，跨设备同步会泄露注销意图）'
+  'mb-support-tickets': '本机专用键，云端同步反而错（注销工单留档供本机补提/查询，跨设备同步会泄露注销意图）',
+  // 2026-11-19：AI 错题讲解结果按场次缓存，与 mock-exam-session 同口径。
+  // ⏳ **到期条件**：题库接入 cloudSync / SYNC_KEYS 的那一笔 PR 必须同时删除本条目并挪进
+  //    CROSS_DEVICE_KEYS，否则讲解结果会永久跳过「换设备是否失忆」的检查。
+  'mock-ai-review:': '模拟考 AI 错题讲解结果（按场次缓存，设备级；到期条件见上方注释）'
 };
 
 /**

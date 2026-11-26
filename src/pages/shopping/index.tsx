@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 import { View, Text, Input, ScrollView } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
+import classnames from 'classnames';
 import EmptyState from '@/components/EmptyState';
 import PromptModal from '@/components/PromptModal';
 import DemoDataHint from '@/components/DemoDataHint';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, themeModeClass, useThemeMode, useThemeStore } from '@/store/theme';
 import { useT } from '@/store/language';
 import PartnerEntry, { PartnerSectionHeader } from '@/components/PartnerEntry';
 import { SXM_ENTRY_URL } from '@/config/partners';
@@ -66,6 +67,9 @@ function toPricedItem(item: ShoppingItem): PricedItem {
 function ShoppingPage() {
   const t = useT();
   const { theme } = useThemeStore();
+  // 暗色下必须把 resolved 传进 brandVars，否则 --brand-soft 仍是浅色 theme.soft，
+  // 页面顶部渐变会留一条浅色带（2026-11-24 暗色门禁实测）。
+  const { resolved } = useThemeMode();
   const [list, setList] = useState<ShoppingItem[]>([]);
   /** 加载失败态（2026-10-24 审计）：与「真空清单」区分 —— 原来 load 失败只 console.error，
    *  list 保持 []，页面渲染「购物清单还是空的」，把「拉取失败」伪装成「真的没数据」。 */
@@ -127,7 +131,7 @@ function ShoppingPage() {
       setList((prev) => [added, ...prev]);
       setName('');
       setTargetPrice('');
-      Taro.showToast({ title: '已加入购物清单', icon: 'success' });
+      Taro.showToast({ title: t('shopping.added'), icon: 'success' });
     } else {
       // 不静默失败：apiShoppingAdd 返回 null（云端不可用/写入失败）时用户必须看见
       Taro.showToast({ title: t('common.saveFailed'), icon: 'none' });
@@ -145,10 +149,10 @@ function ShoppingPage() {
 
   const removeItem = (id: string) => {
     Taro.showModal({
-      title: '删掉这件商品？',
-      content: '删掉后就找不回来了，只能重新加一次。',
-      confirmText: '删掉',
-      cancelText: '留着',
+      title: t('shopping.deleteTitle'),
+      content: t('shopping.deleteBody'),
+      confirmText: t('shopping.deleteConfirm'),
+      cancelText: t('shopping.deleteCancel'),
       confirmColor: '#ee5a29',
       success: async (res) => {
         if (res.confirm) {
@@ -184,12 +188,12 @@ function ShoppingPage() {
       // 空输入与格式不合都必须给用户看见提示：旧实现 `if (!input) return` 在 H5 上
       // 因为拿不到 content 而静默失败，用户点了确认却什么都没发生
       if (!input || !m) {
-        Taro.showToast({ title: '格式：平台 价格', icon: 'none' });
+        Taro.showToast({ title: t('shopping.priceFormat'), icon: 'none' });
         return;
       }
       const price = Number(m[2].replace(/,/g, ''));
       if (!Number.isFinite(price) || price <= 0) {
-        Taro.showToast({ title: '格式：平台 价格', icon: 'none' });
+        Taro.showToast({ title: t('shopping.priceFormat'), icon: 'none' });
         return;
       }
       const done = await apiShoppingAddPrice(item.id, m[1], price);
@@ -200,7 +204,7 @@ function ShoppingPage() {
       const next: ShoppingItem = { ...item, prices: done.prices };
       setList((prev) => prev.map((it) => (it.id === item.id ? { ...it, prices: done.prices } : it)));
       if (!runPriceCheck(next)) {
-        Taro.showToast({ title: '已记录比价', icon: 'success' });
+        Taro.showToast({ title: t('shopping.priceSaved'), icon: 'success' });
       }
       setPriceDialog(null);
       return;
@@ -264,7 +268,7 @@ function ShoppingPage() {
   }, []);
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.backButton} onClick={handleBack}>
         <Text className={styles.backIcon}>‹</Text>
         <Text className={styles.backText}>{t('common.back')}</Text>
@@ -319,7 +323,7 @@ function ShoppingPage() {
                   <View className={styles.head}>
                     <Text className={item.bought ? styles.nameDone : styles.name}>{item.name}</Text>
                     {item.prices.length > 0 && cheapest ? (
-                      <Text className={styles.cheapest}>最低 {cheapest}</Text>
+                      <Text className={styles.cheapest}>{t('shopping.lowestRecorded', { price: cheapest })}</Text>
                     ) : null}
                   </View>
                   {item.prices.length > 0 ? (
@@ -352,7 +356,7 @@ function ShoppingPage() {
                     {item.bought ? t('shopping.unbought') : t('shopping.bought')}
                   </View>
                   <View className={styles.removeBtn} onClick={() => removeItem(item.id)}>
-                    删
+                    {t('shopping.removeShort')}
                   </View>
                 </View>
               </View>

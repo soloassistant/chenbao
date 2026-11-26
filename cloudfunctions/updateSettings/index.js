@@ -26,6 +26,11 @@ exports.main = async (event) => {
   if (Array.isArray(payload.preferences)) {
     update.preferences = payload.preferences.slice(0, 10).map(String);
   }
+  // 晨报订阅授权标记（N4）：客户端点「允许」后才置真；getBriefing 定时下发只认这个字段。
+  // 只接受布尔 true，避免任意值把标记写成真；置 false 由服务端在模板失效时自己写。
+  if (payload.subscribeAccepted === true) {
+    update.subscribeAccepted = true;
+  }
   if (Object.keys(update).length === 0) {
     throw new Error('no valid fields to update');
   }

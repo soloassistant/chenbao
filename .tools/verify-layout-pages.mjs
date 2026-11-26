@@ -302,7 +302,11 @@ function runProbe(port, page, vp, png, initFile) {
       container:g('.taro-tabbar__container'),panel:g('.taro-tabbar__panel'),page:g('.taro_page'),
       pageCount:document.querySelectorAll('.taro_page').length,
       scrollW:document.documentElement.scrollWidth,
-      bodyText:(document.body.innerText||'').replace(/\\s+/g,' ').slice(0,80)};
+      bodyText:(document.body.innerText||'').replace(/\\s+/g,' ').slice(0,80),
+      // 回退线上旧快照会打到 gh-pages 域名；用真实资源请求判定，比“渲染条数”可靠
+      resHosts:[...new Set(performance.getEntriesByType('resource').map(e=>{try{return new URL(e.name).host}catch{return ''}}).filter(Boolean))],
+      // 只有「应用代码/样式/文档」来自 gh-pages 才算回退；热点 JSON 的后台刷新不算
+      offlineAssets:performance.getEntriesByType('resource').filter(e=>{try{return /github\.io$/.test(new URL(e.name).host)&&!(/fetch|xmlhttprequest/.test(e.initiatorType)&&(e.name.indexOf('.json')>=0))}catch{return false}}).map(e=>e.name).slice(0,3)};
     const extra=(function(){${page.probeExtra}})();
     return JSON.stringify(Object.assign(base,extra));
   })()`;
@@ -413,10 +417,13 @@ function pageChecks(page, v) {
     push('首条标题非空', !!(v.firstTitle || '').length, `firstTitle=「${v.firstTitle || ''}」`);
     // B2：摘要里的半截 HTML 是「半修」的典型 —— 数据层已 0 条，但若产物没吃到干净数据就会复现
     push('页面 DOM 里没有「点击查看原文>」残留', v.hasHalfHtml === false, `hasHalfHtml=${v.hasHalfHtml}`);
-    // 防「静默回退到线上旧快照」：渲染条数必须等于 dist 烘焙的条数。
-    // 若不等，几乎一定是应用走了 gh-pages 兜底分支 —— 那测的就不是本地产物了。
-    if (page.id === 'library' && BAKED > 0) {
-      push('渲染条数 == dist 烘焙条数（未静默回退线上旧快照）', v.newsCards === BAKED, `渲染 ${v.newsCards} vs dist ${BAKED}`);
+    // 2026-11-25：原判据「渲染条数 == dist 烘焙条数」与分页设计矛盾（首屏 14 条 + 加载更多，
+    // dist 有 426 条）⇒ 恒红。改为验分页：首屏有内容且明显少于烘焙总数。
+    // 「是否回退线上旧快照」应看网络请求域名，不能靠条数猜。
+    if (page.id === 'library' && BAKED > 50) {
+      push('列表分页生效（首屏有内容且不是一次渲染全部）',
+        v.newsCards > 0 && v.newsCards <= 50 && v.newsCards < BAKED,
+        `渲染 ${v.newsCards} vs dist ${BAKED}`);
     }
   }
 
@@ -465,14 +472,19 @@ async function main() {
         rows.push({ page: page.id, vp, error: String(e.message || e), checks: [['探针执行', false, String(e.message || e)]], bad: [1] });
         continue;
       }
-      const expectPanel = Math.min(vp.w, PANEL_MAX);
-      const expectX = Math.round((vp.w - expectPanel) / 2);
+      // 2026-11-25：640 档已改成「64px 图标导航 + 内容面板」两栏（实测 panel=544, x=80）。
+      // 旧期望值仍是单栏居中 500，导致 5 个页面 × 3 条断言恒红 —— 门禁等于不存在。
+      const navW = vp.w >= 600 ? 64 : 0;
+      const gutter = navW ? 16 : 0;
+      const expectPanel = navW ? vp.w - navW - gutter * 2 : Math.min(vp.w, PANEL_MAX);
+      const expectX = navW ? navW + gutter : Math.round((vp.w - expectPanel) / 2);
       const common = [
         ['容器未塌陷', (v.container?.w || 0) === vp.w, `container=${v.container?.w} 期望 ${vp.w}`],
         ['面板宽度正确', Math.abs((v.panel?.w || 0) - expectPanel) <= 1, `panel=${v.panel?.w} 期望 ${expectPanel}`],
         ['面板水平居中', Math.abs((v.panel?.x || 0) - expectX) <= 1, `panel.x=${v.panel?.x} 期望 ${expectX}`],
         ['页面宽度非 0', (v.page?.w || 0) > 0, `page=${v.page?.w}`],
         ['无横向溢出', (v.scrollW || 0) <= vp.w + 1, `scrollW=${v.scrollW} 期望 <=${vp.w}`],
+        ['未回退线上快照（脚本/样式不来自 gh-pages）', !(v.offlineAssets || []).length, `gh-pages 资源=${(v.offlineAssets || []).join(',') || '无'}；hosts=${(v.resHosts || []).join(',')}`],
         ['页面已绘制', !st.whiteScreen, `近白=${(st.nearWhite * 100).toFixed(1)}% 颜色数=${st.distinctColors}`],
         ['开屏已关闭（否则像素判据测的是遮罩）', v.splash === 'no-splash' || v.splashAfter === 'gone', `splash=${v.splash} 之后=${v.splashAfter}`],
         // 2026-10-27：合规同意层是**第二个**全屏遮罩，此前从未被点掉 ——

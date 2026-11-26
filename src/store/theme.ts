@@ -66,9 +66,16 @@ export function brandVars(theme: ThemePreset, resolved: ResolvedTheme = 'light')
   if (resolved === 'dark') {
     return {
       '--brand': theme.color,
-      '--brand-soft': hexToRgba(theme.color, 0.18),
+      // 暗色下 --brand-soft 不能是「半透明浅橙」：它会叠在页面渐变的最上层，
+      // 半透明色标在深色底上仍显浅，门禁实测留一条 100px 浅带。
+      // 预先与暗底混成不透明色，视觉一致且不会破坏渐变判定。
+      '--brand-soft': mixWithDark(theme.color, 0.18),
       '--brand-deep': theme.onDark,
+      // --brand-strong 在暗色下用于「深底上的品牌文字」，必须是浅色；
+      // 需要「品牌底+白字」的按钮改用 --dm-brand-solid（实心色）。
       '--brand-strong': theme.onDark,
+      // 语义拆分：--dm-brand-strong 供「文字」，暗色下必须是浅色；
+      // 实心底色走 --dm-brand-solid（SCSS 的 $color-brand-solid），见 theme.scss。
       '--dm-brand-strong': theme.onDark,
       '--dm-brand-solid': theme.solid
     } as React.CSSProperties;
@@ -82,11 +89,18 @@ export function brandVars(theme: ThemePreset, resolved: ResolvedTheme = 'light')
   } as React.CSSProperties;
 }
 
-function hexToRgba(hex: string, alpha: number): string {
+/** 把主题色按 alpha 压到暗底 #16130f 上，返回不透明 rgb() */
+function mixWithDark(hex: string, alpha: number): string {
   const v = hex.replace('#', '');
   const n = parseInt(v.length === 3 ? v.split('').map((c) => c + c).join('') : v, 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  const base = { r: 0x16, g: 0x13, b: 0x0f };
+  const mix = (c: number, d: number) => Math.round(c * alpha + d * (1 - alpha));
+  return `rgb(${mix(r, base.r)}, ${mix(g, base.g)}, ${mix(b, base.b)})`;
 }
+
 
 // ============================================
 // 显示模式：跟随系统 / 浅色 / 深色（2026-11-20）
@@ -150,6 +164,21 @@ export const useThemeModeStore = create<ThemeModeState>((set, get) => ({
     if (next !== get().resolved) set({ resolved: next });
   }
 }));
+
+/** 把显示模式挂到 html/body。由 app 根调用一次并订阅变化 ——
+ *  以前只在 useThemeMode() 里挂，全仓只有 10 处调用，其余 17 个路由整页浅色。 */
+export function applyThemeClass(resolved?: ResolvedTheme): void {
+  if (typeof document === 'undefined') return;
+  const mode = resolved || useThemeModeStore.getState().resolved;
+  const root = document.documentElement;
+  root.classList.toggle('theme-dark', mode === 'dark');
+  root.classList.toggle('theme-light', mode === 'light');
+  root.style.colorScheme = mode;
+  if (document.body) {
+    document.body.classList.toggle('theme-dark', mode === 'dark');
+    document.body.classList.toggle('theme-light', mode === 'light');
+  }
+}
 
 /** 页面根节点用的类名：把 .theme-dark / .theme-light 挂上去，token 才会切换 */
 export function themeModeClass(resolved: ResolvedTheme): string {

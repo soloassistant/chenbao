@@ -7,11 +7,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text } from '@tarojs/components';
 import Taro from '@tarojs/taro';
+import classnames from 'classnames';
 import { useT } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { appStorage } from '@/utils/appStorage';
 import { loadMockExamSession, gradeMockExam, type MockExamSession, type MockExamResult } from '@/data/mockExam';
-import { reviewWrongAnswers } from '@/services/mockReview';
+import { loadStoredReview, reviewWrongAnswers, saveStoredReview, type ReviewItem } from '@/services/mockReview';
 import { createQuestionBankProgress } from '@/data/questionBankProgress';
 import { formatAnswerKey } from '@/utils/questionBankGrading';
 import { LINGXI_ENTRY_URL } from '@/config/partners';
@@ -20,6 +21,7 @@ import { pressableProps } from '@/utils/a11y';
 import styles from '@/pages/questionBank/shared.module.scss';
 
 export default function MockExamResultPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const { theme } = useThemeStore();
   const [session, setSession] = useState<MockExamSession | null>(null);
@@ -30,6 +32,8 @@ export default function MockExamResultPage() {
   const [reviews, setReviews] = useState<Record<string, string>>({});
   const [rvState, setRvState] = useState<'idle' | 'busy' | 'fail' | 'done'>('idle');
   const [rvMsg, setRvMsg] = useState('');
+  /** 错题清单只在判分时算一次；「获取讲解」按钮显式触发，不再进页面就花钱 */
+  const [wrongItems, setWrongItems] = useState<ReviewItem[]>([]);
 
   useEffect(() => {
     const s = loadMockExamSession(appStorage());
@@ -42,28 +46,20 @@ export default function MockExamResultPage() {
     setResult(r);
     // 只讲错题；全对时没有可讲的，不花这次调用
     const wrong = r.details.filter((d) => !d.correct);
-    if (wrong.length) {
-      setRvState('busy');
-      void reviewWrongAnswers(wrong)
-        .then((out) => {
-          if (out.ok) {
-            setReviews(out.result.byId);
-            setRvState('done');
-            if (out.result.count < wrong.length) {
-              // 部分题没讲出来也要说，否则用户以为是全讲了
-              setRvMsg(t('mock.aiReviewPartial', { n: String(out.result.count), total: String(wrong.length) }));
-            }
-          } else {
-            setRvState('fail');
-            setRvMsg(out.reason === 'ai-unavailable' ? t('mock.aiReviewNoAi') : t('mock.aiReviewFail'));
-          }
-        })
-        .catch(() => {
-          setRvState('fail');
-          setRvMsg(t('mock.aiReviewFail'));
-        });
-    } else {
+    setWrongItems(wrong);
+    if (!wrong.length) {
       setRvState('done');
+    } else {
+      // 同一张卷再进来：先用已存的讲解，绝不重复调用模型（2026-11-19）
+      const saved = loadStoredReview(s.id);
+      if (saved && Object.keys(saved.byId).length) {
+        setReviews(saved.byId);
+        setRvState('done');
+        if (saved.count < wrong.length) {
+          setRvMsg(t('mock.aiReviewPartial', { n: String(saved.count), total: String(wrong.length) }));
+        }
+      }
+      // 否则留在 idle：等用户明确点「获取 AI 讲解」再调用
     }
     try {
       const progress = createQuestionBankProgress(appStorage());
@@ -77,6 +73,38 @@ export default function MockExamResultPage() {
      * 代价是切换语言后本页文案不即时刷新，可接受（用户重进页面就好）。 */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** 显式触发讲解（不再进页面自动调用）；成功结果按场次存，二次进入复用 */
+  const startReview = () => {
+    if (!session || rvState === 'busy' || !wrongItems.length) return;
+    setRvState('busy');
+    void reviewWrongAnswers(wrongItems)
+      .then((out) => {
+        if (out.ok) {
+          setReviews(out.result.byId);
+          saveStoredReview(session.id, out.result);
+          setRvState('done');
+          if (out.result.count < wrongItems.length) {
+            setRvMsg(t('mock.aiReviewPartial', { n: String(out.result.count), total: String(wrongItems.length) }));
+          }
+        } else {
+          setRvState('fail');
+          setRvMsg(
+            out.reason === 'quota'
+              ? t('mock.aiReviewNoAi')
+              : out.reason === 'unsafe'
+                ? t('mock.aiReviewUnsafe')
+                : out.reason === 'ai-unavailable'
+                  ? t('mock.aiReviewNoAi')
+                  : t('mock.aiReviewFail')
+          );
+        }
+      })
+      .catch(() => {
+        setRvState('fail');
+        setRvMsg(t('mock.aiReviewFail'));
+      });
+  };
 
   const myAnswer = (response: unknown): string => {
     if (response === null || response === undefined) return t('mock.unanswered');
@@ -102,7 +130,7 @@ export default function MockExamResultPage() {
 
   if (missing || !session || !result) {
     return (
-      <View className={styles.page} style={brandVars(theme)}>
+      <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
         <View className={styles.state}>
           <Text className={styles.stateIcon}>📄</Text>
           <Text className={styles.stateTitle}>{t('mock.resultMissing')}</Text>
@@ -118,7 +146,7 @@ export default function MockExamResultPage() {
   const ss = String(usedSec % 60).padStart(2, '0');
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.header}>
         <View className={styles.back} onClick={back} {...pressableProps(t('mock.backToBank'))}>
           <Text className={styles.backIcon}>‹</Text>
@@ -155,6 +183,12 @@ export default function MockExamResultPage() {
       <Text className={styles.stateDesc}>{session.plan.title}</Text>
       <Text className={styles.stateDesc}>{session.plan.sourceNote}</Text>
 
+      {/* AI 讲解：用户明确点才调用模型；已有结果时不再出现按钮（2026-11-19） */}
+      {rvState === 'idle' && wrongItems.length ? (
+        <View className={styles.actionRow} onClick={startReview} {...pressableProps(t('mock.aiReviewStart'))}>
+          <Text className={styles.actionText}>✨ {t('mock.aiReviewStart')}</Text>
+        </View>
+      ) : null}
       {/* AI 讲解状态：busy / fail / 部分成功 都要可见 */}
       {rvState === 'busy' ? (
         <Text className={styles.stateDesc}>{t('mock.aiReviewBusy')}</Text>

@@ -10,7 +10,7 @@
 }
 
 .header { display: flex; align-items: center; gap: $spacing-sm; margin-bottom: $spacing-lg; }
-.back { @include hit-expand(16rpx, 28rpx); display: inline-flex; align-items: center; gap: 4rpx; flex: 0 0 auto; cursor: pointer; }
+.back { @include hit-expand-min(44PX, 16PX); display: inline-flex; align-items: center; gap: 4rpx; flex: 0 0 auto; cursor: pointer; }
 .backIcon { font-size: 34rpx; line-height: 1; color: $color-text-tertiary; }
 .backText { font-size: $font-size-sm; color: $color-text-tertiary; }
 .title { flex: 1; min-width: 0; font-size: $font-size-xxl; font-weight: $font-weight-semibold; }
@@ -27,8 +27,8 @@
   box-sizing: border-box;
 }
 .chips { display: flex; flex-wrap: wrap; gap: $spacing-xs; margin-bottom: $spacing-sm; }
-.chip { padding: 8rpx $spacing-sm; border-radius: $radius-tier-sm; background: $color-bg-hover; font-size: $font-size-sm; color: $color-text-secondary; cursor: pointer; }
-.chipActive { background: $color-primary-strong; color: #fff; }
+.chip { @include hit-expand-min(44PX, 8rpx); padding: 8rpx $spacing-sm; border-radius: $radius-tier-sm; background: $color-bg-hover; font-size: $font-size-sm; color: $color-text-secondary; cursor: pointer; }
+.chipActive { background: $color-brand-solid; color: #fff; }
 .count { display: block; margin-bottom: $spacing-sm; font-size: $font-size-xs; color: $color-text-tertiary; }
 .card {
   margin-bottom: $spacing-sm;
@@ -46,6 +46,23 @@
 .state { display: flex; flex-direction: column; align-items: center; padding: 120rpx 0; text-align: center; }
 .stateIcon { font-size: 64rpx; line-height: 1; opacity: 0.6; }
 .stateTitle { margin-top: $spacing-md; font-size: $font-size-md; color: $color-text-primary; }
+.actionRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  margin: 16rpx 0;
+  padding: 12rpx 24rpx;
+  border-radius: $radius-button;
+  border: 2rpx solid var(--brand, #c7371a);
+  background: rgba(199, 55, 26, 0.06);
+}
+
+.actionText {
+  font-size: $font-size-md;
+  color: var(--brand, #c7371a);
+}
+
 .stateDesc { margin-top: 8rpx; font-size: $font-size-sm; color: $color-text-tertiary; }
 .retry {
   margin-top: $spacing-md;
@@ -61,9 +78,9 @@
 .fileRow { display: flex; align-items: center; gap: $spacing-sm; margin-bottom: $spacing-md; }
 .fileName { flex: 1; min-width: 0; font-size: $font-size-sm; color: $color-text-tertiary; }
 .importTextarea { width: 100%; min-height: 260rpx; margin: $spacing-sm 0 $spacing-md; padding: $spacing-sm $spacing-md; background: $color-bg-card; border: 1rpx solid $color-card-border; border-radius: $radius-md; font-size: $font-size-sm; box-sizing: border-box; }
-.importPrimary { flex: 1; margin: 0; padding: 0; height: $button-height-md; line-height: $button-height-md; border-radius: $radius-button; background: $color-primary-strong; color: #fff; font-size: $font-size-md; &::after { border: none; } &[disabled] { opacity: 0.4; } }
+.importPrimary { flex: 1; margin: 0; padding: 0; height: $button-height-md; line-height: $button-height-md; border-radius: $radius-button; background: $color-brand-solid; color: #fff; font-size: $font-size-md; &::after { border: none; } &[disabled] { opacity: 0.4; } }
 .progressTrack { height: 12rpx; margin: $spacing-sm 0; background: $color-bg-hover; border-radius: $radius-xs; overflow: hidden; }
-.progressBar { height: 100%; background: $color-primary-strong; }
+.progressBar { height: 100%; background: $color-brand-solid; }
 .counts { display: flex; gap: $spacing-sm; margin-top: $spacing-sm; }
 .countItem { flex: 1; padding: $spacing-sm; background: $color-bg-card; border: 1rpx solid $color-card-border; border-radius: $radius-md; text-align: center; }
 .countValue { display: block; font-size: $font-size-xxl; font-weight: $font-weight-semibold; }
@@ -100,7 +117,7 @@
 }
 .judgeRow { display: flex; gap: $spacing-sm; margin-bottom: $spacing-md; }
 .judgeBtn { flex: 1; padding: $spacing-sm 0; text-align: center; background: $color-bg-card; border: 1rpx solid $color-card-border; border-radius: $radius-md; cursor: pointer; }
-.primaryBtn { margin-top: $spacing-md; padding: $spacing-md 0; border-radius: $radius-button; background: $color-primary-strong; text-align: center; cursor: pointer; }
+.primaryBtn { margin-top: $spacing-md; padding: $spacing-md 0; border-radius: $radius-button; background: $color-brand-solid; text-align: center; cursor: pointer; }
 .primaryBtnDisabled { @extend .primaryBtn; opacity: 0.4; cursor: default; }
 .primaryText { color: #fff; font-size: $font-size-md; }
 .secondaryBtn { flex: 1; padding: $spacing-md 0; border: 1rpx solid $color-card-border; border-radius: $radius-button; text-align: center; cursor: pointer; }

@@ -1110,6 +1110,8 @@ function TradePage() {
                 <Text className={styles.resValue}>{calcRR === null ? t('trade.needSl') : `${calcRR.toFixed(2)} ${calcGrade}`}</Text>
               </View>
             </View>
+            {/* 2026-11-23：A/B/C/D 不能只给字母 —— 阈值不写，用户不知道 D 是「差」还是「不同口径」 */}
+            {calcRR !== null ? <Text className={styles.rrHint}>{t('trade.rrGradeHint')}</Text> : null}
           </View>
         )}
         {tool === 'sizing' && (

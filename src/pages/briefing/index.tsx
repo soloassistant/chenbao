@@ -10,6 +10,7 @@ import IntelGroupCard, { IntelItemRow } from '@/components/IntelGroupCard';
 import SafeImage from '@/components/SafeImage';
 import HabitGuardBar from '@/components/HabitGuardBar';
 import PlanProposalCard from '@/components/PlanProposalCard';
+import { nextId, readPlan, writePlan } from '@/data/dailyPlan';
 import { BriefingSkeleton } from '@/components/Skeleton';
 import BurstBanner from '@/components/BurstBanner';
 import { NAV_MAIN, NAV_MORE, type Item as NavItem } from '@/components/DesktopNav';
@@ -66,7 +67,7 @@ import type { LangKey } from '@/store/language';
 import { readPrefs } from '@/utils/prefs';
 import shareCover from '@/assets/share-cover.png';
 // 订阅模板 id 集中配置（上线三件事）：空串 = 未配置，promptSubscribe 内部 noop
-import { SUBSCRIBE_TEMPLATE_ID } from '@/config/subscribe';
+import { SUBSCRIBE_CONFIGURED, SUBSCRIBE_TEMPLATE_ID } from '@/config/subscribe';
 import styles from './index.module.scss';
 
 const isWeapp = process.env.TARO_ENV === 'weapp';
@@ -93,6 +94,30 @@ const r2r = (n: number): string => `${(n / DESIGN_PX_PER_REM).toFixed(5)}rem`;
 const BRIEFING_CACHE_KEY = 'briefingDailyCache';
 /** X8 连读徽章 storage key：{ last: 'YYYY-MM-DD', count: n }，进页即记当天 */
 const BRIEF_STREAK_KEY = 'mb-brief-streak';
+
+/**
+ * F92：收藏 → 待办（2026-11-21）。
+ * 晨报的「收藏精选」此前只展示，看完即止；这里给它一个出口。
+ * 与其他写路径一致：writePlan 会吞掉 storage 异常，必须**回读**确认真的落盘，
+ * 否则「已加入待办」就是假的。
+ */
+function addDigestAsTodo(text: string): 'ok' | 'duplicate' | 'fail' {
+  const title = text.trim().slice(0, 60);
+  if (!title) return 'fail';
+  const plan = readPlan();
+  // 幂等：同一收藏重复点击不再塞第二条（用户看不到 id，只能按标题+来源判重）
+  if (plan.todos.some((item) => item.title === title && item.source === '晨报收藏')) return 'duplicate';
+  const todo = {
+    id: nextId('todo'),
+    title,
+    status: 'confirmed' as const,
+    source: '晨报收藏',
+    createTime: new Date().toISOString()
+  };
+  plan.todos.push(todo);
+  writePlan(plan);
+  return readPlan().todos.some((item) => item.id === todo.id) ? 'ok' : 'fail';
+}
 
 /** 读当日晨报缓存：跨日或损坏时视为未命中 */
 function readBriefingCache(): Briefing | null {
@@ -423,6 +448,20 @@ function BriefingPage() {
     },
     [t, runHabitGuard]
   );
+
+  /**
+   * 突发可见性（2026-11-19）：BurstBanner 只在打开页面时评估一次，
+   * 用户停留在晨报页时突发新闻进来了也看不见。页面可见时每 10 分钟静默重取一次，
+   * force=true 跳过当日缓存；归档写入按日去重，重复调用无副作用。
+   */
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        void loadBriefing(true);
+      }
+    }, 10 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [loadBriefing]);
 
   /* ---------------- C-02 位置权限：功能触发式授权（App 启动严禁弹窗） ---------------- */
   const [locating, setLocating] = useState(false);
@@ -841,6 +880,10 @@ function BriefingPage() {
   /** 订阅临期提醒条点击：force=true 手动触发（与页面常驻订阅按钮同一通道）。
    *  模板 id 跟随本页既有 SUBSCRIBE_TEMPLATE_ID（TODO 占位时 promptSubscribe 内部 noop，不弹不计数）。 */
   const handleRenewSubscribe = async () => {
+    if (!SUBSCRIBE_CONFIGURED) {
+      Taro.showToast({ title: t('briefing.subscribeUnavailable'), icon: 'none' });
+      return;
+    }
     const status = await promptSubscribe(SUBSCRIBE_TEMPLATE_ID, true);
     if (status === 'accept') {
       Taro.showToast({ title: t('briefing.subscribeOk'), icon: 'success' });
@@ -853,6 +896,11 @@ function BriefingPage() {
   const handleSubscribe = async () => {
     if (!isWeapp) {
       Taro.showToast({ title: t('briefing.subscribeWeappOnly'), icon: 'none' });
+      return;
+    }
+    // 模板未配置时 promptSubscribe 会静默 noop —— 用户点了没反应等于假入口，这里如实说
+    if (!SUBSCRIBE_CONFIGURED) {
+      Taro.showToast({ title: t('briefing.subscribeUnavailable'), icon: 'none' });
       return;
     }
     // force=true：页面常驻按钮是用户主动触发，忽略「已弹过」限制
@@ -1306,7 +1354,7 @@ function BriefingPage() {
                 <Text className={styles.badge}>{t('mine.badgeSubscribed')}</Text>
               ) : (
                 <Text className={styles.proBadge} onClick={handleGoSubscribe}>
-                  ⚡ PRO
+                  ⚡ {t('briefing.upgradePro')}
                 </Text>
               )}
               {/* v2.1：晨报连续阅读打卡（主 streak 已改挂晨报）
@@ -1603,6 +1651,25 @@ function BriefingPage() {
               {(briefing.digest || []).map((text, i) => (
                 <View key={i} className={styles.digestItem}>
                   <Text className={styles.digestText}>{text}</Text>
+                  <Text
+                    className={styles.digestAdd}
+                    {...pressableProps(t('briefing.favToTodo'))}
+                    onClick={() => {
+                      const result = addDigestAsTodo(text);
+                      Taro.showToast({
+                        title: t(
+                          result === 'ok'
+                            ? 'briefing.favToTodoDone'
+                            : result === 'duplicate'
+                              ? 'briefing.favToTodoDup'
+                              : 'briefing.favToTodoFail'
+                        ),
+                        icon: result === 'ok' ? 'success' : 'none'
+                      });
+                    }}
+                  >
+                    {t('briefing.favToTodo')}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -1835,15 +1902,15 @@ function BriefingPage() {
           仅 H5 渲染（weapp 无 GBK 解码器，云函数代理又卡部署凭据 —— 隐藏而非假数据）。
           红涨绿跌：A 股习惯，三市场统一，注释钉死避免后人"顺手国际化"。 */}
       {isH5 ? (
-        <View style={{ margin: `0 ${r2r(32)} ${r2r(24)}`, background: 'var(--bg-card, #fff)', border: '1rpx solid var(--card-border, rgba(29,33,41,0.06))', borderRadius: r2r(24), padding: r2r(24) }}>
+        <View style={{ margin: `0 ${r2r(32)} ${r2r(24)}`, background: 'var(--dm-bg-card, #fff)', border: '1rpx solid var(--card-border, rgba(29,33,41,0.06))', borderRadius: r2r(24), padding: r2r(24) }}>
           <View style={{ display: 'flex', alignItems: 'center', gap: r2r(12) }}>
             <Text style={{ fontSize: r2r(32), fontWeight: '600', flex: 1 }}>{t('briefing.quoteTitle')}</Text>
-            <Text style={{ fontSize: r2r(24), color: '#c7371a' }} onClick={() => setQuoteOpen(!quoteOpen)}>
+            <Text style={{ fontSize: r2r(24), color: 'var(--brand-strong, #c7371a)' }} onClick={() => setQuoteOpen(!quoteOpen)}>
               {quoteOpen ? t('briefing.quoteManageClose') : t('briefing.quoteManage')}
             </Text>
           </View>
           {quotes.length === 0 ? (
-            <Text style={{ fontSize: r2r(26), color: '#657080', display: 'block', marginTop: r2r(12) }}>
+            <Text style={{ fontSize: r2r(26), color: 'var(--dm-text-secondary, #657080)', display: 'block', marginTop: r2r(12) }}>
               {t('briefing.quoteEmpty')}
             </Text>
           ) : (
@@ -1851,7 +1918,7 @@ function BriefingPage() {
               <View key={`${q.code}-${idx}`} style={{ display: 'flex', alignItems: 'baseline', gap: r2r(12), marginTop: r2r(12) }}>
                 <Text style={{ fontSize: r2r(28), fontWeight: '500', flex: 1 }}>
                   {q.name}
-                  <Text style={{ fontSize: r2r(22), color: '#657080' }}> {q.code}</Text>
+                  <Text style={{ fontSize: r2r(22), color: 'var(--dm-text-secondary, #657080)' }}> {q.code}</Text>
                 </Text>
                 <Text style={{ fontSize: r2r(28) }}>{q.price.toFixed(2)}</Text>
                 <Text style={{ fontSize: r2r(26), color: q.changePct >= 0 ? '#c7371a' : '#00b42a', minWidth: r2r(110), textAlign: 'right' }}>
@@ -1863,7 +1930,7 @@ function BriefingPage() {
                         data-testid 在真实 DOM 里不落地，自动化一律按稳定 className 选。 */}
                     <Text
                       className='watch-remove-btn'
-                      style={{ fontSize: r2r(26), color: '#657080', padding: `${r2r(8)} ${r2r(12)}` }}
+                      style={{ fontSize: r2r(26), color: 'var(--dm-text-secondary, #657080)', padding: `${r2r(8)} ${r2r(12)}` }}
                       onClick={() => void handleRemoveStock(q.code)}
                     >
                       ✕
@@ -1891,7 +1958,7 @@ function BriefingPage() {
             </View>
           ) : null}
           {quotes.length > 0 && quotes[0].timeText ? (
-            <Text style={{ fontSize: r2r(22), color: '#657080', display: 'block', marginTop: r2r(8) }}>
+            <Text style={{ fontSize: r2r(22), color: 'var(--dm-text-secondary, #657080)', display: 'block', marginTop: r2r(8) }}>
               {t('briefing.quoteAsOf', { time: quotes[0].timeText })} · {t('briefing.quoteSource')}
             </Text>
           ) : null}
@@ -1901,8 +1968,8 @@ function BriefingPage() {
       {/* 💾 每日回顾（竞品倒推 2026-10-25，flomo/Readwise 模式）：随机回望 ≥30 天前的旧收藏，
           把「存了就忘」变「存了会回」。点击查看原文（openExternalPage 与热点页同语义）。 */}
       {memoryFlash ? (
-        <View style={{ margin: `0 ${r2r(32)} ${r2r(24)}`, background: 'var(--bg-card, #fff)', border: '1rpx solid var(--card-border, rgba(29,33,41,0.06))', borderRadius: r2r(24), padding: r2r(24) }}>
-          <Text style={{ fontSize: r2r(26), color: '#657080' }}>{t('briefing.memoryFlashTitle')}</Text>
+        <View style={{ margin: `0 ${r2r(32)} ${r2r(24)}`, background: 'var(--dm-bg-card, #fff)', border: '1rpx solid var(--card-border, rgba(29,33,41,0.06))', borderRadius: r2r(24), padding: r2r(24) }}>
+          <Text style={{ fontSize: r2r(26), color: 'var(--dm-text-secondary, #657080)' }}>{t('briefing.memoryFlashTitle')}</Text>
           <Text style={{ fontSize: r2r(30), fontWeight: '600', display: 'block', marginTop: r2r(8) }}>
             {memoryFlash.title}
           </Text>

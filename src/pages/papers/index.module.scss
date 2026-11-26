@@ -19,7 +19,7 @@ $paper-active-ink: #a82c13;
 
 .back {
   // 返回键视觉只有文字高度，透明外扩到可点（44px 手感线）
-  @include hit-expand(16rpx, 24rpx);
+  @include hit-expand-min(44PX, 16PX);
   display: inline-flex;
   align-items: center;
   gap: 4rpx;
@@ -63,7 +63,7 @@ $paper-active-ink: #a82c13;
 }
 
 .tab {
-  @include hit-expand(0, 12rpx);
+  @include hit-expand-min(44PX, 0);
   display: flex;
   align-items: center;
   min-height: 64rpx;
@@ -75,7 +75,7 @@ $paper-active-ink: #a82c13;
 }
 
 .tabActive {
-  background: $color-primary-strong;
+  background: $color-brand-solid;
   border-color: $color-primary-strong;
 }
 
@@ -90,7 +90,7 @@ $paper-active-ink: #a82c13;
 }
 
 .tabSm {
-  @include hit-expand(0, 12rpx);
+  @include hit-expand-min(44PX, 0);
   display: flex;
   align-items: center;
   min-height: 56rpx;
@@ -135,7 +135,7 @@ $paper-active-ink: #a82c13;
 }
 
 .unitChip {
-  @include hit-expand(0, 8rpx);
+  @include hit-expand-min(44PX, 0);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -198,6 +198,8 @@ $paper-active-ink: #a82c13;
   align-items: center;
   justify-content: space-between;
   gap: $spacing-sm;
+  /* 触控目标 ≥44px：原 padding 18rpx 仅约 38px，真题行密集时容易点错 */
+  min-height: 88rpx;
   padding: 18rpx $spacing-md;
   margin-bottom: 12rpx;
   background: $color-bg-card;
@@ -209,7 +211,10 @@ $paper-active-ink: #a82c13;
   display: flex;
   align-items: center;
   gap: 12rpx;
-  min-width: 0;
+  /* 2026-11-25：min-width:0 不够 —— 行内文字不会自动收缩，变体标签会溢出到
+     右侧 CTA 底下（实测 32×18px 100% 覆盖）。必须真正裁切 + 允许收缩。 */
+  flex: 1 1 0;
+  overflow: hidden;
 }
 
 .rowDate {
@@ -218,6 +223,8 @@ $paper-active-ink: #a82c13;
 }
 
 .variantTag {
+  flex: 0 0 auto;
+  white-space: nowrap;
   padding: 2rpx 10rpx;
   border-radius: $radius-xs;
   background: rgba(199, 55, 26, 0.1);
@@ -234,14 +241,14 @@ $paper-active-ink: #a82c13;
 }
 
 .action {
-  @include hit-expand(0, 10rpx);
+  @include hit-expand-min(44PX, 0);
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 56rpx;
   padding: 0 $spacing-md;
   border-radius: $radius-button;
-  background: $color-primary-strong;
+  background: $color-brand-solid;
   cursor: pointer;
 }
 
@@ -251,7 +258,7 @@ $paper-active-ink: #a82c13;
 }
 
 .actionGhost {
-  @include hit-expand(0, 10rpx);
+  @include hit-expand-min(44PX, 0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -291,7 +298,7 @@ $paper-active-ink: #a82c13;
 }
 
 .noteLink {
-  @include hit-expand(0, 8rpx);
+  @include hit-expand-min(44PX, 0);
   display: inline-flex;
   align-items: center;
   margin-top: $spacing-sm;

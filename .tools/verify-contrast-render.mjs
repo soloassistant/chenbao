@@ -31,11 +31,13 @@ import path from 'node:path';
 import http from 'node:http';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
+import { resolveChrome } from './lib/chrome.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 const NO_BROWSER = process.argv.includes('--no-browser');
 const SELF_TEST = process.argv.includes('--self-test');
+const THEME = (process.argv.find((a) => a.startsWith('--theme=')) || '--theme=light').split('=')[1];
 const vpArg = (process.argv.find((a) => a.startsWith('--viewport=')) || '--viewport=1280x900').split('=')[1];
 const [VW, VH] = vpArg.split('x').map(Number);
 const isWin = process.platform === 'win32';
@@ -50,36 +52,7 @@ function assert(name, cond, detail = '') {
   else fail++;
 }
 
-/* ─── Chrome 路径：CHROME_BIN 优先；否则按平台猜常见位置 ─── */
-function resolveChrome() {
-  if (process.env.CHROME_BIN && fs.existsSync(process.env.CHROME_BIN)) return process.env.CHROME_BIN;
-  if (isWin) return 'C:\\Users\\geral\\.agent-browser\\browsers\\chrome-154.0.8037.92\\chrome.exe';
-  for (const p of [
-    '/usr/bin/google-chrome',
-    '/usr/bin/google-chrome-stable',
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-    `${os.homedir()}/.cache/ms-playwright/chromium-*/chrome-linux/chrome`,
-  ]) {
-    // 支持末尾通配（playwright 版本号未知）
-    if (p.includes('*')) {
-      const dir = path.dirname(p);
-      const base = path.basename(p).replace('*', '');
-      try {
-        const hit = fs.readdirSync(dir).find((f) => f.startsWith(base.replace(/\*$/, '')) || f.includes('chromium'));
-        if (hit) {
-          const full = path.join(dir, hit, 'chrome-linux', 'chrome');
-          if (fs.existsSync(full)) return full;
-        }
-      } catch { /* ignore */ }
-      continue;
-    }
-    if (fs.existsSync(p)) return p;
-  }
-  return null;
-}
-
-/* ─── 颜色解析器（来自上游 _color.mjs 的 COLOR_INIT，注入页面后提供 window.__dsRGBA） ─── */
+/* ─── 颜色解析器（注入页面后提供 window.__dsRGBA） ─── */
 function COLOR_INIT() {
   let cx = null;
   const memo = new Map();
@@ -178,6 +151,8 @@ function measurePage() {
     if (el.closest('[disabled], [aria-disabled="true"], [data-contrast-ignore]')) continue;
     const direct = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length);
     if (!direct) continue;
+    // 纯 emoji 不适用 color 对比度（字形自带颜色），继续按 color 判会产生假阳性
+    if (/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+$/u.test((el.textContent || '').trim())) continue;
     const cs = getComputedStyle(el);
     if (cs.visibility === 'hidden' || +cs.opacity === 0) continue;
     const box = el.getBoundingClientRect();
@@ -216,19 +191,21 @@ const DEFAULT_PAGES = [
   'pages/calendar/index',
   'pages/mine/index',
 ];
-const TARGET_PAGES = (process.env.CONTRAST_PAGES || DEFAULT_PAGES.join(',')).split(',').map((s) => s.trim()).filter(Boolean);
+// 暗色默认扫**全部路由**：浅色只挑 5 页控时间，但暗色是整站风险（2026-11-25
+// 实测 27 页里有 14 页的按钮/卡片用的是「白底+白字」，只扫 5 页漏掉 40+ 处）。
+const ALL_PAGES = (() => {
+  try {
+    const cfg = fs.readFileSync(path.join(ROOT, 'src', 'app.config.ts'), 'utf8');
+    return [...cfg.matchAll(/'pages\/([A-Za-z0-9]+)\/index'/g)].map((m) => `pages/${m[1]}/index`);
+  } catch {
+    return DEFAULT_PAGES;
+  }
+})();
+const TARGET_PAGES = (
+  process.env.CONTRAST_PAGES || (THEME === 'dark' ? ALL_PAGES.join(',') : DEFAULT_PAGES.join(','))
+).split(',').map((s) => s.trim()).filter(Boolean);
 
-console.log('真实渲染对比度门禁 (verify:contrast-render)');
-console.log('──────────────────────────────────────────────────────────');
 
-if (NO_BROWSER) {
-  console.log('（--no-browser：跳过真实渲染测量）');
-  process.exit(0);
-}
-if (!fs.existsSync(path.join(DIST, 'index.html'))) {
-  console.log('（没有 dist/index.html：跳过，先构建。本门禁需要构建产物才能渲染。）');
-  process.exit(0);
-}
 const CHROME = resolveChrome();
 if (!CHROME || !fs.existsSync(CHROME)) {
   console.log(`（找不到 Chrome：${CHROME || '（未设置 CHROME_BIN 且常见路径均无）'}：跳过真实渲染测量。）`);
@@ -316,7 +293,7 @@ try {
   await send('Emulation.setDeviceMetricsOverride', { width: VW, height: VH, deviceScaleFactor: 1, mobile: VW < 600 });
   await send('Page.addScriptToEvaluateOnNewDocument', { source: COLOR_INIT_SRC });
   await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: `try{localStorage.setItem('onboarded-v2', JSON.stringify({data:true}));localStorage.setItem('privacy-consent', JSON.stringify({data:true}));}catch(e){}`,
+    source: `try{localStorage.setItem('onboarded-v2', JSON.stringify({data:true}));localStorage.setItem('privacy-consent', JSON.stringify({data:true}));localStorage.setItem('theme-mode', JSON.stringify({data:'${THEME}'}));}catch(e){}`,
   });
 
   const BASE = `http://127.0.0.1:${port}`;

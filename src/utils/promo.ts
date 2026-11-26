@@ -30,6 +30,8 @@ import Taro from '@tarojs/taro';
  * 若未来要做「离线显示会员」，必须先删掉本键全部写入再谈读取，否则等于重开 AC-03 之前的洞。
  */
 const H5_SUB_KEY = 'h5-subscription';
+/** 本机已兑换过的码（hash 列表）。防「同一个码在同一台设备上反复叠加」。 */
+const PROMO_USED_KEY = 'promo-redeemed';
 
 /** 促销码活动表：hash = SHA-256(码明文) 的十六进制小写。
  *  码由 .tools/promo-gen.mjs 生成（明文不进仓库），格式 PRO-XXXX-XXXX。 */
@@ -53,7 +55,7 @@ export const PROMO_CODES: PromoDef[] = [
 export interface PromoResult {
   ok: boolean;
   /** 失败原因（调用方据此 toast，不猜） */
-  reason?: 'format' | 'unknown' | 'expired';
+  reason?: 'format' | 'unknown' | 'expired' | 'used';
   /** 成功时的新到期日 'YYYY-MM-DD' */
   expiredAt?: string;
   days?: number;
@@ -155,6 +157,18 @@ export function redeemPromo(input: string, codes: PromoDef[] = PROMO_CODES): Pro
   if (!hit) return { ok: false, reason: 'unknown' };
   if (todayStr() > hit.goodUntil) return { ok: false, reason: 'expired' };
 
+  // 2026-11-21：促销码可多人使用，但**同一用户同一个码只算一次**。
+  // 旧逻辑每次都顺延 planDays ⇒ 手里有一个码就能无限叠 PRO。
+  // 这里是本机账本，挡不住换设备/清缓存；服务端去重（orders + 函数）仍是长期解。
+  let used: string[] = [];
+  try {
+    const raw = Taro.getStorageSync(PROMO_USED_KEY);
+    used = Array.isArray(raw) ? (raw as string[]) : [];
+  } catch {
+    used = [];
+  }
+  if (used.includes(hit.hash)) return { ok: false, reason: 'used' };
+
   // 续期叠加：已有未过期凭证 → 在其到期日上顺延；否则从今天起算
   const current = readH5Subscription();
   const base = current ? current.expiredAt : todayStr();
@@ -167,6 +181,21 @@ export function redeemPromo(input: string, codes: PromoDef[] = PROMO_CODES): Pro
     return { ok: false, reason: 'unknown' };
   }
   return { ok: true, expiredAt, days: hit.planDays };
+}
+
+/** 服务端订单落库成功后调用：把该码记入本机已用账本。
+ *  必须在**权益真的留下可回放记录之后**再记，否则订单失败会白白吃掉用户的码。 */
+export function markPromoUsed(input: string): void {
+  const code = input.trim().toUpperCase();
+  const hit = PROMO_CODES.find((p) => p.hash === sha256Hex(code));
+  if (!hit) return;
+  try {
+    const raw = Taro.getStorageSync(PROMO_USED_KEY);
+    const used = Array.isArray(raw) ? (raw as string[]) : [];
+    if (!used.includes(hit.hash)) Taro.setStorageSync(PROMO_USED_KEY, [...used, hit.hash]);
+  } catch (err) {
+    console.error('[promo] mark used failed:', err);
+  }
 }
 
 /** 供门禁直接验证哈希实现（固定测试向量："abc" 的 SHA-256，公有域标准值） */

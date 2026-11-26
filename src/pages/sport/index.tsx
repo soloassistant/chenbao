@@ -11,11 +11,12 @@
  *   3. 距离：只有拿到 GPS 采样才算；定位被拒时记 source='timer'，界面只说时长。
  *   4. 恢复度/睡眠/HRV：一概没有。首页那张卡叫「本周完成度」，用真实跑量算。
  */
+import classnames from 'classnames';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Image } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
 import { useT } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import {
   DEFAULT_GOAL_KM,
   dayPeriod,
@@ -113,6 +114,7 @@ function paceCurveSvgUrl(samples: RunSample[]): string | null {
 }
 
 export default function SportPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const { theme } = useThemeStore();
   const [view, setView] = useState<ViewName>('home');
@@ -425,6 +427,14 @@ export default function SportPage() {
     }).catch(() => undefined);
   }, [detail, t]);
 
+  // 「近 8 周 · 共 N 次」的 N 必须真的是近 8 周；以前用的是全历史 runs.length。
+  const eightWeeksAgo = Date.now() - 56 * 24 * 60 * 60 * 1000;
+  const recentRuns = runs.filter((r) => {
+    // 不能叫 t：外层是 useT() 的翻译函数，同名会被 no-shadow 判红
+    const startedAtMs = new Date(r.startedAt).getTime();
+    return Number.isFinite(startedAtMs) && startedAtMs >= eightWeeksAgo;
+  });
+
   /* ---------------- 渲染 ---------------- */
 
   const headerTitle =
@@ -432,7 +442,10 @@ export default function SportPage() {
 
   const subtitle =
     view === 'records'
-      ? t('sport.recordsSummary', { n: runs.length, km: formatKm(runs.reduce((s, r) => s + r.distanceM, 0)) })
+      ? t('sport.recordsSummary', {
+          n: recentRuns.length,
+          km: formatKm(recentRuns.reduce((s, r) => s + r.distanceM, 0))
+        })
       : view === 'detail'
         ? ''
         : lastRun
@@ -448,7 +461,7 @@ export default function SportPage() {
   const detailPaceUrl = useMemo(() => (detail ? paceCurveSvgUrl(detail.samples) : null), [detail]);
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       {view !== 'recording' ? (
         <View className={styles.backRow} onClick={handleBack}>
           <Text className={styles.backIcon}>‹</Text>

@@ -39,6 +39,7 @@ function assert(name, cond, detail = '') {
 
 const login = read('src/pages/login/index.tsx');
 const lang = read('src/store/language.ts');
+const langEn = read('src/store/language.en.ts');
 
 /* ───────────── A. sdkDownText 的分流结构 ───────────── */
 const m = /function sdkDownText\(([\s\S]*?)\n\}/.exec(login);
@@ -81,10 +82,9 @@ assert(
 
 /* ───────────── B. i18n 完整性（zh / en 都得有） ───────────── */
 const zhStart = lang.indexOf('const zh = {');
-const enStart = lang.indexOf('const en: Record<keyof typeof zh, string> = {');
-assert('B0 language.ts 能定位 zh / en 两段', zhStart > 0 && enStart > zhStart);
-const zhSec = zhStart > 0 && enStart > zhStart ? lang.slice(zhStart, enStart) : '';
-const enSec = zhStart > 0 && enStart > zhStart ? lang.slice(enStart) : '';
+assert('B0 中文段在 language.ts，英文段在 language.en.ts', zhStart > 0 && langEn.includes('export const en'));
+const zhSec = zhStart > 0 ? lang.slice(zhStart, lang.indexOf('export type LangKey')) : '';
+const enSec = langEn;
 for (const k of mappedKeys) {
   assert(`B1 中文有 ${k}`, zhSec.includes(`'${k}':`), '');
   assert(`B2 英文有 ${k}`, enSec.includes(`'${k}':`), '');

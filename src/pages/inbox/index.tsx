@@ -7,13 +7,14 @@ import EmptyState from '@/components/EmptyState';
 import DemoDataHint from '@/components/DemoDataHint';
 import { apiExtract, apiConfirmItem, apiGetBriefing, apiChat, apiLedgerAdd, apiShoppingAdd, type WorkAction } from '@/services/api';
 import { useUserStore } from '@/store/user';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { fromNow } from '@/utils/date';
 import { detectConflicts, buildPlanProposal, type ConflictInfo, type PlanProposal, type PlanProposalRaw, type PlanApplyEvent } from '@/utils/schedule';
 import PlanProposalCard from '@/components/PlanProposalCard';
 import type { Briefing, ExtractResult } from '@/types';
 import { useLanguageStore, useT } from '@/store/language';
 import { safetyRefusal, screenContent } from '@/utils/contentSafety';
+import { AiSchemaError } from '@/utils/aiSchema';
 import { useSubmitHotkey } from '@/hooks/useHotkeys';
 import styles from './index.module.scss';
 
@@ -54,6 +55,7 @@ function fileToDataURL(file: File): Promise<string> {
 }
 
 function InboxPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const theme = useThemeStore((s) => s.theme);
   const [content, setContent] = useState('');
@@ -168,7 +170,7 @@ function InboxPage() {
           const paths = (res.tempFiles || []).map((f) => f.tempFilePath).filter(Boolean);
           if (paths.length === 0) return;
           setImages((prev) => [...prev, ...paths].slice(0, MAX_IMAGES));
-          Taro.showToast({ title: '已添加截图', icon: 'success', duration: 1000 });
+          Taro.showToast({ title: t('inbox.addedShot'), icon: 'success', duration: 1000 });
         },
         fail: (err) => console.info('[InboxPage] chooseMedia cancelled:', err && err.errMsg)
       });
@@ -215,7 +217,7 @@ function InboxPage() {
   const handleExtract = async () => {
     const text = content.trim();
     if (!text && images.length === 0) {
-      Taro.showToast({ title: isH5 ? '粘贴文字，或 Ctrl+V 粘贴截屏' : '先粘贴内容或添加截图', icon: 'none' });
+      Taro.showToast({ title: t(isH5 ? 'inbox.pasteHintH5' : 'inbox.pasteHint'), icon: 'none' });
       return;
     }
     if (extracting) return;
@@ -259,6 +261,12 @@ function InboxPage() {
           origin: result.collection
         });
       }
+      if (next.length === 0) {
+        // 0 条不清空用户已有的草稿：二次提取失败时把上一版擦掉，等于逼用户重来
+        Taro.showToast({ title: result.note || '没找到日程或待办，带上时间试试', icon: 'none' });
+        setNote(result.note || '');
+        return;
+      }
       setDrafts(next);
       setNote(result.note || '');
       setBills(result.bills || []);
@@ -278,15 +286,13 @@ function InboxPage() {
           briefing?.events || []
         )
       );
-      if (next.length === 0) {
-        // 2026-10-24：区分「没解析出东西」与「提取能力不可用」。
-        // 降级路径（src/data/extract.ts）现在**不编造结果**，只在 note 里如实说明原因；
-        // 详细原因随下方空态卡渲染，toast 只做瞬时反馈（太长会被截断）。
-        Taro.showToast({ title: result.note ? '这次没解析出内容' : '没找到日程或待办，带上时间试试', icon: 'none' });
-      }
     } catch (err) {
       console.error('[InboxPage] extract failed:', err);
-      Taro.showToast({ title: '没能解析，检查网络后再点一次', icon: 'none' });
+      // A06：模型返回结构不合法时给专门文案，不混进「网络/能力不可用」
+      Taro.showToast({
+        title: t(err instanceof AiSchemaError ? 'inbox.schemaInvalid' : 'inbox.parseFailed'),
+        icon: 'none'
+      });
     } finally {
       setExtracting(false);
     }
@@ -295,7 +301,7 @@ function InboxPage() {
   const handleWorkRun = async (action: WorkAction) => {
     const text = content.trim();
     if (!text) {
-      Taro.showToast({ title: images.length > 0 ? '工作助手暂只支持文字，请粘贴文字内容' : '先粘贴要分析的内容', icon: 'none' });
+      Taro.showToast({ title: t(images.length > 0 ? 'inbox.workTextOnly' : 'inbox.workNeedContent'), icon: 'none' });
       return;
     }
     if (workBusy) return;
@@ -312,7 +318,7 @@ function InboxPage() {
       setWorkResult(isH5 && reply && !screenContent(reply).ok ? safetyRefusal(useLanguageStore.getState().lang) : (reply || '这次没生成结果，再点一次试试。'));
     } catch (err) {
       console.error('[InboxPage] work assistant failed:', err);
-      Taro.showToast({ title: '没能分析，网络或服务暂时不可用', icon: 'none' });
+      Taro.showToast({ title: t('inbox.analyzeFailed'), icon: 'none' });
     } finally {
       setWorkBusy(false);
     }
@@ -388,7 +394,7 @@ function InboxPage() {
   const handleConfirm = async () => {
     const checked = drafts.filter((d) => d.checked);
     if (checked.length === 0) {
-      Taro.showToast({ title: '先勾一条要写进去的', icon: 'none' });
+      Taro.showToast({ title: t('inbox.selectFirst'), icon: 'none' });
       return;
     }
     if (saving) return;
@@ -411,6 +417,11 @@ function InboxPage() {
         | undefined;
       const res = await apiConfirmItem({ events, todos, collection });
       console.info('[InboxPage] confirmed:', res.saved);
+      // saved=0 不算成功：以前会弹「已入库 0 条」并清空草稿，用户勾选的东西直接消失。
+      if (!res || typeof res.saved !== 'number' || res.saved <= 0) {
+        Taro.showToast({ title: t('inbox.nothingSaved'), icon: 'none' });
+        return;
+      }
       Taro.showToast({ title: `已入库 ${res.saved} 条`, icon: 'success' });
       const sourceLabel = images.length > 0 ? `🖼 截图×${images.length}${content.trim() ? ' + 文字' : ''}` : content.trim();
       setHistory((prev) => [
@@ -440,9 +451,9 @@ function InboxPage() {
       // 两者都含 quota。此前一律 toast「入库失败，请重试」，用户不知道是 50 条收藏满了。
       const msg = String((err as Error)?.message || err || '');
       if (/quota/i.test(msg)) {
-        Taro.showToast({ title: '收藏空间已满（50 条），订阅后可继续写进去', icon: 'none', duration: 3000 });
+        Taro.showToast({ title: t('inbox.collectionFull'), icon: 'none', duration: 3000 });
       } else {
-        Taro.showToast({ title: '没能写进去，多是网络断了，再点一次', icon: 'none' });
+        Taro.showToast({ title: t('inbox.writeFailed'), icon: 'none' });
       }
     } finally {
       setSaving(false);
@@ -477,7 +488,7 @@ function InboxPage() {
       );
       const saved = results.filter(Boolean).length;
       if (saved === 0) {
-        Taro.showToast({ title: '这几笔没能记进账本，再点一次', icon: 'none' });
+        Taro.showToast({ title: t('inbox.ledgerFailed'), icon: 'none' });
         return;
       }
       setBills([]);
@@ -500,7 +511,7 @@ function InboxPage() {
       );
       const saved = results.filter(Boolean).length;
       if (saved === 0) {
-        Taro.showToast({ title: '没能加进购物清单，再点一次', icon: 'none' });
+        Taro.showToast({ title: t('inbox.shopFailed'), icon: 'none' });
         return;
       }
       setShoppingHits([]);
@@ -517,8 +528,8 @@ function InboxPage() {
   const handleCopyVocab = () => {
     const text = vocabHits.map((v) => `${v.word} ${v.meaning || ''}`.trim()).join('\n');
     Taro.setClipboardData({ data: text }).then(
-      () => Taro.showToast({ title: '生词已复制', icon: 'success' }),
-      () => Taro.showToast({ title: '复制失败', icon: 'none' })
+      () => Taro.showToast({ title: t('inbox.glossCopied'), icon: 'success' }),
+      () => Taro.showToast({ title: t('inbox.copyFailed'), icon: 'none' })
     );
   };
 
@@ -534,7 +545,7 @@ function InboxPage() {
   });
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.howTo}>
         <Text className={styles.howIcon}>💡</Text>
         <Text className={styles.howText}>
@@ -613,11 +624,11 @@ function InboxPage() {
                 className={classnames(styles.extractButton, extracting && styles.disabled)}
                 onClick={handleExtract}
               >
-                {extracting ? '正在解析…' : '开始解析'}
+                {extracting ? t('inbox.parsing') : t('inbox.parseBtn')}
               </Button>
               {images.length === 0 ? (
                 <Button className={styles.addButton} onClick={handleAddImage}>
-                  🖼 添加截图
+                  🖼 {t('inbox.addShot')}
                 </Button>
               ) : null}
             </View>
@@ -761,40 +772,40 @@ function InboxPage() {
           转的是"账单原文"而不是日程草稿，所以独立于 drafts.length 渲染 */}
       {bills.length > 0 ? (
         <View className={styles.resultCard}>
-          <Text className={styles.sectionTitle}>💰 账单（{bills.length}）· 可转存记账</Text>
+          <Text className={styles.sectionTitle}>{t('inbox.billsTitle', { n: String(bills.length) })}</Text>
           {bills.map((b, i) => (
             <Text key={`bill-${i}`} className={styles.itemSummary}>
               ¥{b.amount.toFixed(2)} · {b.title}{b.source ? `（${b.source}）` : ''}
             </Text>
           ))}
           <Button className={styles.confirmButton} onClick={handleSaveBills}>
-            全部记为今日订阅支出
+            {t('inbox.billsSaveAll')}
           </Button>
         </View>
       ) : null}
       {shoppingHits.length > 0 ? (
         <View className={styles.resultCard}>
-          <Text className={styles.sectionTitle}>🛒 待购物品（{shoppingHits.length}）· 可转存购物清单</Text>
+          <Text className={styles.sectionTitle}>{t('inbox.shoppingTitle', { n: String(shoppingHits.length) })}</Text>
           {shoppingHits.map((s, i) => (
             <Text key={`shop-${i}`} className={styles.itemSummary}>
               {s.title}{s.note ? ` — ${s.note}` : ''}
             </Text>
           ))}
           <Button className={styles.confirmButton} onClick={handleSaveShopping}>
-            全部加入购物清单
+            {t('inbox.shoppingSaveAll')}
           </Button>
         </View>
       ) : null}
       {vocabHits.length > 0 ? (
         <View className={styles.resultCard}>
-          <Text className={styles.sectionTitle}>🔤 生词（{vocabHits.length}）· 复制到背单词 App</Text>
+          <Text className={styles.sectionTitle}>{t('inbox.vocabTitle', { n: String(vocabHits.length) })}</Text>
           {vocabHits.map((v, i) => (
             <Text key={`vocab-${i}`} className={styles.itemSummary}>
               {v.word} {v.meaning || ''}
             </Text>
           ))}
           <Button className={styles.confirmButton} onClick={handleCopyVocab}>
-            复制全部生词
+            {t('inbox.vocabCopyAll')}
           </Button>
         </View>
       ) : null}

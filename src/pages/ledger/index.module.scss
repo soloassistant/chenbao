@@ -357,7 +357,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--brand-strong, #{$color-primary-strong}); // 白字 4.95:1
+  background: var(--dm-brand-solid, var(--brand-strong, #{$color-primary-strong})); // 白字 4.95:1
   color: #fff;
   font-size: 20rpx;
   font-weight: $font-weight-semibold;
@@ -618,4 +618,18 @@
   display: block;
   font-size: $font-size-xs;
   color: $color-text-tertiary;
+}
+
+.exportHint {
+  display: block;
+  margin: 4rpx 0 12rpx;
+  font-size: $font-size-xs;
+  line-height: 1.5;
+  color: $color-text-tertiary;
+}
+
+/* 深色：选分类按钮的浅橙底配浅色字（1.54:1），改实心底 + 白字 */
+:global(.theme-dark) .entryCatBtn {
+  background: var(--dm-brand-solid, #a82c13);
+  color: #fff;
 }

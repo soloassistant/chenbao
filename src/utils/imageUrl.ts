@@ -64,6 +64,7 @@ export function thumbUrl(src: string | undefined | null, w = THUMB_W, h = THUMB_
 
   // 拆 hash / query：只对路径部分做后缀替换
   const hashIdx = url.indexOf('#');
+  const hash = hashIdx >= 0 ? url.slice(hashIdx) : '';
   const noHash = hashIdx >= 0 ? url.slice(0, hashIdx) : url;
   const qIdx = noHash.indexOf('?');
   const pathPart = qIdx >= 0 ? noHash.slice(0, qIdx) : noHash;
@@ -78,7 +79,7 @@ export function thumbUrl(src: string | undefined | null, w = THUMB_W, h = THUMB_
   // 不是图片文件（无扩展名 / 接口地址）→ 不改写，宁可原样慢慢加载，也不猜坏
   if (!IMAGE_EXT_RE.test(base)) return src;
 
-  return `${base}@${w}w_${h}h_1c.webp${query}`;
+  return `${base}@${w}w_${h}h_1c.webp${query}${hash}`;
 }
 
 /**

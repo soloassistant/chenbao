@@ -123,7 +123,6 @@ const DELETE_CONFIRM_WORD = '注销';
  * （nslookup 返回 Non-existent domain），邮件必退信。客服统一走站内反馈 → 后台工单，
  * 不再对外暴露任何邮箱地址。 */
 
-const SERVICE_WECHAT = '私人晨报助理';
 const LAST_DELETE_KEY = 'mb-last-delete-at';
 const TICKET_HISTORY_KEY = 'mb-support-tickets';
 const TICKET_KINDS = ['llm_events', 'feedback', 'client_errors'] as const;
@@ -471,8 +470,11 @@ function MinePage() {
               const saved = (r as { savedFilePath?: string }).savedFilePath;
               if (!saved) throw new Error('empty savedFilePath');
               setAvatar(saved);
-              Taro.setStorageSync(AVATAR_KEY, saved);
-              Taro.showToast({ title: t('mine.avatarSaved'), icon: 'success' });
+              const ok = persistAvatar(saved);
+              Taro.showToast({
+                title: t(ok ? 'mine.avatarSaved' : 'mine.avatarTempOnly'),
+                icon: ok ? 'success' : 'none'
+              });
             })
             .catch((err) => {
               // 转存失败（本地缓存满等）：**不谎称已保存** —— 本次会话内显示新头像，
@@ -496,8 +498,11 @@ function MinePage() {
           if (avatarObjectKey) void deleteAvatar(avatarObjectKey);
           setAvatarObjectKey('');
           setAvatar(next);
-          Taro.setStorageSync(AVATAR_KEY, next);
-          Taro.showToast({ title: t('mine.avatarSaved'), icon: 'success' });
+          const ok = persistAvatar(next);
+          Taro.showToast({
+            title: t(ok ? 'mine.avatarSaved' : 'mine.avatarTempOnly'),
+            icon: ok ? 'success' : 'none'
+          });
         })
         .catch(() => {
           /* 静默：showActionSheet 被用户取消时 reject，是正常操作而非错误 */
@@ -539,14 +544,18 @@ function MinePage() {
           const prevKey = avatarObjectKey;
           setAvatarObjectKey(res.path);
           if (url) setAvatar(url);
-          Taro.setStorageSync(AVATAR_KEY, AVATAR_CLOUD_PREFIX + res.path);
+          const persisted = persistAvatar(AVATAR_CLOUD_PREFIX + res.path);
           if (prevKey && prevKey !== res.path) void deleteAvatar(prevKey);
           // 存成功了但换不出可显示的 URL（签名服务异常）时**不谎称「已更新」**——
           // 用户眼前根本没变化，说「已更新」就是假成功。如实说「已保存、重进本页可见」。
           Taro.showToast({
-            title: url ? t('mine.avatarSaved') : t('mine.avatarSavedNoPreview'),
-            icon: url ? 'success' : 'none',
-            duration: url ? 1500 : 3000
+            title: !persisted
+              ? t('mine.avatarTempOnly')
+              : url
+                ? t('mine.avatarSaved')
+                : t('mine.avatarSavedNoPreview'),
+            icon: persisted && url ? 'success' : 'none',
+            duration: persisted && url ? 1500 : 3000
           });
         } catch (err) {
           console.error('[MinePage] avatar upload crashed:', String((err && (err as Error).message) || err));
@@ -559,6 +568,18 @@ function MinePage() {
 
   /** 点头像：更换头像 或 查看浏览历史（v2.0 F26；2026-10-25 历史页并入热点页 ——
    *  switchTab 过去并置展开标记，热点页 useDidShow 读标记自动展开「最近浏览」） */
+  /** 头像持久化：storage 满时 setStorageSync 会抛，抛了却报「已保存」就是假成功。
+   *  返回 false 时调用方必须改成「本次会话有效」的文案。 */
+  const persistAvatar = (value: string): boolean => {
+    try {
+      Taro.setStorageSync(AVATAR_KEY, value);
+      return Taro.getStorageSync(AVATAR_KEY) === value;
+    } catch (err) {
+      console.error('[MinePage] persist avatar failed:', err);
+      return false;
+    }
+  };
+
   const handleAvatarTap = () => {
     // 第三项「上传照片」单独放在这一层：Taro H5 的 showActionSheet 上限 6 项，
     // 塞进预设 emoji 那一层会变成 7 项而被 API 拒绝（历史 bug：点更换头像无反应）。
@@ -820,7 +841,7 @@ function MinePage() {
     if (!overlay) return;
     const pin = pinInput.trim();
     if (!/^\d{4}$/.test(pin)) {
-      Taro.showToast({ title: '请输入 4 位数字密码', icon: 'none' });
+      Taro.showToast({ title: t('mine.need4Digit'), icon: 'none' });
       return;
     }
     if (overlay.mode === 'set') {
@@ -830,12 +851,12 @@ function MinePage() {
       closePinOverlay();
     } else {
       if (pin !== appPrefs.parentPin) {
-        Taro.showToast({ title: '密码不正确，请重试', icon: 'none' });
+        Taro.showToast({ title: t('mine.pinWrong'), icon: 'none' });
         setPinInput('');
         return;
       }
       commitPrefs({ minorMode: false });
-      Taro.showToast({ title: '已退出未成年人模式', icon: 'none' });
+      Taro.showToast({ title: t('mine.minorExited'), icon: 'none' });
       closePinOverlay();
     }
   };
@@ -859,7 +880,7 @@ function MinePage() {
           success: (res2) => {
             if (!res2.confirm) return;
             commitPrefs({ parentPin: '', minorMode: false });
-            Taro.showToast({ title: '已重置', icon: 'none' });
+            Taro.showToast({ title: t('mine.pinReset'), icon: 'none' });
           }
         });
       }
@@ -872,9 +893,9 @@ function MinePage() {
     if (isWeapp && typeof openPrivacyContract === 'function') {
       openPrivacyContract
         .call(Taro, {})
-        .catch(() => Taro.showToast({ title: '请在微信「设置-隐私」中管理授权', icon: 'none' }));
+        .catch(() => Taro.showToast({ title: t('mine.privacyWechatManage'), icon: 'none' }));
     } else {
-      Taro.showToast({ title: '微信端可管理隐私授权', icon: 'none' });
+      Taro.showToast({ title: t('mine.privacyWechatOnly'), icon: 'none' });
     }
   };
 
@@ -1075,6 +1096,11 @@ function MinePage() {
         .then((status) => {
           if (status === 'failed' || status === 'no-db' || status === 'denied-authenticated') {
             console.error(`[MinePage] purgeMyH5Data = ${status} — 三表残留未清偿，需人工核查`);
+            Taro.showToast({ title: t('mine.deleteCloudWarn'), icon: 'none', duration: 4000 });
+          } else if (status === 'not-deployed') {
+            // N5：函数未部署时三表不清，用户此前完全无感知；至少给一次性提示
+            console.error('[MinePage] purgeMyH5Data = not-deployed — 云端三表未清除');
+            Taro.showToast({ title: t('mine.deleteCloudWarn'), icon: 'none', duration: 4000 });
           } else {
             console.info('[MinePage] purgeMyH5Data =', status);
           }
@@ -1117,7 +1143,7 @@ function MinePage() {
         .then(() => finishDelete())
         .catch((err) => {
           console.error('[MinePage] deleteAccount failed:', err);
-          Taro.showToast({ title: '账号没注销成功，数据还在。检查网络后再试一次', icon: 'none', duration: 3000 });
+          Taro.showToast({ title: t('mine.deleteFailed'), icon: 'none', duration: 3000 });
         });
     }
   };
@@ -1956,7 +1982,7 @@ function MinePage() {
         )}
         {renderRow(
           t('mine.service'),
-          <Text className={styles.linkText}>{SERVICE_WECHAT}</Text>,
+          <Text className={styles.linkText}>{t('mine.serviceOnline')}</Text>,
           handleContactService
         )}
         {renderRow(t('mine.feedback'), null, () => setFbOpen(true))}
@@ -2050,7 +2076,7 @@ function MinePage() {
                 {t('cancel')}
               </Button>
               <Button className={styles.docClose} onClick={handlePinSubmit}>
-                保存密码
+                {t('mine.savePassword')}
               </Button>
             </View>
           </View>

@@ -33,6 +33,17 @@ import styles from './index.module.scss';
  * 无障碍：只渲染文本、不写 role/aria-*（Taro 的 View/Text 不透传未知属性，
  * 详见 components/Splash 的 nativeProps 说明），读屏可直接获取文本。
  */
+/** 冲突按模块归类：45 个键平铺时用户不知道从哪下手，先按功能分组。
+ *  映射只影响展示，不影响裁决语义（裁决仍是 per-key）。 */
+function moduleOf(key: string): 'plan' | 'ledger' | 'shopping' | 'library' | 'learn' | 'settings' {
+  if (/^(dailyPlanStore|calendar)/.test(key)) return 'plan';
+  if (/^ledger/.test(key)) return 'ledger';
+  if (/^shopping/.test(key)) return 'shopping';
+  if (/^(collectionStore|browseHistory|news|hotspot)/.test(key)) return 'library';
+  if (/^(learn|question|mock|paper)/.test(key)) return 'learn';
+  return 'settings';
+}
+
 function SyncConflictHint() {
   const t = useT();
   const [conflicts, setConflicts] = useState<SyncConflict[]>(() => getSyncConflicts());
@@ -61,6 +72,27 @@ function SyncConflictHint() {
     } catch (err) {
       // 裁决失败不静默：用户点了按钮要有反馈，否则会以为已生效
       console.error('[SyncConflictHint] resolve failed:', err);
+      Taro.showToast({ title: t('syncConflict.failed'), icon: 'none' });
+    }
+  };
+
+  const grouped = conflicts.reduce<Record<string, SyncConflict[]>>((acc, c) => {
+    const g = moduleOf(c.key);
+    (acc[g] = acc[g] || []).push(c);
+    return acc;
+  }, {});
+
+  const handleResolveAll = async () => {
+    // 45 个键换设备时可能一次冒出十几条；逐条点不现实。
+    // 「较新者为准」= 每条各自比 remoteTs/localTs，而不是一刀切用云端。
+    const remoteKeys = conflicts.filter((c) => c.remoteTs >= c.localTs).map((c) => c.key);
+    const localKeys = conflicts.filter((c) => c.remoteTs < c.localTs).map((c) => c.key);
+    try {
+      if (remoteKeys.length) await resolveSyncConflicts('remote', remoteKeys);
+      if (localKeys.length) await resolveSyncConflicts('local', localKeys);
+      Taro.showToast({ title: t('syncConflict.toastAll'), icon: 'none' });
+    } catch (err) {
+      console.error('[SyncConflictHint] resolve all failed:', err);
       Taro.showToast({ title: t('syncConflict.failed'), icon: 'none' });
     }
   };
@@ -107,9 +139,15 @@ function SyncConflictHint() {
         <>
           <Text className={styles.title}>{t('syncConflict.title')}</Text>
           <Text className={styles.desc}>{t('syncConflict.desc')}</Text>
+          <Text className={styles.action} onClick={() => void handleResolveAll()}>
+            {t('syncConflict.resolveAll')}
+          </Text>
         </>
       )}
-      {conflicts.map((c) => (
+      {Object.entries(grouped).map(([group, list]) => (
+        <View key={group}>
+          <Text className={styles.group}>{t(`syncConflict.group.${group}` as LangKey)} · {list.length}</Text>
+          {list.map((c) => (
         <View className={styles.item} key={c.key}>
           <Text className={styles.itemLabel}>{t(`sync.key.${c.key}` as LangKey)}</Text>
           <View className={styles.itemActions}>
@@ -122,6 +160,8 @@ function SyncConflictHint() {
               {t('syncConflict.takeRemote')}
             </Text>
           </View>
+        </View>
+          ))}
         </View>
       ))}
     </View>

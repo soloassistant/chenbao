@@ -458,3 +458,8 @@
   font-weight: $font-weight-medium;
   color: $color-primary-strong;
 }
+
+/* 深色：完成度数字用的是「压浅绿底」的深绿 #0a6b1c，暗色下变成深底深字 */
+:global(.theme-dark) .scoreCircle {
+  color: #7ee2a0;
+}

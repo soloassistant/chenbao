@@ -3,7 +3,7 @@ import type { PropsWithChildren } from 'react';
 import Taro, { useDidShow } from '@tarojs/taro';
 import Splash from '@/components/Splash';
 // 引导标记读写（拆分后只取布尔/写入函数，不拉入整屏引导组件）
-import { hasOnboarded, hasOnboardedFor, markOnboardedFor } from '@/components/Onboarding/state';
+import { ONBOARD_PENDING_KEY, markOnboardedFor } from '@/components/Onboarding/state';
 import { HELP_EVENT, focusSearchBox, useGlobalHotkeys } from '@/hooks/useHotkeys';
 import { hotkeyRoute } from '@/utils/hotkeys';
 import type { HotkeyId } from '@/utils/hotkeys';
@@ -11,8 +11,8 @@ import type { HotkeyId } from '@/utils/hotkeys';
 import { needsAuthGate, getSession, markGateRedirect, getCloudUserId, hasStoredSession } from '@/services/cloudAuth';
 // 只依赖「同意读写」小模块：三份法务正文（~11 KB gzip）不该为这一个布尔值进首屏包
 import { hasAgreedConsent } from '@/data/legal-consent';
-import { useLanguageStore, dict, STORAGE_KEY as LANG_KEY } from '@/store/language';
-import { useThemeStore, useTabBarTheme, STORAGE_KEY as THEME_KEY } from '@/store/theme';
+import { useLanguageStore, dict, isEnDictLoaded, loadEnDict, STORAGE_KEY as LANG_KEY } from '@/store/language';
+import { applyThemeClass, useThemeModeStore, useThemeStore, useTabBarTheme, STORAGE_KEY as THEME_KEY } from '@/store/theme';
 import { useUiScaleStore, STORAGE_KEY as UI_SCALE_KEY } from '@/store/uiScale';
 import { initCloudSync, subscribeSyncApplied } from '@/services/cloudSync';
 import { syncHealthSyncExclusion } from '@/services/healthConsent';
@@ -172,6 +172,12 @@ function App(props: PropsWithChildren) {
   // 原生 TabBar 壳层跟随「跟随系统/浅色/深色」（应用级调用，避免从收件箱/日历启动时漏同步）
   useTabBarTheme();
 
+  // 显示模式在应用根挂一次：页面级 hook 只覆盖了 10 个调用点，其余路由会整页浅色。
+  useEffect(() => {
+    applyThemeClass();
+    return useThemeModeStore.subscribe((state) => applyThemeClass(state.resolved));
+  }, []);
+
   // 应用级合规同意（H5 首启）：未同意前整屏遮罩，覆盖所有 tab 与 AI 悬浮球。
   // 小程序端依赖微信平台隐私弹窗，此处恒为 true 不参与。
   const [consentAgreed, setConsentAgreed] = useState(() =>
@@ -188,53 +194,40 @@ function App(props: PropsWithChildren) {
      小程序端不挂（没有物理键盘，挂上去只是白打代码）。 */
   const [helpOpen, setHelpOpen] = useState(false);
   const [shellReady, setShellReady] = useState(process.env.TARO_ENV !== 'h5');
-  // 首次启动引导（设计稿 p19/p20）：只在 H5 且有真实账号体系时才有意义，
-  // 看过一次就落库，不再骚扰（微信端直接视为已看过）。
-  const [onboarded, setOnboarded] = useState(() => process.env.TARO_ENV !== 'h5' || hasOnboarded());
-  // 当前会话的 uid：引导完成时按账号落库（见下方 effect 与 Onboarding 的 accountKey）
+  // 首启引导：只对「刚完成注册的新用户」弹一次。
+  // 2026-11-25 收口：以前按设备标记 + 账号标记在登录后补弹，老用户换设备/换账号
+  // 都会被再弹一次；产品口径改成「注册成功才弹」。
+  // 传递方式：注册成功时写 onboarding-pending，App 在离开登录页后消费。
+  const [onboarded, setOnboarded] = useState(true); // 默认已看过；只有注册标记会置 false
+  /** 是否已确认「有会话」：门禁异步查会话期间，引导不能抢在登录页前面出现。 */
+  const [authed, setAuthed] = useState(() => !needsAuthGate);
+  // 当前会话的 uid：引导完成时按账号落库
   const [onboardUid, setOnboardUid] = useState<string | null>(null);
-  /**
-   * 登录后补一次用户指导（2026-10-30，用户反馈「只有注册有、登录没有」）。
-   *
-   * 上面 useState 只在应用挂载时求值一次，读的是**设备级**标记 —— 于是：
-   *   · 老用户换设备登录 → 本地没标记，但那次挂载可能发生在登录页（不渲染引导），
-   *     登录成功切进来后 state 已定，不会重新判断 → 一次指导都看不到；
-   *   · 同设备换账号登录 → 设备标记还在 → 新账号也永远看不到。
-   * 这里在「离开登录页」时按**账号**再判一次，没看过就补上。
-   * 会话取不到时保持原判断（宁可少弹一次，也不要因为异常把人挡在门外）。
-   */
   useEffect(() => {
     if (process.env.TARO_ENV !== 'h5' || isLoginPage) return;
     let alive = true;
-    let tries = 0;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    // ⚠️ 2026-10-30 线上实测：这条判定**只跑一次**，而 getSession() 在「刚登录 / 刚刷新」
-    //    那一刻经常还是 null（SDK 的会话恢复有竞态）。一次拿不到就退化成设备级判断
-    //    （hasOnboardedFor(null) → 退回设备标记 true）→ 「登录后补引导」**永远不会弹**，
-    //    真账号 E2E 里 L4/L4b 都是 false 就是这个原因。
-    //    改成最多重试 10 次（约 7 秒）：拿到 uid 再决定，拿不到才沿用设备级。
-    const decide = () => {
-      getCloudUserId()
-        .then((uid) => {
-          if (!alive) return;
-          if (!uid && tries < 10) {
-            tries += 1;
-            timers.push(setTimeout(decide, 700));
-            return;
-          }
-          setOnboardUid(uid);
-          setOnboarded(hasOnboardedFor(uid));
-        })
-        .catch((err) => {
-          console.warn('[App] 引导的账号级判定失败，沿用设备级标记:', err);
-        });
-    };
-    decide();
+    let pending = false;
+    try {
+      pending = Taro.getStorageSync(ONBOARD_PENDING_KEY) === true;
+      if (pending) Taro.removeStorageSync(ONBOARD_PENDING_KEY);
+    } catch {
+      /* 存储不可用：不弹引导，不影响登录 */
+    }
+    if (!pending) return;
+    getCloudUserId()
+      .then((uid) => {
+        if (!alive) return;
+        setOnboardUid(uid);
+        setOnboarded(false);
+      })
+      .catch(() => {
+        if (alive) setOnboarded(false);
+      });
     return () => {
       alive = false;
-      timers.forEach((t) => clearTimeout(t));
     };
   }, [isLoginPage]);
+
   // 外壳左栏导航：H5 + ≥600px 挂载（手机继续用 Taro 底部 tabBar）。
   // 同时给 body 打类，让 app.scss 把 Taro tabBar 关掉并把内容列按断点右移（64/232/240）。
   // 断点从 1200 降到 600 的原因：Taro tabBar 最多 5 项，768 的 iPad 上记账/运动/省钱
@@ -399,6 +392,24 @@ function App(props: PropsWithChildren) {
     };
   }, []);
 
+  /**
+   * 英文词典是动态 chunk（2026-11-19 首屏字节）：英文用户首帧前必须等它，
+   * 否则会先渲染一屏中文、chunk 到了再跳成英文。中文用户 langReady 初始就是 true。
+   */
+  const [langReady, setLangReady] = useState<boolean>(
+    () => !(useLanguageStore.getState().lang === 'en' && !isEnDictLoaded())
+  );
+  useEffect(() => {
+    if (langReady) return;
+    let alive = true;
+    void loadEnDict().then(() => {
+      if (alive) setLangReady(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [langReady]);
+
   // 首屏骨架退场（2026-10-29）：骨架写在 src/index.html，是 app 挂载前的唯一可见内容。
   // 这里等两帧（挂载完成 → 真正上屏）再淡出，避免「骨架撤了、界面还没画」的白闪。
   // app 自己的开屏（splash）在这一帧已经渲染，所以用户看到的是 骨架 → 开屏 → 内容，中间不断档。
@@ -512,7 +523,8 @@ function App(props: PropsWithChildren) {
       let gateRetries = 0;
       const runGateCheck = () => {
         getSession().then((s) => {
-          if (s) return;
+          if (s) { setAuthed(true); return; }
+          setAuthed(false);
           if (hasStoredSession() && gateRetries < 3) {
             gateRetries += 1;
             console.error(`[App] 会话恢复失败（第 ${gateRetries}/3 次重试）——本地凭据还在，不送登录页`);
@@ -553,7 +565,7 @@ function App(props: PropsWithChildren) {
           <DesktopNav />
         </Suspense>
       ) : null}
-      {props.children}
+      {langReady ? props.children : null}
       {/* 应用外壳一律不进登录页：未登录时它既无用又泄漏"应用已就绪"的错觉 */}
       {isLoginPage ? null : (
         <React.Fragment>
@@ -568,7 +580,7 @@ function App(props: PropsWithChildren) {
           </Suspense>
           {/* 首启引导：必须等隐私同意之后再挂（两个全屏层叠在一起，用户会点不到下面那层），
               也必须等开屏退场（shellReady），否则引导藏在开屏下面等于没出现。 */}
-          {consentAgreed && shellReady && !onboarded ? (
+          {consentAgreed && shellReady && authed && !onboarded ? (
             // fallback=null：引导只在首启/换账号时出现，此刻 Splash 正盖在上面，占位会闪
             <Suspense fallback={null}>
               <Onboarding

@@ -6,9 +6,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text } from '@tarojs/components';
 import Taro from '@tarojs/taro';
+import classnames from 'classnames';
 import { appStorage } from '@/utils/appStorage';
 import { useT } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import type { Question } from '@/types/questionBank';
 import type { ProgressEntry } from '@/data/questionBankProgress';
 import { createQuestionBankProgress } from '@/data/questionBankProgress';
@@ -22,6 +23,7 @@ type LoadState =
   | { status: 'ready'; items: MistakeItem[] };
 
 export default function QuestionBankMistakesPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const { theme } = useThemeStore();
   const [view, setView] = useState<LoadState>({ status: 'loading' });
@@ -100,7 +102,7 @@ export default function QuestionBankMistakesPage() {
   };
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.header}>
         <View className={styles.back} onClick={backToList}>
           <Text className={styles.backIcon}>‹</Text>

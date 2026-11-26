@@ -50,7 +50,6 @@ export const SYNC_KEYS = [
   'collectionStore',  // 收藏库（收件箱确认入库）
   'usage-voice',      // 语音用量月度计数
   'feature-usage',    // 功能记账：按天聚合的各功能真实调用次数（2026-10-24）
-  'briefingChatLog',  // 晨报 AI 对话（限长 60）
   'aiAssistantLog',   // 悬浮球 AI 对话（限长 60）
   'brand-theme',      // 主题
   'app-lang',         // 语言
@@ -136,7 +135,6 @@ const REMOVE_PLACEHOLDER: Record<string, unknown> = {
   learnStore: [],
   'ai-memory': [],
   collectionStore: [],
-  briefingChatLog: [],
   aiAssistantLog: [],
   sportRuns: [],
   'mb_news_blocklist': [],
@@ -969,6 +967,10 @@ async function pushNow(forceEmptyKeys: string[] = []): Promise<void> {
 }
 
 async function doPush(forceEmptyKeys: string[] = []): Promise<void> {
+  // 小程序端不开放跨设备同步（对外文案写死了这句）。这里的闸门以前只挂在 initCloudSync，
+  // 而 sport 页直接调 syncNow，pushNow/doPush 只靠「getSession 恰好为空」兜着 ——
+  // 一旦小程序端拿到会话就会开始上传。把闸门下沉到真正发请求的这一层。
+  if (process.env.TARO_ENV === 'weapp') return;
   const session = await getSession();
   const sessionOwner = session?.user?.id || null;
   if (!sessionOwner) return; // 未登录：跳过（不计失败）

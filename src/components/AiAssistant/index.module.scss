@@ -93,7 +93,11 @@
 .pageRoot {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  /* 必须是**有界**高度：min-height:100vh 会让内容把整页撑高，输入行被推到
+     视口之外（390×844 实测输入栏 y=849，点不到）。消息列表自己滚。 */
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: $color-bg-page;
 }
 
@@ -325,7 +329,7 @@
   justify-content: center;
   border-radius: $radius-button;
   /* 2026-11-03：白字压品牌橙/晨空蓝只有 2.59 / 3.23:1。改 strong 变体：白字 4.95 / 5.97:1。 */
-  background: var(--brand-strong, #{$color-secondary-strong});
+  background: var(--dm-brand-solid, var(--brand-strong, #{$color-secondary-strong}));
   color: $color-text-white;
   font-size: $font-size-md;
   font-weight: $font-weight-medium;

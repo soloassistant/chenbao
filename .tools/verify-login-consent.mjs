@@ -92,10 +92,13 @@ function finderExpr() {
     `scrollW:document.documentElement.scrollWidth,` +
     `bodyText:(document.body.innerText||'').replace(/\\s+/g,' '),` +
     `agreeLine:box('我已阅读并同意上述隐私说明'),` +
-    `notice:box('邮箱仅用于账号登录'),` +
+    `notice:box('仅用于账号登录'),` +
     `submit:box('登录'),` +
-    `unchecked:document.body.innerText.includes('\\u2610'),` +
-    `checked:document.body.innerText.includes('\\u2611'),` +
+    // 只判「同意行自己」的勾选态：全页可能有别的默认勾选（记住登录），
+    // 拿 body.innerText 判会把它们算进来（2026-11-25 实测 ☐/☑ 同时为真）。
+    `agreeGlyph:(function(){const els=[...document.querySelectorAll('*')].filter(e=>(e.innerText||'').includes('我已阅读并同意上述隐私说明')&&e.children.length===0);const el=els[els.length-1];if(!el)return '';let p=el,best=el.innerText||'';for(let i=0;i<4&&p.parentElement;i++){p=p.parentElement;const t=p.innerText||'';if(t.length>best.length&&t.length<200)best=t;}return best;})(),` +
+    `unchecked:false,` +
+    `checked:false,` +
     `splashGone:!document.querySelector('.taro_splash,.splash-screen,[class*=splash]')||document.querySelector('.taro_splash,.splash-screen,[class*=splash]').getBoundingClientRect().height===0` +
     `})})()`;
 }
@@ -163,6 +166,9 @@ async function main() {
         continue;
       }
 
+      // 由同意行文本派生勾选态（☐ 未勾 / ☑ 已勾）
+      v.unchecked = String(v.agreeGlyph || '').includes('\u2610');
+      v.checked = String(v.agreeGlyph || '').includes('\u2611');
       const checks = [];
       const add = (name, passVal, detail) => { checks.push([name, passVal, detail]); };
 

@@ -10,6 +10,8 @@
 import Taro from '@tarojs/taro';
 
 export const ONBOARD_STORAGE_KEY = 'onboarded-v2';
+/** 注册成功后置真；App 消费一次即删（只对新用户弹引导） */
+export const ONBOARD_PENDING_KEY = 'onboarding-pending';
 
 /** 是否已经看过引导。Taro 对缺键返回空串（不是 undefined），必须显式判真值。 */
 export function hasOnboarded(): boolean {

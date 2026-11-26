@@ -629,7 +629,7 @@ ok('R3 前提可复现：fromNow(undefined) 确实返回「刚刚」', dateMod.f
 ok('R4 前提可复现：fromNow(合法 ISO) 不会退化成「刚刚」',
   dateMod.fromNow(new Date(Date.now() - 3 * 3600 * 1000).toISOString()) === '3 小时前');
 
-const langSrc = stripComments(read('src/store/language.ts'));
+const langSrc = stripComments(read('src/store/language.ts') + read('src/store/language.en.ts'));
 const fullQuotes = langSrc.match(/'briefing\.quoteFull':\s*'([^']*)'/g) || [];
 ok('R5 自选满额文案中英各一处，且都用 {max} 占位符（不写死 8）',
   fullQuotes.length === 2 && fullQuotes.every((l) => l.includes('{max}')));
@@ -705,7 +705,7 @@ ok('T6 小程序端仍走 saveFile（云端路径不影响 weapp）',
 /* T7 上传成功但换不出签名 URL 时**不谎称「头像已更新」**——用户眼前没有任何变化，
  * 这时报「已更新」就是假成功。必须按 url 是否真拿到分流两套文案。 */
 ok('T7 取不到签名 URL 时不谎称已更新（改报「已保存、重进可见」）',
-  /url \? t\('mine\.avatarSaved'\) : t\('mine\.avatarSavedNoPreview'\)/.test(mine) &&
+  /url[\s\S]{0,40}\? t\('mine\.avatarSaved'\)[\s\S]{0,40}: t\('mine\.avatarSavedNoPreview'\)/.test(mine) &&
   /'mine\.avatarSavedNoPreview':/.test(langSrc));
 /* T8 依赖的 SDK 面必须在我们**实际加载的那份 SDK**里真实存在。
  * 本仓自托管 SDK（大陆 CDN 被墙，见 src/assets/wb-sdk.js）与 npm 版可能不同版本，
@@ -757,7 +757,7 @@ ok('U4 顶栏渲染失败文案与重试入口（t(trade.feedDown) + onClick={re
     /t\('trade\.feedRetry'\)/.test(tradeSrc) &&
     /onClick=\{retryFeed\}/.test(tradeSrc));
 // U5 中英同步：两个键各出现 2 次（zh + en），中文文案与需求逐字一致
-const langU = stripComments(read('src/store/language.ts'));
+const langU = stripComments(read('src/store/language.ts') + read('src/store/language.en.ts'));
 ok('U5 失败文案与重试键中英各一处', (langU.match(/'trade\.feedDown':/g) || []).length === 2 &&
   (langU.match(/'trade\.feedRetry':/g) || []).length === 2);
 ok('U5b 中文失败文案逐字包含「实时行情暂不可用，已回到参考行情」',
@@ -805,6 +805,675 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   }
   ok('U7e 3 分钟连续失败调用次数 = 5（可复算：0/10/40/100/160）',
     times.length === 5 && times.join(',') === '0,10,40,100,160');
+}
+
+/* M36（2026-11-19）：英文核心操作与 H5 付费出口 */
+{
+  const inboxSrc = read('src/pages/inbox/index.tsx');
+  const splashSrc = read('src/components/Splash/index.tsx');
+  const memberSrc = read('src/pages/membership/index.tsx');
+  ok('M36a 收件箱核心按钮/提示走 i18n，不再硬编码中文',
+    inboxSrc.includes("t('inbox.parseBtn')") &&
+    inboxSrc.includes("t('inbox.addShot')") &&
+    inboxSrc.includes("t(images.length > 0 ? 'inbox.workTextOnly' : 'inbox.workNeedContent')") &&
+    !inboxSrc.includes("'已添加截图'") && !inboxSrc.includes("'开始解析'") && !inboxSrc.includes("'添加截图'"));
+  ok('M36b 开屏文案走 i18n（英文模式不再出现中文开屏）',
+    splashSrc.includes("t('app.title')") && splashSrc.includes("t('app.slogan')") && splashSrc.includes("t('app.skip')"));
+  ok('M36c H5 无支付通道时给常驻说明并指向促销码，而不是 3 秒 toast',
+    memberSrc.includes('isH5 && !currentPayChannel ? () => setPayGuideOpen(true) : handleSubscribe') &&
+    memberSrc.includes('{payGuideOpen ? (') &&
+    memberSrc.includes('setPromoOpen(true)') &&
+    memberSrc.includes("t('mine.payGuideBody')"));
+}
+
+/* M39（2026-11-19）：英文模式不再弹中文提示 */
+{
+  const files = ['src/pages/inbox/index.tsx', 'src/pages/mine/index.tsx', 'src/pages/membership/index.tsx', 'src/pages/shopping/index.tsx', 'src/pages/learnCommunity/index.tsx', 'src/components/IntelGroupCard/index.tsx'];
+  const bad = [];
+  for (const f of files) {
+    const src = read(f);
+    for (const line of src.split('\n')) {
+      // 不用正则字面量：\\s / \\u 在不同写盘路径下容易被转义破坏，用显式判断更稳
+      const hasZh = [...line].some((ch) => {
+        const c = ch.codePointAt(0) || 0;
+        return c >= 0x4e00 && c <= 0x9fa5;
+      });
+      if (line.includes('showToast(') && line.includes("title: '") && hasZh && !line.includes("t('")) {
+        bad.push(`${f}: ${line.trim().slice(0, 60)}`);
+      }
+    }
+  }
+  ok('M39a 核心页面无硬编码中文 toast（英文模式不再露中文）', bad.length === 0);
+  const langZh = read('src/store/language.ts');
+  const langEn = read('src/store/language.en.ts');
+  const needed = ['inbox.parseFailed','inbox.analyzeFailed','inbox.selectFirst','inbox.collectionFull','inbox.writeFailed','inbox.ledgerFailed','inbox.shopFailed','inbox.glossCopied','inbox.copyFailed','community.empty','mine.need4Digit','mine.pinWrong','mine.minorExited','mine.pinReset','mine.privacyWechatManage','mine.privacyWechatOnly','mine.deleteFailed','shopping.added','shopping.priceFormat','shopping.priceSaved','mine.payCancel','mine.payRetry','mine.payOrderFail'];
+  const missing = needed.filter((k) => !langZh.includes(`'${k}':`) || !langEn.includes(`'${k}':`));
+  ok('M39b 新增提示文案中英齐全', missing.length === 0);
+}
+
+/* M37（2026-11-19）：热点每日新鲜度 */
+{
+  const wf = read('.github/workflows/refresh-data.yml');
+  const cloud = read('src/services/cloud.ts');
+  const lib = read('src/pages/library/index.tsx');
+  ok('M37a 热点刷新工作流有多组错峰 cron（GH 排队实测 8h 一次）',
+    wf.split('cron:').length - 1 >= 3 && wf.includes('workflow_dispatch'));
+  ok('M37b 强制取新：只给跨域源加时间戳 + 两份取较新 + 同步元信息',
+    cloud.includes('export async function refreshHotspotPayload') &&
+    cloud.includes('LIVE_HOTSPOT_URL}?t=${Date.now()}') &&
+    cloud.includes('Date.parse(live.updatedAt) > Date.parse(same.updatedAt)') &&
+    cloud.includes('hotspotMeta = filtered.updatedAt'));
+  ok('M37f 刷新工作流写状态文件（否则无法判定是否真刷新）',
+    wf.includes('--status gh-pages-out/api/hotspot.status.json') &&
+    wf.includes('git add api/hotspot.json api/hotspot.status.json'));
+  ok('M37d 固定 06:00 上海切点（22:00 UTC）存在',
+    wf.includes("cron: '0 22 * * *'"));
+  ok('M37e 晨报页可见时每 10 分钟重取，突发横幅能随新条目出现',
+    read('src/pages/briefing/index.tsx').includes('10 * 60 * 1000') &&
+    read('src/pages/briefing/index.tsx').includes('void loadBriefing(true)') &&
+    read('src/pages/briefing/index.tsx').includes("document.visibilityState === 'visible'"));
+  ok('M37c 热点页可手动刷新，且可见时每 10 分钟静默取新',
+    lib.includes('refreshHotspotPayload()') && lib.includes("t('library.refresh')") &&
+    lib.includes('10 * 60 * 1000') && lib.includes("document.visibilityState === 'visible'"));
+}
+/* M38（2026-11-19）：订阅模板 id 不写死空串，未配置时 UI 如实提示 */
+{
+  const cfg = read('src/config/subscribe.ts');
+  const build = read('config/index.ts');
+  const brief = read('src/pages/briefing/index.tsx');
+  ok('M38a 模板 id 来自构建期环境变量，不在源码写死空串',
+    cfg.includes('process.env.TARO_APP_SUBSCRIBE_TEMPLATE_ID') &&
+    !/export const SUBSCRIBE_TEMPLATE_ID = ''/.test(cfg));
+  ok('M38b defineConstants 用完整 process.env.X 键（裸键替换不到）',
+    build.includes("'process.env.TARO_APP_SUBSCRIBE_TEMPLATE_ID'"));
+  ok('M38c 未配置时点击如实提示，不再静默 noop',
+    cfg.includes('SUBSCRIBE_CONFIGURED') &&
+    brief.includes("t('briefing.subscribeUnavailable')") &&
+    brief.includes('if (!SUBSCRIBE_CONFIGURED)'));
+}
+
+/* M40（2026-11-21）：收藏 → 待办（F92）。
+ * 守三件事：真的写 dailyPlanStore.todos、写后回读校验、失败不得报成功。 */
+{
+  const src = read('src/pages/briefing/index.tsx');
+  ok('M40a 收藏精选有「转为待办」出口且写入 dailyPlanStore',
+    src.includes('addDigestAsTodo') &&
+      src.includes('readPlan()') && src.includes('writePlan(plan)') &&
+      src.includes("t('briefing.favToTodo')"));
+  ok('M40b 写入后回读校验（writePlan 吞异常，不能只凭返回值报成功）',
+    /readPlan\(\)\.todos\.some\(/.test(src));
+  ok('M40c 成功/重复/失败文案分开，失败不报「已加入」',
+    src.includes("'briefing.favToTodoDone'") &&
+      src.includes("'briefing.favToTodoDup'") &&
+      src.includes("'briefing.favToTodoFail'"));
+  const zh = read('src/store/language.ts');
+  const en = read('src/store/language.en.ts');
+  ok('M40d 三条文案中英齐全',
+    ['favToTodo', 'favToTodoDone', 'favToTodoFail'].every(
+      (k) => zh.includes(`'briefing.${k}':`) && en.includes(`'briefing.${k}':`)
+    ));
+}
+
+/* M41（2026-11-21）：促销码防叠加 + 同步冲突批量裁决。
+ * 促销码是 H5 唯一开 PRO 的通道，必须防「一个码无限续期」；
+ * 冲突 45 键在换设备时可能一次冒出十几条，必须给一键出口。 */
+{
+  const promo = read('src/utils/promo.ts');
+  const member = read('src/pages/membership/index.tsx');
+  ok('M41a 促销码同码同用户只算一次（本机账本）',
+    promo.includes("PROMO_USED_KEY = 'promo-redeemed'") &&
+      promo.includes("reason: 'used'") &&
+      promo.includes('markPromoUsed'));
+  ok('M41b 已用记录在「服务端权益成立」之后才写（订单失败不白吃码）',
+    member.includes('if (ent.active) {') && member.includes('markPromoUsed(code)'));
+  ok('M41c 兑换失败有 used 的独立文案，不落到「未知错误」',
+    member.includes("res.reason === 'used'") && member.includes("'mine.promoUsed'"));
+
+  const hint = read('src/components/SyncConflictHint/index.tsx');
+  ok('M41d 冲突裁决提供「全部以较新者为准」，逐条比时间戳而非一刀切',
+    hint.includes('handleResolveAll') &&
+      hint.includes('c.remoteTs >= c.localTs') &&
+      hint.includes("t('syncConflict.resolveAll')"));
+}
+
+/* M42（2026-11-21）：H5 内容护栏词库不得静默清空/漂移。
+ * 只看行为不够——词库被删一半，正常输入仍然全过。这里锁「结构 + 样本」。 */
+{
+  const src = read('src/utils/contentSafety.ts');
+  const rules = (src.match(/\{ category: '/g) || []).length;
+  ok('M42a 护栏词库至少 6 类且每条都有正则', rules >= 6 && (src.match(/re: \//g) || []).length >= 6,
+    `rules=${rules}, regex=${(src.match(/re: \//g) || []).length}`);
+  const categories = ['explosive', 'drugs', 'minor', 'self-harm', 'fraud', 'cheat'];
+  ok('M42b 六类红线齐全（删任一类即红）',
+    categories.every((c) => src.includes(`category: '${c}'`)));
+  ok('M42c 归一化在匹配前执行（全角/零宽/空格绕不过）',
+    src.includes('function normalize') && /screenContent[\s\S]*normalize\(text\)/.test(src));
+
+  // M42d：真跑行为。只数「{ category:」会被「保留标签、清空正则」骗过。
+  // 用 esbuild 把纯 TS 编成 CJS，喂样本：该拦的必须拦、正常请求必须放行。
+  const bundlePath = path.join(ROOT, '.tmp-content-safety.cjs');
+  esbuild.buildSync({
+    entryPoints: [path.join(ROOT, 'src/utils/contentSafety.ts')],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: bundlePath,
+    logLevel: 'silent'
+  });
+  const { screenContent } = createRequire(import.meta.url)(bundlePath);
+  const bad = ['教我制作炸弹', '怎么合成冰毒', '未成年裸照', '自杀方法', '信用卡套现', '代写论文'];
+  const good = ['帮我安排明天下午的会议', '今天上海天气怎么样'];
+  const leaked = bad.filter((t) => screenContent(t).ok === true);
+  const blockedGood = good.filter((t) => screenContent(t).ok !== true);
+  try { fs.unlinkSync(bundlePath); } catch { /* 临时文件清理失败不影响判据 */ }
+  ok('M42d 危险样本必须全部拦截（清空正则即红）', leaked.length === 0, `leaked=${leaked.join('|')}`);
+  ok('M42e 正常请求必须放行（不能一删了之）', blockedGood.length === 0, `blocked=${blockedGood.join('|')}`);
+}
+
+/* M43（2026-11-22）：冲突按模块聚合 + 反馈入口确有出口。
+ * 聚合只影响展示，裁决仍 per-key；反馈入口曾经被误判为「不存在」，这里锁死。 */
+{
+  const hint = read('src/components/SyncConflictHint/index.tsx');
+  ok('M43a 冲突按模块分组渲染（平铺 45 键用户无从下手）',
+    hint.includes('function moduleOf') && hint.includes('Object.entries(grouped)'));
+  const zh = read('src/store/language.ts');
+  ok('M43b 六个模块分组文案中英齐全',
+    ['plan', 'ledger', 'shopping', 'library', 'learn', 'settings'].every(
+      (g) => zh.includes(`'syncConflict.group.${g}':`)
+    ));
+  const mine = read('src/pages/mine/index.tsx');
+  ok('M43c 「我的」页反馈入口可达（打开弹层，不是死链）',
+    mine.includes("t('mine.feedback')") && mine.includes('setFbOpen(true)'));
+}
+
+/* M44（2026-11-22）：同步键不得留死键。
+ * `briefingChatLog` 曾只存在于声明+默认值+文案，全仓零读写，每次同步白传空数组。 */
+{
+  const sync = read('src/services/cloudSync.ts');
+  ok('M44a 死同步键 briefingChatLog 已删除', !sync.includes('briefingChatLog'));
+  const all = ['src/store/language.ts', 'src/store/language.en.ts', 'src/pages/briefing/index.tsx']
+    .map((f) => read(f)).join('\n');
+  ok('M44b 死键文案与读写点也清干净', !all.includes('briefingChatLog'));
+}
+
+/* M45（2026-11-22）：A06 结构化校验必须真校验，不是「能 parse 就信」。
+ * M46：F92 收藏转待办必须幂等，同一标题不得重复入库。 */
+{
+  const schema = read('src/utils/aiSchema.ts');
+  const api = read('src/services/api.ts');
+  ok('M45a 提取结果有字段级校验（类型/日期格式/上限），失败抛 AiSchemaError',
+    schema.includes('validateExtractResult') &&
+      schema.includes('class AiSchemaError') &&
+      schema.includes('bad_datetime') &&
+      schema.includes('not_string'));
+  ok('M45b apiExtract 真的调用校验，不是只 import',
+    /apiExtract[\s\S]{0,400}validateExtractResult\(raw\)/.test(api));
+  const inbox = read('src/pages/inbox/index.tsx');
+  ok('M45c 校验失败给专门文案，不混进网络失败',
+    inbox.includes('instanceof AiSchemaError') && inbox.includes("'inbox.schemaInvalid'"));
+
+  const brief = read('src/pages/briefing/index.tsx');
+  ok('M46a 收藏转待办按标题+来源判重',
+    /plan\.todos\.some\([\s\S]{0,120}item\.title === title[\s\S]{0,80}晨报收藏/.test(brief));
+  ok('M46b 重复点击返回 duplicate，不写第二条',
+    brief.includes("'duplicate'") && brief.includes("'briefing.favToTodoDup'"));
+}
+
+/* M47（2026-11-22）：高压力交互点不得残留硬编码中文。
+ * M48：方案卡/习惯守护的 H5 落库不得再把「没写」兜成成功。 */
+{
+  const shop = read('src/pages/shopping/index.tsx');
+  const search = read('src/pages/search/index.tsx');
+  ok('M47a 删除确认走词典（英文模式不再弹中文）',
+    shop.includes("t('shopping.deleteTitle')") && !shop.includes("title: '删掉这件商品？'"));
+  ok('M47b 搜索失败提示走词典', search.includes("t('search.webUnavailable')"));
+  const zh = read('src/store/language.ts');
+  const en = read('src/store/language.en.ts');
+  ok('M47c 新增文案中英齐全',
+    ['shopping.deleteTitle', 'shopping.deleteBody', 'search.webUnavailable'].every(
+      (k) => zh.includes(`'${k}':`) && en.includes(`'${k}':`)
+    ));
+
+  const api = read('src/services/api.ts');
+  ok('M48a H5 方案落库直接写本地（不依赖 chat 云函数）',
+    /if \(!isWeapp\) return applyPlanLocally\(events\)/.test(api));
+  ok('M48b 云端缺 saved 时判失败，不得默认成 events.length',
+    /typeof res\.saved !== 'number'/.test(api) &&
+      !/saved\s*=\s*events\.length/.test(api));
+}
+
+/* M49（2026-11-22）：搜索空结果给示例；H5 本地降级回复必须带标识。
+ * 两者都是 H5 主形态上用户直接看到的位置。 */
+{
+  const search = read('src/pages/search/index.tsx');
+  ok('M49a 搜索无结果给「试试」示例，不是只报一句没找到',
+    (search.match(/t\('search\.tryExamples'\)/g) || []).length >= 2);
+  const ai = read('src/components/AiAssistant/index.tsx');
+  ok('M49b 本地模板回复有降级标识（A02 不得冒充模型）',
+    ai.includes("m.notice === 'fallback'") && ai.includes("t('ai.fallbackLocal')"));
+}
+
+/* M50（2026-11-22）：跨域热点请求必须有超时，失败回落同源快照；
+ * M51 主题类名必须在 app 根挂载（不是页面级 hook 逐页挂）；
+ * M52 内部审计后缀不得出现在用户可见法务正文；
+ * M53 订阅创建订单期间必须有 loading。 */
+{
+  const cloud = read('src/services/cloud.ts');
+  ok('M50a 热点请求有 AbortController 4s 超时',
+    /AbortController/.test(cloud) && /4000/.test(cloud) && /signal: ctrl\.signal/.test(cloud));
+  ok('M50b 同源过期先返回旧数据，远端后台升级（不阻塞首屏）',
+    /void refreshHotspotPayload\(\)\.catch/.test(cloud));
+  const app = read('src/app.tsx');
+  ok('M51a app 根挂载主题类名并订阅变化',
+    app.includes('applyThemeClass()') && app.includes('useThemeModeStore.subscribe'));
+  const legal = read('src/data/legal.ts');
+  ok('M52a 用户可见法务版本不含 PENDING-SIGNATURE',
+    legal.includes("LEGAL_VERSION.replace(/-PENDING-SIGNATURE$/, '')") &&
+      !/版本：\$\{LEGAL_VERSION\}/.test(legal));
+  const member = read('src/pages/membership/index.tsx');
+  ok('M53a 创建订单期间有 showLoading / hideLoading',
+    member.includes('Taro.showLoading') && member.includes('Taro.hideLoading'));
+}
+
+/* M54（2026-11-22）：二次提取 0 条不得清空已有草稿；
+ * M55 未订阅角标必须写「升级 PRO」，不能把免费用户标成 PRO。 */
+{
+  const inbox = read('src/pages/inbox/index.tsx');
+  ok('M54a 提取 0 条时提前返回，不覆盖已有草稿',
+    /if \(next\.length === 0\)[\s\S]{0,200}return;/.test(inbox));
+  const brief = read('src/pages/briefing/index.tsx');
+  ok('M55a 未订阅角标走 upgradePro 文案',
+    brief.includes("t('briefing.upgradePro')") && !/>\s*⚡ PRO\s*</.test(brief));
+  const zh = read('src/store/language.ts');
+  const en = read('src/store/language.en.ts');
+  ok('M55b upgradePro 中英齐全',
+    zh.includes("'briefing.upgradePro':") && en.includes("'briefing.upgradePro':"));
+}
+
+/* M56（2026-11-22）：用户可见数字/名称必须与口径一致。
+ * 订单通道不得渲染裸键名；客服行右值要与点击动作一致；
+ * 超预算提示给「超出额」而不是「预算额」；最低价标明是记录值；运动汇总按 8 周窗口算。 */
+{
+  const member = read('src/pages/membership/index.tsx');
+  ok('M56a 订单通道按主通道名映射，未知回落「其他」',
+    member.includes('channelBase') && member.includes("t('mine.orderChannelOther')") &&
+      !/mine\.orderChannel\$\{ch\[0\]/.test(member));
+  const mine = read('src/pages/mine/index.tsx');
+  ok('M56b 联系客服右值与「在线提交」动作一致',
+    mine.includes("t('mine.serviceOnline')") && !mine.includes('{SERVICE_WECHAT}'));
+  const ledger = read('src/pages/ledger/index.tsx');
+  ok('M56c 超预算提示计算「超出额」',
+    /todaySum\.expense - budget\.daily/.test(ledger) &&
+      /monthSum\.expense - \(budget\.monthly/.test(ledger));
+  const shop = read('src/pages/shopping/index.tsx');
+  ok('M56d 最低价标注为「记录最低」', shop.includes("t('shopping.lowestRecorded'"));
+  const sport = read('src/pages/sport/index.tsx');
+  ok('M56e 运动汇总只统计近 8 周',
+    sport.includes('eightWeeksAgo') && sport.includes('recentRuns.length'));
+}
+
+/* M57（2026-11-23）：订阅授权必须回写云端，否则定时推送恒不下发；
+ * M58 云端清除未执行必须让用户看见；M59 test: 命名空间不能被门禁视野漏掉。 */
+{
+  const sub = read('src/utils/subscribe.ts');
+  const upd = read('cloudfunctions/updateSettings/index.js');
+  ok('M57a 客户端 accept 后把 subscribeAccepted 写回云端',
+    sub.includes('subscribeAccepted: true') && sub.includes("name: 'updateSettings'"));
+  ok('M57b 云函数接收并校验该字段（只认真 true）',
+    upd.includes('payload.subscribeAccepted === true') && upd.includes('update.subscribeAccepted = true'));
+  const mine = read('src/pages/mine/index.tsx');
+  ok('M58a 云端清除未执行时给用户可见提示，不再只 console.info',
+    mine.includes("t('mine.deleteCloudWarn')") && /not-deployed[\s\S]{0,300}deleteCloudWarn/.test(mine));
+  const all = read('.tools/verify-all.mjs');
+  ok('M59a 门禁普查包含 test: 命名空间',
+    all.includes("k.startsWith('test:')") && /verify\|audit\|test/.test(all));
+}
+
+/* M60（2026-11-23）：本地指令写库必须回读，不能写后直接报「已…」。
+ * chat.ts 的 writePlan 会吞 storage 异常；以前 6 个写点都是 writePlan 后立刻返回成功文案。 */
+{
+  const chat = read('src/data/chat.ts');
+  ok('M60a 所有写点都经 commitPlan（写后回读）',
+    (chat.match(/commitPlan\(/g) || []).length >= 7 &&
+      !/writePlan\(plan\);\s*return `/.test(chat));
+  ok('M60b commitPlan 用 readPlan 校验，失败给明确文案',
+    /function commitPlan[\s\S]{0,200}readPlan\(\)/.test(chat) &&
+      chat.includes('没有写入成功'));
+}
+
+/* M61（2026-11-23）：社区种子帖不得在英文模式露出中文。
+ * 种子帖是示例数据，但用户看得见；中文正文 + 英文界面是明确的双语缺口。 */
+{
+  const c = read('src/pages/learnCommunity/index.tsx');
+  ok('M61a 种子帖按当前语言生成中英两版',
+    c.includes('function seedPosts(lang') && c.includes("en ? 'Japanese'") && c.includes("en ? 'Korean'"));
+  ok('M61b 调用点传入当前语言，不是写死 zh',
+    /seedPosts\(useLanguageStore\.getState\(\)\.lang\)/.test(c));
+}
+
+/* M62（2026-11-23）：风险回报比评级必须写清阈值，不能只给 A/B/C/D。 */
+{
+  const trade = read('src/pages/trade/index.tsx');
+  const zh = read('src/store/language.ts');
+  ok('M62a 评级旁有阈值说明', trade.includes("t('trade.rrGradeHint')"));
+  const flat = trade.replace(/\s+/g, ' ');
+  ok('M62b 阈值与实际计算一致（A≥3 / B≥2 / C≥1）',
+    zh.includes('A ≥ 3、B ≥ 2、C ≥ 1') &&
+      flat.includes("calcRR >= 3 ? 'A'") &&
+      flat.includes("calcRR >= 2 ? 'B'") &&
+      flat.includes("calcRR >= 1 ? 'C'"));
+}
+
+/* M63（2026-11-23）：分类哨兵「全部」不得在英文界面露中文。 */
+{
+  const lib = read('src/pages/library/index.tsx');
+  const zh = read('src/store/language.ts');
+  const en = read('src/store/language.en.ts');
+  ok('M63a 「全部」哨兵走 library.all，不直接进 categoryLabel',
+    lib.includes("tag === '全部' ? t('library.all')") &&
+      !lib.includes('label={categoryLabel('));
+  ok('M63b library.all 中英齐全', zh.includes("'library.all':") && en.includes("'library.all':"));
+}
+
+/* M64（2026-11-23）：头像落盘必须回读；写不进去要改口，不能报「已保存」。 */
+{
+  const mine = read('src/pages/mine/index.tsx');
+  ok('M64a 头像写入统一走 persistAvatar 并回读比对',
+    /function persistAvatar|const persistAvatar/.test(mine) &&
+      /getStorageSync\(AVATAR_KEY\) === value/.test(mine));
+  ok('M64b 不再出现「裸写 storage 后直接报已保存」',
+    !/setStorageSync\(AVATAR_KEY,[\s\S]{0,80}avatarSaved/.test(mine));
+  ok('M64c 失败时有「仅本次会话有效」的替代文案',
+    mine.includes("t(ok ? 'mine.avatarSaved' : 'mine.avatarTempOnly')"));
+}
+
+/* M65（2026-11-23）：确认入库 saved=0 不算成功，不得清空草稿。 */
+{
+  const inbox = read('src/pages/inbox/index.tsx');
+  ok('M65a saved<=0 时提前返回，草稿保留',
+    /typeof res\.saved !== 'number' \|\| res\.saved <= 0[\s\S]{0,160}return;/.test(inbox));
+  ok('M65b 失败提示走词典且中英齐全',
+    inbox.includes("t('inbox.nothingSaved')") &&
+      read('src/store/language.ts').includes("'inbox.nothingSaved':") &&
+      read('src/store/language.en.ts').includes("'inbox.nothingSaved':"));
+}
+
+/* M66（2026-11-23）：卷子/题目是**原文**，不得按界面语言翻译。
+ * 界面 chrome 走词典，题目正文、选项、材料必须原样渲染 —— 翻译题干会改变题义。 */
+{
+  const papers = read('src/pages/papers/index.tsx');
+  const bank = read('src/pages/questionBank/index.tsx');
+  ok('M66a 卷子标题原样透传，不经过 t()/词典',
+    papers.includes('{ title,') && !papers.includes("t('paper"));
+  ok('M66b 题库页不读界面语言来改写题干',
+    !bank.includes('useLanguageStore') && !bank.includes("lang === 'en'"));
+}
+
+/* M67（2026-11-23）：用户可见 chrome 不得残留硬编码中文；语音启动失败要有反馈。 */
+{
+  const inbox = read('src/pages/inbox/index.tsx');
+  const member = read('src/pages/membership/index.tsx');
+  const mine = read('src/pages/mine/index.tsx');
+  const shop = read('src/pages/shopping/index.tsx');
+  ok('M67a 收件箱三段操作区走词典',
+    inbox.includes("t('inbox.billsSaveAll')") &&
+      inbox.includes("t('inbox.shoppingSaveAll')") &&
+      inbox.includes("t('inbox.vocabCopyAll')") &&
+      !inbox.includes('全部记为今日订阅支出'));
+  ok('M67b 会员核对状态、我的保存密码、购物删除走词典',
+    member.includes("t('membership.recheck')") &&
+      mine.includes("t('mine.savePassword')") &&
+      shop.includes("t('shopping.removeShort')"));
+  const voice = read('src/components/VoiceButton/index.tsx');
+  ok('M67c 语音启动失败给出可见反馈',
+    /start engine failed[\s\S]{0,120}showToast\('voice\.startFailed'/.test(voice));
+  const zh = read('src/store/language.ts');
+  ok('M67d 新增文案中英齐全',
+    ['inbox.billsSaveAll', 'membership.recheck', 'mine.savePassword', 'shopping.removeShort', 'voice.startFailed'].every(
+      (k) => zh.includes(`'${k}':`)
+    ) && read('src/store/language.en.ts').includes("'voice.startFailed':"));
+}
+
+/* M68（2026-11-23）：题库 chip 与真题行触控目标 ≥44px。 */
+{
+  const qb = read('src/pages/questionBank/shared.module.scss');
+  const papers = read('src/pages/papers/index.module.scss');
+  ok('M68a 题库 chip 用 hit-expand-min 扩到 44PX', qb.includes('hit-expand-min(44PX'));
+  ok('M68b 真题行最小高度 88rpx（≈44px）', papers.includes('min-height: 88rpx'));
+}
+
+/* M69（2026-11-23）：社区点赞是可点元素，要有 44px 热区与键盘可达。 */
+{
+  const page = read('src/pages/learnCommunity/index.tsx');
+  const css = read('src/pages/learnCommunity/index.module.scss');
+  ok('M69a 点赞热区扩到 44PX', css.includes('hit-expand-min(44PX'));
+  ok('M69b 点赞有可访问名（pressableProps）', page.includes("pressableProps(t('community.likeAction'))"));
+  ok('M69c 文案中英齐全',
+    read('src/store/language.ts').includes("'community.likeAction':") &&
+      read('src/store/language.en.ts').includes("'community.likeAction':"));
+}
+
+/* M70（2026-11-23）：模板 ID 缺失时定时任务不能完全静默，否则线上无法区分
+ * 「没授权」与「没模板」——N4 这类断链正是这样被藏住的。 */
+{
+  const brief = read('cloudfunctions/getBriefing/index.js');
+  ok('M70 模板缺失时只告警一次并带明确原因',
+    brief.includes('warnedNoTemplate') && brief.includes('SUBSCRIBE_TEMPLATE_ID 未配置'));
+}
+
+/* M71（2026-11-23）：账本导出必须在界面上写清列口径，不能只藏在代码里。 */
+{
+  const page = read('src/pages/ledger/index.tsx');
+  const zh = read('src/store/language.ts');
+  ok('M71a 导出入口旁有列口径说明', page.includes("t('ledger.exportColumnsHint')"));
+  ok('M71b 说明覆盖 CSV 主要列（日期/类型/分类/金额/备注）',
+    ['日期', '收支类型', '分类', '金额', '备注'].every((w) => zh.includes(w)) &&
+      zh.includes("'ledger.exportColumnsHint'"));
+}
+
+/* M72（2026-11-23）：浏览器门禁自身不能挂死。
+ * 实测 verify-routes 在 Chrome 起不来/渲染器节流时会无限等 CDP，拖死整个 verify:all。 */
+{
+  const r = read('.tools/verify-routes.mjs');
+  ok('M72a DevTools 探测有超时（不无限等端口）', r.includes('AbortSignal.timeout(1000)'));
+  ok('M72b 拿不到 ws 端点明确退出，不 new WebSocket(undefined)', r.includes('Chrome DevTools 未就绪'));
+  ok('M72c CDP 调用有超时', r.includes('CDP ${method} 超时'));
+  ok('M72d 有全局看门狗 + 反渲染节流参数',
+    r.includes('WATCHDOG') && r.includes('--disable-background-timer-throttling'));
+}
+
+/* M73（2026-11-23）：深色覆盖必须可自动验证，而不是靠人眼看截图。 */
+{
+  const r = read('.tools/verify-routes.mjs');
+  const pkg = read('package.json');
+  ok('M73a 巡检支持 --theme=dark，用截图像素判亮度',
+    r.includes("arg('theme')") && r.includes('Page.captureScreenshot') && r.includes('整页主色仍为浅色'));
+  ok('M73b 有独立脚本入口 verify:theme-dark',
+    pkg.includes('verify:theme-dark') && pkg.includes('--theme=dark'));
+}
+
+/* M74（2026-11-24）：首启引导不得抢在登录门禁前面。
+ * 回归：冷启动首屏是 briefing，会话检查还没回来就渲染了引导。 */
+{
+  const app = read('src/app.tsx');
+  ok('M74a 引导渲染条件包含已确认会话（authed）',
+    /consentAgreed && shellReady && authed && !onboarded/.test(app));
+  ok('M74b 会话成功时置 authed=true，失败时置 false',
+    /if \(s\) \{ setAuthed\(true\); return; \}/.test(app) && /setAuthed\(false\)/.test(app));
+}
+
+/* M75（2026-11-24）：打字框对齐必须有可执行门禁，且 CI 真的跑。 */
+{
+  const pkg = read('package.json');
+  const wf = read('.github/workflows/checks.yml');
+  ok('M75a 有独立入口 verify:inputs', pkg.includes('"verify:inputs"'));
+  ok('M75b CI 的 contrast-render 里真的调用', wf.includes('node .tools/verify-inputs.mjs'));
+}
+
+/* M76（2026-11-24）：登录页必须能输入邮箱；密码登录不得用 8 位下限挡老账号。 */
+{
+  const login = read('src/pages/login/index.tsx');
+  ok('M76a 账号框允许邮箱（text + 含 @ 分流）',
+    login.includes('accountIsEmail') && !login.includes("type='number'\n                value={account}\n                maxlength={15}"));
+  ok('M76b 密码登录只校验非空，注册/重置仍要求 8 位',
+    login.includes("if (!password) {") && login.includes("if (isSignup && password.length < 8)"));
+}
+
+/* M77（2026-11-24）：登录页会话检查必须有超时，不能一直停在「稍等」。 */
+{
+  const login = read('src/pages/login/index.tsx');
+  ok('M77 会话检查 2.5s 后放行到表单', login.includes('setTimeout(release, 2500)') && login.includes("setPhase('form')"));
+}
+
+/* M78（2026-11-24）：忘记密码必须按用户输入的标识分流，不能按写死的 channel。 */
+{
+  const login = read('src/pages/login/index.tsx');
+  ok('M78 邮箱走邮件重置、手机号走短信重置',
+    login.includes('const res = accountIsEmail()') &&
+      login.includes('requestPasswordReset(account.trim())') &&
+      login.includes('requestPasswordResetByPhone(buildPhoneE164'));
+}
+
+/* M79（2026-11-25）：四条「不可信门禁」修好后不许回退。 */
+{
+  const bundle = read('.tools/check-bundle-markers.js');
+  ok('M79a 产物标记扫描覆盖全部 chunk', bundle.includes('全量扫描') && !bundle.includes("filter((f) => /^app\\..*\\.js$/"));
+  const layout = read('.tools/verify-layout-pages.mjs');
+  ok('M79b 640 档按「导航 64 + 面板」判几何', layout.includes('vp.w - navW - gutter * 2'));
+  const visual = read('.tools/visual-pass.mjs');
+  ok('M79c 页面未渲染时 visual-pass 判红', visual.includes("chrome-error://") && visual.includes('pageEls === 0'));
+  const stub = read('.tools/verify-h5-login-path.cjs');
+  ok('M79d 登录链路桩补齐新导出', stub.includes('chatCloudStream') && stub.includes('getHotspotPayload'));
+}
+
+/* M80（2026-11-25）：首启引导只对「刚注册的新用户」弹一次。 */
+{
+  const app = read('src/app.tsx');
+  const login = read('src/pages/login/index.tsx');
+  ok('M80a App 只消费注册标记，不再按账号/设备补弹',
+    app.includes('ONBOARD_PENDING_KEY') && !app.includes('hasOnboardedFor('));
+  ok('M80b 注册成功才写标记（isSignup 分支内）',
+    /if \(isSignup\) \{[\s\S]{0,120}ONBOARD_PENDING_KEY/.test(login));
+}
+
+/* M81（2026-11-25）：小程序端没有 html 兜底，页面根必须自带主题类。
+ * 例外只有 trade（固定深色终端配色，不随主题切换）。 */
+{
+  const dir = path.join(ROOT, 'src', 'pages');
+  const missing = fs.readdirSync(dir).filter((n) => {
+    if (n === 'trade') return false;
+    const f = path.join(dir, n, 'index.tsx');
+    return fs.existsSync(f) && !fs.readFileSync(f, 'utf8').includes('themeModeClass');
+  });
+  ok('M81 除 trade 外所有页面根都挂 themeModeClass', missing.length === 0);
+}
+
+/* M82（2026-11-25）：同意勾选态只能看同意行自己，不能拿全页文字判。 */
+{
+  const c = read('.tools/verify-login-consent.mjs');
+  ok('M82 勾选态按同意行文本判定', c.includes('agreeGlyph') && !c.includes("document.body.innerText.includes('\\u2611')"));
+}
+
+/* M83（2026-11-25）：布局门禁要能识别「回退线上旧快照」，且不误判热点刷新。 */
+{
+  const l = read('.tools/verify-layout-pages.mjs');
+  ok('M83 用资源域名判回退，只拦脚本/样式', l.includes('offlineAssets') && l.includes('fetch|xmlhttprequest'));
+}
+
+/* M85（2026-11-25）：暗色像素判据必须能自证会红（U-11）。 */
+{
+  const r = read('.tools/verify-routes.mjs');
+  const pkg = read('package.json');
+  ok('M85 有 --selftest-dark 且接进入口', r.includes('--selftest-dark') && r.includes('注入后') && pkg.includes('verify:dark-selftest'));
+}
+
+/* M86（2026-11-25）：SafeImage 文案必须走 i18n；图片规则必须有门禁。 */
+{
+  const si = read('src/components/SafeImage/index.tsx');
+  const pkg = read('package.json');
+  ok('M86a SafeImage 不再硬编码中文文案',
+    !si.includes('暂无配图') && !si.includes('配图加载失败') && si.includes("t('image.from'"));
+  ok('M86b 图片规则有独立门禁入口', pkg.includes('"verify:image-url"'));
+}
+
+/* M87（2026-11-25）：登录页 2.5s 超时后，晚到的有效会话必须进应用。 */
+{
+  const login = read('src/pages/login/index.tsx');
+  ok('M87 超时后晚到会话不被 settled 吞掉',
+    /if \(s\) \{[\s\S]{0,80}settled = true;[\s\S]{0,80}goToApp\(\)/.test(login));
+}
+
+/* M88（2026-11-25）：暗色对比度默认扫全部路由，不只 5 页。 */
+{
+  const c = read('.tools/verify-contrast-render.mjs');
+  ok('M88 暗色默认扫 app.config 全量路由', c.includes('ALL_PAGES') && c.includes("THEME === 'dark' ? ALL_PAGES"));
+}
+
+/* M89（2026-11-25）：工具脚本不得硬编码本机用户路径；E2E 截图不落项目目录。 */
+{
+  const fs2 = fs;
+  const dir = path.join(ROOT, '.tools');
+  const NEEDLE = 'C:' + String.fromCharCode(92) + 'Users' + String.fromCharCode(92);
+  const offenders = fs2.readdirSync(dir)
+    .filter((f) => /\.(mjs|js|cjs)$/.test(f))
+    .filter((f) => fs2.readFileSync(path.join(dir, f), 'utf8').includes(NEEDLE));
+  ok('M89a .tools 下无硬编码本机用户路径', offenders.length === 0, offenders.join(','));
+  const e2e = read('.tools/_e2e-internal-login.mjs');
+  ok('M89b E2E 截图写系统临时目录且先建目录', e2e.includes("os.tmpdir()") && e2e.includes('mkdirSync(SHOT_DIR'));
+}
+
+/* M90（2026-11-25）：文字重叠门禁存在，且按可见矩形判（裁掉的不算）。 */
+{
+  const o = read('.tools/verify-overlap.mjs');
+  ok('M90 重叠门禁存在并按可见矩形判定', o.includes('visibleRect') && o.includes('overflowX'));
+}
+
+/* M91（2026-11-25）：AI 助手整页模式必须有界高度，输入行不能跑出视口。 */
+{
+  const ai = read('src/components/AiAssistant/index.module.scss');
+  const block = ai.slice(ai.indexOf('.pageRoot'), ai.indexOf('.pageRoot') + 400);
+  ok('M91 AI 整页高度有界（100dvh + overflow hidden）', block.includes('100dvh') && block.includes('overflow: hidden'));
+}
+
+/* M92（2026-11-25）：记账选分类后必须关弹层；预算 chip 不得显示成支出。 */
+{
+  const led = read('src/pages/ledger/index.tsx');
+  ok('M92a 选中分类即关闭弹层', /setPickedCategory\(c\.id\);\s*setSheetOpen\(false\)/.test(led));
+  ok('M92b 预算 chip 显示预算或「未设置」，不再拿支出顶上',
+    led.includes("t('ledger.budgetUnset')") && !/budgetVal\}>\s*\{\s*formatMoney\(todaySum\.expense\)/.test(led));
+}
+
+/* M93（2026-11-25）：生产 H5 不得打本地 LLM 代理（localhost:8138）。 */
+{
+  const c = read('src/services/cloud.ts');
+  const i = c.indexOf('async function callLocalAI');
+  const body = c.slice(i, i + 400);
+  ok('M93 callLocalAI 仅在开发态访问 8138', body.includes("NODE_ENV !== 'development'") && body.includes('return null'));
+}
+
+/* M94（2026-11-26）：命中区口径固化成门禁 + rpx 外扩清零。 */
+{
+  const t = read('.tools/verify-touch-target.mjs');
+  ok('M94a 命中区门禁按 ::before 有效区判定', t.includes("getComputedStyle(el, '::before')") && t.includes('44'));
+  const files = fs.readdirSync(path.join(ROOT, 'src'), { recursive: true })
+    .filter((f) => String(f).endsWith('.scss'));
+  const joined = files.map((f) => fs.readFileSync(path.join(ROOT, 'src', String(f)), 'utf8')).join('\n');
+  ok('M94b 不再有 @include hit-expand(rpx) 调用', !joined.includes('@include hit-expand('));
+}
+
+/* M95（2026-11-26）：favicon 不再 404；.ics 导出按选中日判空并兜异常。 */
+{
+  ok('M95a index.html 有内联 favicon', read('src/index.html').includes('rel="icon"'));
+  const cal = read('src/pages/calendar/index.tsx');
+  ok('M95b .ics 按选中日判空且有失败提示',
+    cal.includes('dayEvents.length === 0 && dayTodos.length === 0') && cal.includes("t('calendar.icsFailed')"));
+}
+
+/* M96（2026-11-26）：我的页宫格不得再用 7 等分 flex 挤一行。 */
+{
+  const m = read('src/pages/mine/index.module.scss');
+  const grid = m.slice(m.indexOf('.featureGrid'), m.indexOf('.featureGrid') + 400);
+  ok('M96 宫格用 grid + 窄屏 4 列', grid.includes('display: grid') && grid.includes('repeat(4, minmax(0, 1fr))'));
 }
 
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);

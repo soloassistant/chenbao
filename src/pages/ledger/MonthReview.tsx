@@ -69,7 +69,7 @@ export default function MonthReview({ entries }: { entries: LedgerEntry[] }) {
       style={{
         margin: '8px 0 0',
         padding: '10px 12px',
-        background: 'var(--card-bg, #fff)',
+        background: 'var(--dm-bg-card, #fff)',
         border: '1px solid var(--card-border, rgba(0,0,0,0.06))',
         borderRadius: '10px',
       }}

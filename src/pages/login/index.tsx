@@ -1,7 +1,9 @@
 import { pressableProps } from '@/utils/a11y';
+import { ONBOARD_PENDING_KEY } from '@/components/Onboarding/state';
 import React, { useEffect, useState } from 'react';
 import Taro from '@tarojs/taro';
 import { View, Text, Input } from '@tarojs/components';
+import { themeModeClass, useThemeMode } from '@/store/theme';
 import { useT } from '@/store/language';
 import {
   needsAuthGate,
@@ -255,6 +257,7 @@ export default function LoginPage() {
   const [resetTicket, setResetTicket] = useState<{
     updateUser(input: { nonce: string; password: string }): Promise<{ error: { message?: string } | null }>;
   } | null>(null);
+  const { resolved } = useThemeMode();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -301,18 +304,37 @@ export default function LoginPage() {
       .catch(() => {
         /* 由下面的 getSession 统一收口 */
       });
+    // 2026-11-24：会话检查没有超时，后端慢时用户会一直看着「稍等，先看看你是不是登录过」
+    // （本机实测超过 12s）。2.5s 内没结果就先放行到表单，让用户能开始输入。
+    // 2026-11-25 修：超时后晚到的**有效会话不能被吞掉** —— 之前的 settled 早退会让
+    // 慢后端用户永久停在登录表单、被要求重输账号密码。现在晚到的会话照常进应用。
+    let settled = false;
+    const release = () => {
+      if (!alive || settled) return;
+      settled = true;
+      setPhase('form');
+    };
+    const timer = setTimeout(release, 2500);
     getSession()
       .then((s) => {
+        clearTimeout(timer);
         if (!alive) return;
-        if (s) goToApp();
-        else setPhase('form');
+        if (s) {
+          settled = true;
+          goToApp();
+          return;
+        }
+        if (settled) return;
+        settled = true;
+        setPhase('form');
       })
       .catch(() => {
-        if (!alive) return;
-        setPhase('form');
+        clearTimeout(timer);
+        release();
       });
     return () => {
       alive = false;
+      clearTimeout(timer);
     };
     // t 仅用于「后端不可达」错误文案；本 effect 负责会话校验/加载，语言切换无需重跑请求
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -394,8 +416,13 @@ export default function LoginPage() {
    *  （旧注释「国际区号归一由 SDK 内部完成」是错的，已按实测纠正。
    *   另注意：区号表刻意不含 `+1`，因为 SDK 会把任何 1 开头的 11 位数字改写成 +86 号码，
    *   详见 `src/data/dialCodes.ts` 头注释。） */
+  // 2026-11-24：账号框允许直接输入邮箱。此前通道写死 phone + 输入框 type=number，
+  // 邮箱账号连字符都打不进去，等于没有邮箱登录入口。
+  const accountIsEmail = (v: string = account) => v.includes('@');
   const currentId = (): AuthIdentifier =>
-    channel === 'phone' ? { phone: buildPhoneE164(dialCode, account) } : { email: account.trim() };
+    accountIsEmail() || channel !== 'phone'
+      ? { email: account.trim() }
+      : { phone: buildPhoneE164(dialCode, account) };
 
   /**
    * 切换区号。
@@ -444,6 +471,13 @@ export default function LoginPage() {
 
   const ensureAccount = (): boolean => {
     const v = account.trim();
+    if (accountIsEmail()) {
+      if (!EMAIL_RE.test(v)) {
+        setError(t('auth.errEmail'));
+        return false;
+      }
+      return true;
+    }
     if (channel === 'phone') {
       // 校验交给区号表驱动的 validateNational：位数区间按区号不同，
       // 中国大陆还额外校验 `/^1[3-9]\d{9}$/`（11 位、1 开头、第二位 3–9）。
@@ -462,10 +496,6 @@ export default function LoginPage() {
         return false;
       }
       return true;
-    }
-    if (!EMAIL_RE.test(v)) {
-      setError(t('auth.errEmail'));
-      return false;
     }
     return true;
   };
@@ -530,6 +560,14 @@ export default function LoginPage() {
       return;
     }
     setPending(null);
+    // 只有「真的注册了新账号」才弹首启引导；老用户登录不弹。
+    if (isSignup) {
+      try {
+        Taro.setStorageSync(ONBOARD_PENDING_KEY, true);
+      } catch {
+        /* 存储不可用则不弹，不影响登录 */
+      }
+    }
     // 手机号通道登录成功 = 本机已持有手机号，落"已绑定"标记，避免之后邮箱登录再被强弹
     if (channel === 'phone') markPhoneBound();
     void afterLogin();
@@ -538,8 +576,10 @@ export default function LoginPage() {
   const submitPassword = async () => {
     if (busy) return;
     if (!ensureAccount()) return;
-    if (password.length < 8) {
-      setError(t('auth.errPassword'));
+    // 登录不校验长度：老账号可能存在 8 位以下的密码，本地拦下会让本人也登不进去。
+    // 只有注册 / 重置（设置新密码）才要求 8 位；正确性由服务端判定。
+    if (!password) {
+      setError(t('auth.errPasswordEmpty'));
       return;
     }
     clearMsg();
@@ -562,10 +602,11 @@ export default function LoginPage() {
     if (!ensureAccount()) return;
     clearMsg();
     setBusy(true);
-    // 手机号通道走自己实现的那条（服务端支持、SDK 未封装，见 cloudAuth.requestPasswordResetByPhone）
-    const res = channel === 'phone'
-      ? await requestPasswordResetByPhone(buildPhoneE164(dialCode, account))
-      : await requestPasswordReset(account.trim());
+    // 按**用户实际输入的标识**分流：账号框允许邮箱后，channel 恒为 phone，
+    // 再用 channel 判断会把邮箱地址拼成 +86 号码去发短信。
+    const res = accountIsEmail()
+      ? await requestPasswordReset(account.trim())
+      : await requestPasswordResetByPhone(buildPhoneE164(dialCode, account));
     setBusy(false);
     if (res.error) {
       setError(sdkDownText(res.error, t) || t('auth.errGeneric'));
@@ -764,7 +805,7 @@ export default function LoginPage() {
 
   if (phase === 'checking') {
     return (
-      <View className={styles.screen}>
+      <View className={`${styles.screen} ${themeModeClass(resolved)}`}>
         <Text className={styles.checking}>{t('auth.checking')}</Text>
       </View>
     );
@@ -783,7 +824,7 @@ export default function LoginPage() {
   const tabs: Tab[] = baseTabs.filter((k) => IS_H5 || k !== 'forgot');
 
   return (
-    <View className={styles.screen}>
+    <View className={`${styles.screen} ${themeModeClass(resolved)}`}>
       <View className={styles.card}>
         {/* 品牌区：logo emoji + 应用标题 */}
         <View className={styles.brand}>
@@ -818,22 +859,27 @@ export default function LoginPage() {
           {channel === 'phone' ? (
             // 区号按钮 + 本地号码输入。两者分在两个字段里存，提交时才拼 E.164。
             <View className={styles.phoneRow}>
-              <View className={styles.dialBtn} onClick={() => setDialPickerOpen(true)}>
+              <View
+                className={styles.dialBtn}
+                style={accountIsEmail() ? { display: 'none' } : undefined}
+                onClick={() => setDialPickerOpen(true)}
+              >
                 <Text className={styles.dialText}>{`+${dialCode}`}</Text>
                 <Text className={styles.dialCaret}>▾</Text>
               </View>
               <Input
                 className={`${styles.input} ${styles.phoneInput}`}
-                type='number'
+                type='text'
                 value={account}
-                maxlength={15}
+                maxlength={64}
                 // 大陆用户看到「11 位手机号」最直观；其他国家只能提示「不含区号」，
                 // 否则用户会把 +852 再输一遍（区号已经由左侧按钮提供）。
                 placeholder={dialCode === '86' ? t('auth.phonePlaceholder') : t('auth.phoneIntlPlaceholder')}
                 onInput={(e) => {
-                  // `type='number'` 在 H5 仍可能放进 e / . / -，统一剥成数字，
-                  // 让 state 里只存在能直接拼进 E.164 的字符。
-                  setAccount(normalizeNational(String(e.detail.value || '')));
+                  const raw = String(e.detail.value || '');
+                  // 含 @ 视为邮箱账号：保留原样；否则按本地号码剥成纯数字，
+                  // 保证 E.164 拼接只有合法字符。
+                  setAccount(raw.includes('@') ? raw.trimStart() : normalizeNational(raw));
                   onAccountInput();
                 }}
               />

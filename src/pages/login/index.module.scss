@@ -224,7 +224,7 @@
   justify-content: center;
   border-radius: $radius-md;
   // 白字压浅橙 #ff7a45 仅 2.59:1（未达 AA）；改用 strong 变体 #c7371a（5.26:1），与全站主按钮同源。
-  background: $color-primary-strong;
+  background: $color-brand-solid;
   transition: transform $transition-fast, opacity $transition-fast;
 
   &:active {
@@ -404,3 +404,48 @@
   text-decoration: underline;
 }
 
+
+/* 深色：登录页此前没有任何暗色规则，暗色下整屏白底。
+   只覆盖硬编码底色；文字色走 $color-text-*，已由 .theme-dark 变量切换。 */
+:global(.theme-dark) {
+  .screen {
+    background:
+      radial-gradient(ellipse at 10% 0%, rgba(255, 122, 69, 0.10) 0%, transparent 50%),
+      linear-gradient(160deg, #16130f 0%, #1c1712 50%, #141110 100%);
+  }
+
+  .card {
+    background: rgba(34, 28, 23, 0.94);
+  }
+
+  .input,
+  .codeInput {
+    background: #221c17;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* 小程序端没有 html 兜底，主题类挂在页面根节点上（self class） */
+.screen:global(.theme-dark) {
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(255, 122, 69, 0.10) 0%, transparent 50%),
+    linear-gradient(160deg, #16130f 0%, #1c1712 50%, #141110 100%);
+}
+
+/* 深色：页签选中态与区号按钮原本写死 #fff，暗色下是白底白字 */
+:global(.theme-dark) {
+  .brand,
+  .privacyBox {
+    color: var(--brand-deep, #ffb59a);
+  }
+
+  .tabActive {
+    background: #2a2119;
+    box-shadow: none;
+  }
+
+  .dialBtn {
+    background: #221c17;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+}

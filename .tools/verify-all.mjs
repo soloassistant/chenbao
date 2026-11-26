@@ -66,7 +66,12 @@ const BROWSER = new Map([
   ['verify:compress', 'cdp-probe 驱动真 Chrome 验头像压缩（canvas 位图，jsdom 测不了）'],
   ['verify:hotkeys-live', 'cdp-probe 驱动真 Chrome 在 dist 上按一遍快捷键（合成 keydown + 真实事件路径）'],
   ['verify:site-live', 'cdp-probe 驱动真 Chrome 量落地页的计算样式（CSS 级联覆盖只有渲染后才看得见）'],
-  ['verify:contrast-render', 'CDP 通道驱动真 Chrome，把 5 个公开页真实渲染后量每个文字元素「计算样式 + alpha 合成背景」对比度（WCAG 2.2 AA）']
+  ['verify:contrast-render', 'CDP 通道驱动真 Chrome，把 5 个公开页真实渲染后量每个文字元素「计算样式 + alpha 合成背景」对比度（WCAG 2.2 AA）'],
+  ['verify:theme-dark', 'cdp-probe 驱动真 Chrome，把 27 个路由 × 3 档视口在暗色主题下全渲染一遍'],
+  ['verify:inputs', 'cdp-probe 驱动真 Chrome，量所有输入框的左边缘/内边距/高度/溢出'],
+  ['verify:layout-pages', 'cdp-probe 驱动真 Chrome，逐页量 5 个内页的面板几何与像素'],
+  ['verify:overlap', 'cdp-probe 驱动真 Chrome，量文字可见矩形并检查两两重叠（papers / library）'],
+  ['verify:touch-target', 'cdp-probe 驱动真 Chrome，量 9 页 × 3 档视口的有效命中区（::before 外扩）']
 ]);
 // 会临时改写源码，必须排在所有只读门禁之后（否则后面的门禁验的是被变异过的代码）。
 const MUTATING = new Map([['verify:mutation', '临时改写源码跑变异测试']]);
@@ -148,7 +153,6 @@ function parseCounts(out) {
 const CI_EXEMPT = new Map([
   ['verify:all', '自身，CI 里没有递归跑的必要'],
   ['verify:layout', '需真 Chrome，CI 不跑浏览器门禁'],
-  ['verify:routes', '同上（真 Chrome 全路由渲染巡检）'],
   ['verify:visual', '同上'],
   ['verify:compress', '同上（真 Chrome 验 canvas 压缩）'],
   ['verify:hotkeys-live', '同上（真 Chrome 在 dist 上按快捷键）'],
@@ -171,11 +175,6 @@ const CI_EXEMPT = new Map([
   ['verify:local-write', '专项行为回归（账本/购物/收藏写盘失败必须显式失败，stubs），由 verify:all 覆盖'],
   ['verify:account-purge', '专项静态回归（v2 匿名收紧 / v3 注销清偿 SQL 与客户端接线），由 verify:all 覆盖'],
   ['verify:content-safety', '专项行为回归（H5 AI 红线护栏 + 输入输出接线），由 verify:all 覆盖'],
-  // 2026-11-06 新增：门禁自身的变异自检要反复 spawn 测量，且被测对象是 dist 产物。
-  // checks 工作流不构建产物，CI 上没有可比对的 dist，跑了也只是「产物缺失 → exit 2」。
-  // 到期条件：checks 增加「构建 H5 产物」步骤（或提供可复用的冻结产物）时，
-  // 必须删掉本豁免并把它接进 CI —— 届时「这道门会不会红」才有 CI 级证据。
-  ['verify:startup-perf', '变异自检需 dist 产物（checks 不构建产物）；到期：CI 有构建步骤即删除本豁免并接入']
 ]);
 
 export function checkCiParity(ciText, scripts, exempt = CI_EXEMPT) {
@@ -192,9 +191,13 @@ export function checkCiParity(ciText, scripts, exempt = CI_EXEMPT) {
   //   而 CI 一直绿 —— 因为 parity 只数 verify:*，没人要求它进 CI。
   //   三个命名空间都要算门禁，否则「换个前缀命名」就等于「从某个门禁的视野里消失」。
   const gates = Object.keys(scripts).filter(
-    (k) => k.startsWith('verify:') || k.startsWith('audit:') || EXTRA_GATES.includes(k)
+    (k) =>
+      k.startsWith('verify:') ||
+      k.startsWith('audit:') ||
+      k.startsWith('test:') ||
+      EXTRA_GATES.includes(k)
   );
-  const referenced = new Set([...body.matchAll(/npm run ((?:verify|audit):[\w-]+)/g)].map((m) => m[1]));
+  const referenced = new Set([...body.matchAll(/npm run ((?:verify|audit|test):[\w-]+)/g)].map((m) => m[1]));
   // 每个 gate 的脚本路径（取第一条 .tools/ 路径，够用且不受多脚本影响）
   const pathOf = (g) => (String(scripts[g] || '').match(/\.tools\/[\w./-]+\.(mjs|js|cjs)/) || [])[0] || null;
   const missing = gates.filter((g) => {
@@ -412,7 +415,8 @@ const scripts = pkg.scripts || {};
 // `audit:identity` 红了很久而 CI 一直绿；`selfcheck` 则是**没有前缀**的另一种盲区：
 // 它在 CI 里是独立一步（node .tools/selfcheck.js），本地 `verify:all` 却完全看不见它。
 const allVerify = Object.keys(scripts).filter(
-  (k) => k.startsWith('verify:') || k.startsWith('audit:') || EXTRA_GATES.includes(k)
+  (k) =>
+    k.startsWith('verify:') || k.startsWith('audit:') || k.startsWith('test:') || EXTRA_GATES.includes(k)
 );
 
 // 例外表腐烂检查：登记了、package.json 里却没有 → 表本身过期。
@@ -450,7 +454,7 @@ for (const name of list) {
     // 最后一口气掐死在还原前 → 退出码 -1 看起来像变异逃逸。900s ≈ 实测 × 1.6。
     // verify:routes 同理放宽：27 路由 × 3 视口 × ~3.5s ≈ 300s+，默认 300s 必然把
     // 正常跑完的那一次判成超时（2026-11-19 实测 300.0s 被杀）。
-    timeout: MUTATING.has(name) || name === 'verify:routes' ? 900000 : 300000,
+    timeout: MUTATING.has(name) || name === 'verify:routes' || name === 'verify:theme-dark' ? 900000 : 300000,
     maxBuffer: 64 * 1024 * 1024,
     env: { ...process.env, FORCE_COLOR: '0' }
   });

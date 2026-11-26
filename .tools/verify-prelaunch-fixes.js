@@ -300,7 +300,7 @@ console.log('\n--- E. 云函数 OPENID 空值拒绝---');
 
 console.log('\n--- F. 免责声明（免费档不得称「AI 整理」）---');
 {
-  const lang = fs.readFileSync(path.join(ROOT, 'src/store/language.ts'), 'utf8');
+  const lang = fs.readFileSync(path.join(ROOT, 'src/store/language.ts'), 'utf8') + fs.readFileSync(path.join(ROOT, 'src/store/language.en.ts'), 'utf8');
   const neutral = lang.match(/'common\.disclaimer':\s*'([^']*)'/g) || [];
   const withAi = lang.match(/'common\.disclaimerAI':\s*'([^']*)'/g) || [];
   ok('F1 中英两版都有 common.disclaimer（中性版）', neutral.length === 2);
@@ -321,7 +321,7 @@ console.log('\n--- F. 免责声明（免费档不得称「AI 整理」）---');
 
 console.log('\n--- G. i18n 新增键---');
 {
-  const lang = fs.readFileSync(path.join(ROOT, 'src/store/language.ts'), 'utf8');
+  const lang = fs.readFileSync(path.join(ROOT, 'src/store/language.ts'), 'utf8') + fs.readFileSync(path.join(ROOT, 'src/store/language.en.ts'), 'utf8');
   for (const key of ['auth.privacyNotice', 'auth.privacyAgree', 'auth.errPrivacy', 'common.disclaimerAI']) {
     const n = (lang.match(new RegExp("'" + key + "'", 'g')) || []).length;
     ok('G ' + key + ' 中英各一（共 ' + n + ' 处）', n === 2);

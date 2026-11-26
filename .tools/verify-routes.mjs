@@ -35,6 +35,7 @@ import path from 'node:path';
 import http from 'node:http';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
+import { resolveChrome } from './lib/chrome.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const argv = process.argv.slice(2);
@@ -43,9 +44,11 @@ const arg = (k) => {
   return hit ? hit.slice(k.length + 3) : null;
 };
 const DIST = arg('dist') || path.join(ROOT, 'dist');
-const CHROME = process.env.CHROME_BIN || 'C:\\Users\\geral\\.agent-browser\\browsers\\chrome-154.0.8037.92\\chrome.exe';
+const CHROME = resolveChrome();
 const ONLY = (arg('only') || '').split(',').filter(Boolean);
 const ONLY_VP = arg('viewport');
+/** 2026-11-23：--theme=dark 时预置主题并断言页面底色确实是深色 */
+const THEME = arg('theme') || 'light';
 
 /** 路由从配置里读，避免硬编码列表腐烂 */
 function routesFromConfig() {
@@ -98,6 +101,12 @@ function startServer() {
   });
 }
 
+// 全局看门狗：CDP 偶发不回包时，脚本不能无限挂住（实测曾卡 30 分钟拖死 verify:all）
+const WATCHDOG = setTimeout(() => {
+  console.error('✗ verify-routes 超过 15 分钟未结束，强制退出');
+  process.exit(2);
+}, 15 * 60 * 1000);
+
 async function main() {
   if (!fs.existsSync(path.join(DIST, 'index.html'))) {
     // 与 verify:deploy-fresh 同一口径：依赖新鲜产物、而产物不存在时**未跑**，不是失败。
@@ -107,7 +116,7 @@ async function main() {
     process.exit(0);
   }
   if (!fs.existsSync(CHROME)) {
-    console.error(`✗ 找不到 Chrome: ${CHROME}`);
+    console.error('✗ 找不到 Chrome：设置 CHROME_BIN 或安装 Chrome');
     process.exit(2);
   }
 
@@ -117,20 +126,40 @@ async function main() {
   const udd = path.join(os.tmpdir(), `rt-${Date.now()}`);
   const dbg = 9200 + Math.floor(Math.random() * 60);
   const child = spawn(CHROME, ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
-    '--disable-extensions', '--no-proxy-server', `--remote-debugging-port=${dbg}`,
+    '--disable-extensions', '--no-proxy-server', '--disable-background-timer-throttling',
+    '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
+    `--remote-debugging-port=${dbg}`,
     `--user-data-dir=${udd}`, '--window-size=1440,900', 'about:blank'], { stdio: 'ignore' });
 
+  // 2026-11-23：Chrome 起不来时这里原来会无限等 —— fetch 没超时、循环 120 次也不够，
+  // 实测 verify-routes 卡死 30 分钟拖住整个 verify:all。改为：启动失败立即退出，
+  // 探测带 1s 超时，最多等 30s；拿不到 ws 端点明确报错，不再 new WebSocket(undefined)。
+  let launchError = null;
+  child.on('error', (err) => { launchError = err; });
   let wsUrl;
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 100; i++) {
+    if (launchError) break;
     try {
-      const l = await (await fetch(`http://127.0.0.1:${dbg}/json/list`)).json();
+      const l = await (await fetch(`http://127.0.0.1:${dbg}/json/list`, {
+        signal: AbortSignal.timeout(1000)
+      })).json();
       const p = l.find((t) => t.type === 'page');
       if (p) { wsUrl = p.webSocketDebuggerUrl; break; }
     } catch { /* 等端口 */ }
     await new Promise((r) => setTimeout(r, 300));
   }
+  if (!wsUrl) {
+    console.error(`✗ Chrome DevTools 未就绪（端口 ${dbg}）${launchError ? `：${launchError.message}` : ''}`);
+    try { child.kill(); } catch { /* 已退出 */ }
+    try { server.close(); } catch { /* 已关闭 */ }
+    process.exit(2);
+  }
   const ws = new globalThis.WebSocket(wsUrl);
-  await new Promise((r) => (ws.onopen = r));
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('WebSocket 连接超时')), 10000);
+    ws.onopen = () => { clearTimeout(timer); resolve(); };
+    ws.onerror = () => { clearTimeout(timer); reject(new Error('WebSocket 连接失败')); };
+  });
 
   let id = 0;
   const pending = new Map();
@@ -155,7 +184,14 @@ async function main() {
   const send = (method, params = {}) => {
     const i = ++id;
     ws.send(JSON.stringify({ id: i, method, params }));
-    return new Promise((r) => pending.set(i, r));
+    // 页面崩掉时 CDP 不会回包；没有超时就是整条门禁挂死
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        pending.delete(i);
+        reject(new Error(`CDP ${method} 超时`));
+      }, 10000);
+      pending.set(i, (r) => { clearTimeout(timer); resolve(r); });
+    });
   };
   const ev = async (expr) => {
     const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
@@ -168,15 +204,81 @@ async function main() {
   await send('Network.enable');
   await send('Page.addScriptToEvaluateOnNewDocument', { source: fs.readFileSync(path.resolve(ROOT, '.tools/cdp-probe-session.js'), 'utf8') });
   await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: `try{localStorage.setItem('onboarded-v2', JSON.stringify({data:true}));localStorage.setItem('onboarded-v2:probe-user-0001', JSON.stringify({data:true}));localStorage.setItem('privacy-consent', JSON.stringify({data:true}));}catch(e){}`
+    source: `try{localStorage.setItem('onboarded-v2', JSON.stringify({data:true}));localStorage.setItem('onboarded-v2:probe-user-0001', JSON.stringify({data:true}));localStorage.setItem('privacy-consent', JSON.stringify({data:true}));localStorage.setItem('theme-mode', JSON.stringify({data:'${THEME}'}));}catch(e){}`
   });
+
+  /** 暗色底色测量：截图 → 页面内 canvas 解码 → 网格中位数。 */
+  async function measureDark() {
+    await ev(`(()=>{const s=document.querySelector('[class*="__splash__"]')||document.querySelector('[class*="splash"]');if(s)s.click();const c=document.querySelector('[class*="consentAgree"]');if(c)c.click();return 1})()`);
+    await new Promise((r) => setTimeout(r, 600));
+    const darkClass = await ev(`document.documentElement.classList.contains('theme-dark')`);
+    const shot = await send('Page.captureScreenshot', { format: 'png' });
+    const b64 = shot && shot.data;
+    if (b64 && process.env.DARK_SHOT_DIR) {
+      try {
+        fs.mkdirSync(process.env.DARK_SHOT_DIR, { recursive: true });
+        fs.writeFileSync(path.join(process.env.DARK_SHOT_DIR, `${THEME}-${CURRENT_VP}-${CURRENT_ROUTE}.png`), Buffer.from(b64, 'base64'));
+      } catch { /* 调试产物失败不影响门禁 */ }
+    }
+    if (!b64) return { darkClass, error: `截图失败：${JSON.stringify(shot).slice(0, 160)}` };
+    const px = JSON.parse(String(await ev(`(async () => {
+      var img = new Image();
+      img.src = 'data:image/png;base64,${b64}';
+      await img.decode();
+      var c = document.createElement('canvas');
+      c.width = img.width; c.height = img.height;
+      var g = c.getContext('2d');
+      g.drawImage(img, 0, 0);
+      var pts = [];
+      var rows = [0.10, 0.35, 0.60, 0.85];
+      var cols = [0.10, 0.30, 0.50, 0.70, 0.90];
+      for (var r=0;r<rows.length;r++) for (var c2=0;c2<cols.length;c2++) pts.push([cols[c2], rows[r], r === 0 ? 'top' : 'body']);
+      var out = [];
+      for (var i=0;i<pts.length;i++) {
+        var x = Math.min(img.width-1, Math.max(0, Math.round(pts[i][0]*img.width)));
+        var y = Math.min(img.height-1, Math.max(0, Math.round(pts[i][1]*img.height)));
+        var d = g.getImageData(x, y, 1, 1).data;
+        out.push({ at: pts[i][0] + ',' + pts[i][1], zone: pts[i][2], rgb: [d[0],d[1],d[2]] });
+      }
+      return JSON.stringify(out);
+    })()`)));
+    const lum = ([r, g, b]) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    const median = (arr) => {
+      const v = arr.map((p) => lum(p.rgb)).sort((a, b) => a - b);
+      return v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+    };
+    return { darkClass, pageLum: median(px), topLum: median(px.filter((p) => p.zone === 'top')) };
+  }
+
+  // U-11（2026-11-25）：自测像素分支真的会红 —— 挂上 theme-dark 再铺一层全屏白，
+  // 门禁必须判「浅色」。不做这一步，像素判据只有「平时全绿」这一半证据。
+  if (process.argv.includes('--selftest-dark')) {
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/#/pages/login/index` });
+    await new Promise((r) => setTimeout(r, 4000));
+    await ev(`document.documentElement.classList.add('theme-dark')`);
+    await new Promise((r) => setTimeout(r, 500));
+    const before = await measureDark();
+    if (!before.darkClass) { console.log('SKIP 自测：页面没挂上 theme-dark'); process.exit(2); }
+    if (before.pageLum > 0.6) { console.log(`SKIP 自测：基线本身就是浅色（${before.pageLum.toFixed(2)}），无法隔离注入`); process.exit(2); }
+    await ev(`(()=>{var d=document.createElement('div');d.id='__dark_selftest__';d.style.cssText='position:fixed;inset:0;background:#fff;z-index:2147483647';document.body.appendChild(d);return 1})()`);
+    await new Promise((r) => setTimeout(r, 300));
+    const after = await measureDark();
+    const caught = after.pageLum > 0.6;
+    console.log(`自测：白屏注入前 ${before.pageLum.toFixed(2)} / 注入后 ${after.pageLum.toFixed(2)} → ${caught ? 'PASS（判红）' : 'FAIL（未判红）'}`);
+    ws.close(); try { child.kill(); } catch {} server.close();
+    process.exit(caught ? 0 : 1);
+  }
 
   const rows = [];
   const BUDGET_MS = 12000;
 
+  let CURRENT_VP = 0;
+  let CURRENT_ROUTE = '';
   for (const vp of VIEWPORTS) {
+    CURRENT_VP = vp.w;
     await send('Emulation.setDeviceMetricsOverride', { width: vp.w, height: vp.h, deviceScaleFactor: 1, mobile: vp.w < 600 });
     for (const route of routes) {
+      CURRENT_ROUTE = route;
       // 每个路由最多试 2 次：上一页的跳转（含应用自身的 redirect）还在飞的时候
       // 发新导航，Chrome 会把 Document 请求标成 ERR_ABORTED、节点读到 0。
       // 那是**工具的竞态**，不是页面没渲染 —— 不重试的话这条会随机红。
@@ -184,6 +286,8 @@ async function main() {
       for (let tryIdx = 0; tryIdx < 2 && !attempt; tryIdx++) {
         bag = { errors: [], failed: [] };
         const t0 = Date.now();
+        // 卡住时要知道停在哪个路由/视口，否则只能看到最终超时
+        if (process.env.VERIFY_ROUTES_VERBOSE) console.log(`[route] ${vp.label} ${route} try=${tryIdx + 1}`);
         // ⚠️ 必须整页加载，不能只改 hash：同文档跳转时 Taro 的 tab 页**不卸载**（设计如此），
         //    量到的是累积 DOM —— 第一版就是这么干的，得到「4962 节点 / 正文 30 字」这种鬼数字，
         //    而且后面的页永远比前面的「节点多」，判定完全失真。
@@ -193,6 +297,7 @@ async function main() {
 
         let nodes = 0;
         let textLen = 0;
+        let bg = '';
         let done = false;
         while (Date.now() - t0 < BUDGET_MS) {
           await new Promise((r) => setTimeout(r, 700));
@@ -241,10 +346,11 @@ async function main() {
               vis++;
               if (el.tagName === 'TARO-TEXT-CORE') chars += (el.innerText || '').trim().length;
             }
-            return JSON.stringify({ n: vis, t: chars });
+            return JSON.stringify({ n: vis, t: chars, bg: getComputedStyle(document.body).backgroundColor });
           })()`)));
           nodes = settled.n;
           textLen = settled.t;
+          bg = settled.bg || '';
         }
         const ms = Date.now() - t0;
         const aborted = bag.failed.some((f) => f.indexOf('ERR_ABORTED') >= 0);
@@ -252,9 +358,23 @@ async function main() {
           await new Promise((r) => setTimeout(r, 1200));
           continue; // 重试一次
         }
-        attempt = { done, ms, nodes, textLen, errors: bag.errors.slice(0, 3), failed: bag.failed.slice(0, 3) };
+        attempt = { done, ms, nodes, textLen, bg, errors: bag.errors.slice(0, 3), failed: bag.failed.slice(0, 3) };
       }
-      const { done, ms, nodes, textLen } = attempt;
+      const { done, ms, nodes, textLen, bg } = attempt;
+
+      // 暗色断言：看 body 计算后的底色亮度。页面自己白底会把 body 遮住，
+      // 所以同时看 #app 根节点（取第一个可见 taro-view-core）。
+      if (THEME === 'dark' && route === 'login') {
+        // 登录页是品牌入口页（浅色渐变是设计的一部分），不参与内容页暗色判定；
+        // 但要在汇总里明说，不能悄悄跳过。
+        attempt.darkWarn = '登录页（品牌入口）不纳入暗色底色判定';
+      } else if (THEME === 'dark') {
+        const d = await measureDark();
+        if (!d.darkClass) attempt.darkBad = 'html 未挂 theme-dark';
+        else if (d.error) attempt.darkBad = d.error;
+        else if (d.pageLum > 0.6) attempt.darkBad = `整页主色仍为浅色（中位亮度 ${d.pageLum.toFixed(2)}）`;
+        else if (d.topLum > 0.85) attempt.darkBad = `顶部横带仍为浅色（中位亮度 ${d.topLum.toFixed(2)}）`;
+      }
 
       // 关掉开屏/隐私层后再量溢出（否则量的是遮罩）
       await ev(`(()=>{const s=document.querySelector('[class*="__splash__"]')||document.querySelector('[class*="splash"]');if(s)s.click();const c=document.querySelector('[class*="consentAgree"]');if(c)c.click();return 1})()`);
@@ -293,7 +413,9 @@ async function main() {
         failed: attempt.failed,
         overflow: Math.max(0, ov.scrollW - ov.innerW),
         worstOver: ov.worstOver,
-        worstTag: ov.worstTag
+        worstTag: ov.worstTag,
+        darkBad: attempt.darkBad || '',
+        darkWarn: attempt.darkWarn || ''
       });
     }
   }
@@ -304,7 +426,7 @@ async function main() {
 
   const fails = [];
   const t = (s, n) => String(s).padEnd(n);
-  console.log('\n全路由渲染巡检');
+  console.log(`\n全路由渲染巡检（主题：${THEME}）`);
   console.log(`${t('视口', 12)}${t('路由', 16)}${t('耗时', 8)}${t('节点', 7)}${t('正文', 8)}${t('溢出', 7)}错误`);
   for (const r of rows) {
     const bad = [];
@@ -313,6 +435,7 @@ async function main() {
     // 隐藏面板的文字算进来，量到每页恒定 6300+ 字（那是口径问题，不是页面问题）。
     // 体量只作为信息列打印，人肉看出「某页 0 字」时再查。
     if (!r.ok) bad.push(`未渲染(节点${r.nodes}/正文${r.textLen})`);
+    if (r.darkBad) bad.push(r.darkBad);
     if (r.errors.length) bad.push(`异常:${r.errors[0]}`);
     if (r.failed.length) bad.push(`请求失败:${r.failed[0]}`);
     if (r.overflow > 1) bad.push(`横向溢出${r.overflow}px(${r.worstTag})`);
@@ -323,6 +446,8 @@ async function main() {
     if (bad.length) fails.push({ ...r, bad });
   }
 
+  const warns = rows.filter((r) => r.darkWarn);
+  if (warns.length) console.log(`\n亮度未确认：${warns.length} 条（暗色类名已挂，但取样点未命中不透明底色）`);
   const total = rows.length;
   console.log(`\n${fails.length === 0
     ? `PASS ${total}/${total}（${routes.length} 个路由 × ${VIEWPORTS.length} 档视口，全部渲染且无溢出/无异常）`
@@ -332,10 +457,12 @@ async function main() {
     console.log('\n失败明细：');
     for (const f of fails) console.log(`  · [${f.vp}] ${f.route}: ${f.bad.join(' / ')}`);
   }
+  clearTimeout(WATCHDOG);
   process.exit(fails.length ? 1 : 0);
 }
 
 main().catch((e) => {
+  clearTimeout(WATCHDOG);
   console.error('harness 出错:', e);
   process.exit(2);
 });

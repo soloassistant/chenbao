@@ -4,7 +4,8 @@ import { createRequire } from 'node:module';
 
 const ROOT = process.cwd();
 const require = createRequire(import.meta.url);
-const FILES = ['auth-douyin', 'getBriefing', 'queryOrder', 'pay-callback'];
+// 2026-11-19：注销函数曾明文打印 OPENID，旧门禁只扫四个函数故漏掉；补进来
+const FILES = ['auth-douyin', 'getBriefing', 'queryOrder', 'pay-callback', 'deleteAccount'];
 
 const cases = [
   { input: '', want: '' },

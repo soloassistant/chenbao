@@ -18,7 +18,8 @@ import {
 import type { LedgerExportResult } from '@/data/ledger';
 /** 仅取类型：schedule.ts 反向依赖 api.ts，用 import type 避免运行时循环依赖 */
 import type { PlanProposalRaw } from '@/utils/schedule';
-import { setTodoStatus, updateEvent } from '@/data/dailyPlan';
+import { validateExtractResult } from '@/utils/aiSchema';
+import { applyPlanLocally, setTodoStatus, updateEvent } from '@/data/dailyPlan';
 import { normalizeVideoItems } from '@/utils/videoNews';
 import type { VideoNewsItem } from '@/utils/videoNews';
 import { recordUsage } from '@/utils/usageLog';
@@ -56,7 +57,9 @@ export async function apiLogin(): Promise<UserProfile> {
 
 /** AI 提取转发内容/截图 → 日程/待办/收藏（images 为 base64 数组，不含 dataURL 前缀） */
 export function apiExtract(payload: { content?: string; images?: string[] }): Promise<ExtractResult> {
-  return callFunction<ExtractResult>('extract', payload);
+  // A06：模型返回必须过结构与类型校验；不合法直接抛 AiSchemaError，
+  // 由调用方展示明确失败，不把半截数据渲染成「提取成功」。
+  return callFunction<ExtractResult>('extract', payload).then((raw) => validateExtractResult(raw));
 }
 
 /** 确认提取结果入库 */
@@ -507,15 +510,25 @@ export async function apiApplyPlan(payload: PlanApplyPayload): Promise<PlanApply
     }
     return { saved: 0, ids: [], ok: true };
   }
+  // H5：没有 chat 云函数，callFunction 会落到模型/示例数据，**根本不会写日程**。
+  // 旧实现随后把缺失的 saved 默认成 events.length ⇒ 界面显示「已加入日程」，
+  // 日历里一条都没有（2026-11-19 审计确认）。这里直接写本地 dailyPlanStore。
+  // H5：没有 chat 云函数，旧实现会把缺失的 saved 默认成 events.length ⇒ UI 假成功。
+  // 这里直接写本地 dailyPlanStore，并回读校验。
+  if (!isWeapp) return applyPlanLocally(events);
   try {
     const res = await callFunction<Partial<PlanApplyResult> | null>('chat', {
       action: 'applyPlan',
       proposalId: payload.proposalId,
       events
     });
-    const saved = res && typeof res.saved === 'number' ? res.saved : events.length;
-    const ids = res && Array.isArray(res.ids) ? res.ids : [];
-    return { saved, ids, ok: true };
+    // 只信云函数明确返回的 saved；缺失时不得默认成「全部成功」（那正是 H5 假成功的来源）
+    if (!res || typeof res.saved !== 'number') {
+      console.warn('[api] applyPlan: cloud returned no saved count, treat as failure');
+      return { saved: 0, ids: [], ok: false };
+    }
+    const ids = Array.isArray(res.ids) ? res.ids : [];
+    return { saved: res.saved, ids, ok: res.saved === events.length };
   } catch (err) {
     console.warn('[api] applyPlan failed:', err);
     return { saved: 0, ids: [], ok: false };

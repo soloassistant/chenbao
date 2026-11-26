@@ -79,3 +79,11 @@
   color: $color-warning;
   font-weight: $font-weight-medium;
 }
+
+.group {
+  display: block;
+  margin-top: 8PX;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  color: $color-text-secondary;
+}

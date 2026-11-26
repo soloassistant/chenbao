@@ -137,7 +137,7 @@
 .modeTab {
   flex: 1;
   // 2026-11-04：64rpx（375 下 32px）低于 44px；视觉不变，上下各外扩 12rpx
-  @include hit-expand(0, 12rpx);
+  @include hit-expand-min(44PX, 0);
   height: 64rpx;
   display: flex;
   align-items: center;
@@ -326,13 +326,13 @@
 .extractButton {
   @include button-reset;
   // 2026-11-04：80rpx（375 下 40px）差 4px；视觉不变，上下各外扩 4rpx
-  @include hit-expand(0, 4rpx);
+  @include hit-expand-min(44PX, 0);
   width: 100%;
   height: $button-height-md;
   border-radius: $radius-button;
   // 2026-10-24（巡检实测）：原 `$color-sub-gradient`（#ff9a76→#ff7a45）压白字，
   // 最亮档 2.07:1、暗档 2.59:1 —— 两个停靠色都过不了 AA。改用品牌深色（5.26:1）。
-  background: var(--brand-strong, #{$color-primary-strong});
+  background: var(--dm-brand-solid, var(--brand-strong, #{$color-primary-strong}));
   color: $color-text-white;
   font-size: $font-size-md;
   font-weight: $font-weight-medium;
@@ -624,4 +624,9 @@
   display: block;
   font-size: $font-size-xs;
   color: $color-text-tertiary;
+}
+
+/* 深色：顶部「怎么用」提示条用的是浅色 voice 底，暗色下是一块奶油白 */
+:global(.theme-dark) .howTo {
+  background: #2a2119;
 }

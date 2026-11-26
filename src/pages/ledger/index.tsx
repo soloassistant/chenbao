@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
+import classnames from 'classnames';
 import { View, Text, Input, Button, ScrollView } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
 import { useSyncRefresh } from '@/hooks/useSyncRefresh';
 import EmptyState from '@/components/EmptyState';
 import PromptModal from '@/components/PromptModal';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeStore, useThemeMode, themeModeClass } from '@/store/theme';
 import { useT } from '@/store/language';
 import {
   apiLedgerAdd,
@@ -56,6 +57,7 @@ function budgetRatio(used: number, limit?: number): number {
  * 所以分类是横向 chip 一键选、预置 9 个常用项，备注收进「更多」而非必填。
  */
 function LedgerPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const { theme } = useThemeStore();
 
@@ -377,7 +379,7 @@ function LedgerPage() {
   );
 
   return (
-    <View className={styles.page} style={brandVars(theme)}>
+    <View className={classnames(styles.page, themeModeClass(resolved))} style={brandVars(theme, resolved)}>
       <View className={styles.backButton} onClick={handleBack}>
         <Text className={styles.backIcon}>‹</Text>
         <Text className={styles.backText}>{t('common.back')}</Text>
@@ -431,8 +433,7 @@ function LedgerPage() {
           >
             <Text className={styles.budgetCap}>{t('ledger.dailyBudget')}</Text>
             <Text className={styles.budgetVal}>
-              {formatMoney(todaySum.expense)}
-              {budget.daily !== undefined ? ` / ${formatMoney(budget.daily)}` : ''}
+              {budget.daily !== undefined ? formatMoney(budget.daily) : t('ledger.budgetUnset')}
             </Text>
             {budget.daily !== undefined ? (
               <View className={styles.bar}>
@@ -450,8 +451,7 @@ function LedgerPage() {
           >
             <Text className={styles.budgetCap}>{t('ledger.monthlyBudget')}</Text>
             <Text className={styles.budgetVal}>
-              {formatMoney(monthSum.expense)}
-              {budget.monthly !== undefined ? ` / ${formatMoney(budget.monthly)}` : ''}
+              {budget.monthly !== undefined ? formatMoney(budget.monthly) : t('ledger.budgetUnset')}
             </Text>
             {budget.monthly !== undefined ? (
               <View className={styles.bar}>
@@ -469,8 +469,12 @@ function LedgerPage() {
             <Text>⚠️</Text>
             <Text>
               {todaySum.overDaily && budget.daily !== undefined
-                ? t('ledger.overDaily', { amount: formatMoney(budget.daily) })
-                : t('ledger.overMonthly', { amount: formatMoney(budget.monthly ?? 0) })}
+                ? t('ledger.overDaily', {
+                    amount: formatMoney(Math.max(0, todaySum.expense - budget.daily))
+                  })
+                : t('ledger.overMonthly', {
+                    amount: formatMoney(Math.max(0, monthSum.expense - (budget.monthly ?? 0)))
+                  })}
             </Text>
           </View>
         ) : null}
@@ -491,6 +495,8 @@ function LedgerPage() {
               {t('ledger.export')}
             </Text>
           </View>
+          {/* 2026-11-23：导出列口径原来只写在 ledgerExport.ts，用户看不到自己会拿到什么列 */}
+          <Text className={styles.exportHint}>{t('ledger.exportColumnsHint')}</Text>
           {monthSum.byCategory.slice(0, 5).map((c) => {
             const cat = resolveCategory(categories, c.categoryId);
             return (
@@ -579,7 +585,7 @@ function LedgerPage() {
                 <Button
                   key={c.id}
                   className={pickedCategory === c.id ? `${styles.catChip} ${styles.catChipActive}` : styles.catChip}
-                  onClick={() => setPickedCategory(c.id)}
+                  onClick={() => { setPickedCategory(c.id); setSheetOpen(false); }}
                 >
                   {c.icon} {c.name}
                 </Button>

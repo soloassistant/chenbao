@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Image, Text } from '@tarojs/components';
+import { useT } from '@/store/language';
 import styles from './index.module.scss';
 
 /**
@@ -37,6 +38,7 @@ function prefersReducedMotion(): boolean {
 }
 
 function Splash({ onGone }: SplashProps) {
+  const t = useT();
   const [phase, setPhase] = useState<'in' | 'out' | 'gone'>('in');
   /** 区分自动淡出与点击跳过：决定用 450ms 还是 180ms 过渡 */
   const [skipped, setSkipped] = useState(false);
@@ -107,10 +109,10 @@ function Splash({ onGone }: SplashProps) {
               : undefined
           }
         />
-        <Text className={styles.title}>私人晨报助理</Text>
-        <Text className={styles.slogan}>今天的事，晨报先知道</Text>
+        <Text className={styles.title}>{t('app.title')}</Text>
+        <Text className={styles.slogan}>{t('app.slogan')}</Text>
       </View>
-      <Text className={styles.skip}>点击跳过</Text>
+      <Text className={styles.skip}>{t('app.skip')}</Text>
     </View>
   );
 }

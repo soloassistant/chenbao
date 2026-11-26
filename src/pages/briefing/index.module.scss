@@ -567,6 +567,19 @@
   border-radius: $radius-round;
 }
 
+.digestAdd {
+  // 44PX 实尺寸：这是卡片里唯一的动作，不用透明外扩（避免压到下一条）
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44PX;
+  min-height: 44PX;
+  margin-left: $spacing-xs;
+  font-size: $font-size-xs;
+  color: $color-primary-strong;
+  flex-shrink: 0;
+}
+
 .digestText {
   font-size: $font-size-sm;
   color: $color-text-secondary;

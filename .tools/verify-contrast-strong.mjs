@@ -314,7 +314,7 @@ try {
 // ============ I. 订阅记录：三态分明 + 云端通道（2026-10-27 改走 WorkBuddy 云） ============
 try {
   const src = read('src/pages/membership/index.tsx');
-  const lang = read('src/store/language.ts');
+  const lang = read('src/store/language.ts') + read('src/store/language.en.ts');
   const svc = read('src/services/cloudOrders.ts');
 
   ok('I2 渲染分支区分 ordersError 与 orders.length===0', /ordersError && orders\.length === 0/.test(src));
@@ -398,12 +398,12 @@ try {
 console.log('\nJ 组 巡检实测白字过淡 → 品牌深色');
 const J_POINTS = [
   ['src/components/ConsentGate/index.module.scss', 'consentAgree', '--brand-strong', '首启同意按钮（每个新用户第一个按钮）'],
-  ['src/pages/learnCommunity/index.module.scss', 'postButton', 'color-primary-strong', '社区发布'],
+  ['src/pages/learnCommunity/index.module.scss', 'postButton', '$color-brand-solid', '社区发布'],
   ['src/pages/inbox/index.module.scss', 'extractButton', '--brand-strong', 'AI 提取'],
   ['src/pages/mine/index.module.scss', 'subCard', '--brand-strong', '付费卡底（卡内 14 处文字）'],
   // 2026-11-10：真实渲染门禁在登录屏逮到的 3 处橙底 2.59:1（浅橙 #ff7a45 白字/勾选符未达 AA），
   // 改 strong 变体 #c7371a（5.26:1）。静态清单补锁，否则下次回归仍漏。
-  ['src/pages/login/index.module.scss', 'codeBtn', '$color-primary-strong', '获取验证码按钮底色（白字压浅橙 2.59:1）'],
+  ['src/pages/login/index.module.scss', 'codeBtn', '$color-brand-solid', '获取验证码按钮底色（白字压浅橙 2.59:1）'],
   ['src/pages/login/index.module.scss', 'privacyBox', '$color-primary-strong', '隐私勾选符（☐ 压白卡 2.59:1）'],
   ['src/pages/login/index.module.scss', 'rememberBox', '$color-primary-strong', '记住登录勾选符（☑ 压白卡 2.59:1）'],
   // 2026-11-10：真实渲染门禁第二轮在登录屏又逮到 2 处 4.32:1（卡片半透叠 .screen 桃色渐变，真实底色≈#FFEAE1；
@@ -618,7 +618,7 @@ try {
     `J22 EmptyState .action 白字底 ≥4.5（$color-primary-strong ${strong} = ${strong ? contrastOf('#ffffff', strong).toFixed(2) : '?'}:1；原 $color-primary 2.59）`,
     // ⚠️ 必须用 (?!-) 负向前瞻：`\$color-primary\b` 里的 \b 在 `-` 前也成立，
     // 于是 `$color-primary-strong` 会被判成「还在用 primary」—— 子串误匹配的老坑。
-    Boolean(strong) && action.includes('$color-primary-strong') && !/\$color-primary(?!-)/.test(action) &&
+    Boolean(strong) && (action.includes('$color-primary-strong') || action.includes('$color-brand-solid')) && !/\$color-primary(?!-)/.test(action) &&
       contrastOf('#ffffff', strong) >= 4.5
   );
 

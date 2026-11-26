@@ -1,4 +1,5 @@
 const cloud = require('wx-server-sdk');
+const maskId = require('./maskId');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
@@ -73,7 +74,7 @@ exports.main = async () => {
         console.info(`[deleteAccount] collection ${name} not exists, skipped`);
         continue;
       }
-      console.error(`[deleteAccount] collection ${name} remove FAILED:`, err && err.message);
+      console.error(`[deleteAccount] collection ${name} remove FAILED (${(err && err.code) || 'unknown'})`);
       failed.push(name);
     }
   }
@@ -93,13 +94,15 @@ exports.main = async () => {
     if (isCollectionMissing(err)) {
       console.info(`[deleteAccount] collection redeemCodes not exists, skipped`);
     } else {
-      console.error(`[deleteAccount] redeemCodes pull FAILED:`, err && err.message);
+      console.error(`[deleteAccount] redeemCodes pull FAILED (${(err && err.code) || 'unknown'})`);
       failed.push('redeemCodes');
     }
   }
 
+  // 2026-11-19：OpenID 是用户标识，绝不进日志。只留尾 4 位用于把同一请求的多行日志串起来，
+  // 且这 4 位不足以定位到个人；失败原因只写表名，不拼原始异常对象（异常里可能带标识）。
   console.info(
-    `[deleteAccount] openid=${OPENID} removed=${deleted} failed=${failed.join(',') || 'none'}`
+    `[deleteAccount] openid=${maskId(OPENID)} removed=${deleted} failed=${failed.join(',') || 'none'}`
   );
   if (failed.length) {
     // 如实报告部分失败；客户端 services/cloud.ts:313 会把 code!==0 抛成异常 → 页面显示「注销失败」

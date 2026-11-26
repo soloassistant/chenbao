@@ -258,21 +258,29 @@ function CalendarPage() {
   // 只在 H5 显示：weapp 已有 addPhoneCalendar 单向写入；H5 没有系统日历通道，ics 是唯一出口。
   // 导的是当前 briefing 里的全部日程+待办（一次性文件，不是订阅链接 —— 评估文档写明的诚实边界）。
   const handleExportIcs = () => {
-    if (!briefing || ((!briefing.events || !briefing.events.length) && (!briefing.todos || !briefing.todos.length))) {
+    // 2026-11-26：导的必须是**当前选中日**，而不是「briefing 里任意一天有东西」——
+    // 之前用整份 briefing 判空，选中日没有日程时既不提示也不产出文件（看起来像按钮坏了）。
+    if (dayEvents.length === 0 && dayTodos.length === 0) {
       Taro.showToast({ title: t('calendar.icsNothing'), icon: 'none' });
       return;
     }
-    const text = buildIcs({ events: briefing.events, todos: briefing.todos });
-    const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `晨报日程-${briefing.date.replace(/-/g, '')}.ics`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    Taro.showToast({ title: t('calendar.icsSaved'), icon: 'success', duration: 1800 });
+    try {
+      const text = buildIcs({ events: dayEvents, todos: dayTodos });
+      const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `晨报日程-${selected.replace(/-/g, '')}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      Taro.showToast({ title: t('calendar.icsSaved'), icon: 'success', duration: 1800 });
+    } catch (err) {
+      // 生成/下载失败必须说话，不能静默
+      console.error('[Calendar] ics export failed:', err);
+      Taro.showToast({ title: t('calendar.icsFailed'), icon: 'none' });
+    }
   };
 
   /** 单向写入手机系统日历（小程序支持写入、不支持读取） */
@@ -511,9 +519,13 @@ function CalendarPage() {
               {t('calendar.icsExport')}
             </Button>
           )}
-          <Button className={styles.syncButton} onClick={handleWriteSystemCalendar}>
-            {t('calendar.writeToPhone')}
-          </Button>
+          {/* F-07：H5 没有系统日历通道，这个按钮点了只会弹「微信端可写入」——
+              隐藏而不是留一个假按钮；H5 的出口是左边的 .ics 导出。 */}
+          {isWeapp ? (
+            <Button className={styles.syncButton} onClick={handleWriteSystemCalendar}>
+              {t('calendar.writeToPhone')}
+            </Button>
+          ) : null}
         </View>
 
         <View className={styles.quickAdd}>

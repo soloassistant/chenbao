@@ -368,7 +368,7 @@ section('D. 会员中心 UI 与配色');
 
 {
   // D3 i18n 中英齐全：逐个 key 在 zh/en 各出现一次，且值不相同（防"英文里写中文"）
-  const langSrc = read('src/store/language.ts');
+  const langSrc = read('src/store/language.ts') + read('src/store/language.en.ts');
   const keys = [
     'mine.usageTitle', 'mine.usageToday', 'mine.usageWeek', 'mine.usageEmpty', 'mine.usageNote',
     'mine.fUsageChat', 'mine.fUsageExtract', 'mine.fUsageVoice', 'mine.fUsageSearch',

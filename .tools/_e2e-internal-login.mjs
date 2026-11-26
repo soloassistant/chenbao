@@ -26,10 +26,17 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { resolveChrome } from './lib/chrome.mjs';
 
-const CHROME = process.env.CHROME_BIN || 'C:\\Users\\geral\\.agent-browser\\browsers\\chrome-154.0.8037.92\\chrome.exe';
+const CHROME = process.env.CHROME_BIN || resolveChrome();
 const BASE = (process.env.E2E_BASE || 'https://48f86dcd48e3462dbe897b5fce534551.app.workbuddy.host').replace(/\/$/, '');
 const ONB_TITLE = '三步，从混乱到清晰';
+
+const SHOT_DIR = path.join(os.tmpdir(), 'chenbao-e2e');
+const shotPath = (name) => {
+  fs.mkdirSync(SHOT_DIR, { recursive: true });
+  return path.join(SHOT_DIR, name);
+};
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => console.log(...a);
@@ -165,7 +172,8 @@ async function ev(expr) {
   // 账号来源：优先复用「内部号」（凭据存在仓库外，见 ACCOUNT_FILE），
   // 只有明确 SAVE_ACCOUNT=1 时才新建一个并落盘。
   // 为什么：每跑一次就注册一个新号，会在生产库里堆垃圾，也让结果不可复现。
-  const ACCOUNT_FILE = process.env.ACCOUNT_FILE || 'C:\\Users\\geral\\.workbuddy\\secrets\\chenbao-internal-account.json';
+  const ACCOUNT_FILE =
+    process.env.ACCOUNT_FILE || path.join(os.homedir(), '.workbuddy', 'secrets', 'chenbao-internal-account.json');
   let mail;
   if (process.env.SAVE_ACCOUNT === '1') {
     mail = await makeMailbox();
@@ -315,7 +323,7 @@ async function ev(expr) {
     })()`);
     log('  诊断（仍在登录页）:', diag);
     const shot = await send('Page.captureScreenshot', { format: 'png' });
-    fs.writeFileSync(path.join(process.cwd(), '.tmp-verify/onb-login-stuck.png'), Buffer.from(shot.data, 'base64'));
+    fs.writeFileSync(shotPath('onb-login-stuck.png'), Buffer.from(shot.data, 'base64'));
   }
   check('L3 真实登录成功（已离开登录页）', loggedIn.onLogin === false, JSON.stringify(loggedIn));
 
@@ -448,7 +456,7 @@ async function ev(expr) {
   const onbShown = await ev(`document.body.textContent.includes(${JSON.stringify(ONB_TITLE)})`);
   if (onbShown !== true) {
     const shot = await send('Page.captureScreenshot', { format: 'png' });
-    fs.writeFileSync(path.join(process.cwd(), '.tmp-verify/onb-after-login.png'), Buffer.from(shot.data, 'base64'));
+    fs.writeFileSync(shotPath('onb-after-login.png'), Buffer.from(shot.data, 'base64'));
     const layers = await ev(`(() => {
       const cls = (sel) => [...document.querySelectorAll(sel)].map((e) => String(e.className).slice(0, 34)).slice(0, 3);
       return JSON.stringify({

@@ -3,8 +3,15 @@ import Taro from '@tarojs/taro';
 import dayjs from 'dayjs';
 import type { ScheduleEvent, TodoItem } from '../types';
 import { readPlan, writePlan, nextId } from './dailyPlan';
+import type { DailyPlan } from './dailyPlan';
 import getHotspot from './getHotspot';
 import { SHOP_PLATFORMS } from '../config/sxmPlatforms';
+
+/** 写后回读：writePlan 会吞掉 storage 异常，不校验就报「已…」等于假成功。 */
+function commitPlan(plan: DailyPlan, verify: (next: DailyPlan) => boolean, okText: string): string {
+  writePlan(plan);
+  return verify(readPlan()) ? okText : '⚠️ 这次修改没有写入成功，请重试。';
+}
 
 const SHOPPING_STORAGE_KEY = 'shoppingList';
 
@@ -197,7 +204,7 @@ function extractBatchTitle(msg: string, anchorIndex: number): string {
 /** 批量/周期排班：固定会议排未来 4 次；多条目逐条排入（上限 6 条） */
 function handleBatchSchedule(msg: string): string {
   const plan = readPlan();
-  const created: string[] = [];
+const created: string[] = [];
 
   // 1) 周期固定：把「周会」固定到（每周）周二上午 → 未来 4 次
   const anchor = msg.match(/固定到|固定在|定为|改成每周|每周|每个周/);
@@ -213,12 +220,16 @@ function handleBatchSchedule(msg: string): string {
         plan.events.push({ id: nextId('evt'), title, startTime: start, status: 'confirmed', source: 'AI 批量排班' });
         created.push(start);
       }
-      writePlan(plan);
-      return [
+      const expect = created.slice();
+      return commitPlan(
+        plan,
+        (next) => expect.every((t) => next.events.some((e) => e.startTime === t && e.title === title)),
+        [
         `📅 已把「${title}」固定为每周${wm[1]}，未来 4 次已排入：`,
         ...created.map((s) => `· ${s}`),
         '日历页可查看忙闲分布，晨报会按天提醒。'
-      ].join('\n');
+        ].join('\n')
+      );
     }
   }
 
@@ -239,8 +250,12 @@ function handleBatchSchedule(msg: string): string {
     created.push(`${date} ${slot} 「${title}」`);
   }
   if (created.length) {
-    writePlan(plan);
-    return [`📅 已批量排入 ${created.length} 条日程：`, ...created.map((s) => `· ${s}`), '日历页可查看忙闲分布。'].join('\n');
+    const titles = plan.events.slice(-created.length).map((e) => e.startTime + ' ' + e.title);
+    return commitPlan(
+      plan,
+      (next) => titles.every((t) => next.events.some((e) => e.startTime + ' ' + e.title === t)),
+      [`📅 已批量排入 ${created.length} 条日程：`, ...created.map((s) => `· ${s}`), '日历页可查看忙闲分布。'].join('\n')
+    );
   }
   return '批量排班可以这样说：「把周会固定到每周二上午」，或「下周一站会、周三评审、周五复盘」。';
 }
@@ -312,13 +327,19 @@ function handleDailyPlan(msg: string): string {
         source: 'AI 新增'
       };
       plan.events.push(evt);
-      writePlan(plan);
-      return `📅 已把「${title}」排入日程（${t}），晨报会同步。`;
+      return commitPlan(
+        plan,
+        (next) => next.events.some((e) => e.id === evt.id),
+        `📅 已把「${title}」排入日程（${t}），晨报会同步。`
+      );
     }
     const todo: TodoItem = { id: nextId('todo'), title, dueDate: t, status: 'confirmed', source: 'AI 新增' };
     plan.todos.unshift(todo);
-    writePlan(plan);
-    return `✅ 已把「${title}」加进待办（${t}）。`;
+    return commitPlan(
+      plan,
+      (next) => next.todos.some((x) => x.id === todo.id),
+      `✅ 已把「${title}」加进待办（${t}）。`
+    );
   }
 
   // 2) 完成：把「XX」标记完成 / 完成XX
@@ -328,8 +349,11 @@ function handleDailyPlan(msg: string): string {
     const hit = plan.todos.find((t) => t.status !== 'done' && t.title.includes(kw));
     if (hit) {
       hit.status = 'done';
-      writePlan(plan);
-      return `🎉 已把「${hit.title}」标记完成。`;
+      return commitPlan(
+        plan,
+        (next) => next.todos.find((x) => x.id === hit.id)?.status === 'done',
+        `🎉 已把「${hit.title}」标记完成。`
+      );
     }
     return `我没找到匹配「${kw}」的未完成待办。`;
   }
@@ -341,14 +365,20 @@ function handleDailyPlan(msg: string): string {
     const tHit = plan.todos.find((t) => t.title.includes(kw));
     if (tHit) {
       plan.todos = plan.todos.filter((t) => t.id !== tHit.id);
-      writePlan(plan);
-      return `🗑️ 已删除待办「${tHit.title}」。`;
+      return commitPlan(
+        plan,
+        (next) => !next.todos.some((x) => x.id === tHit.id),
+        `🗑️ 已删除待办「${tHit.title}」。`
+      );
     }
     const eHit = plan.events.find((e) => e.title.includes(kw));
     if (eHit) {
       plan.events = plan.events.filter((e) => e.id !== eHit.id);
-      writePlan(plan);
-      return `🗑️ 已删除日程「${eHit.title}」。`;
+      return commitPlan(
+        plan,
+        (next) => !next.events.some((x) => x.id === eHit.id),
+        `🗑️ 已删除日程「${eHit.title}」。`
+      );
     }
     return `没找到「${kw}」，无需删除。`;
   }
@@ -365,8 +395,17 @@ function handleDailyPlan(msg: string): string {
     if (hit) {
       if ('startTime' in hit) hit.startTime = target || hit.startTime;
       else hit.dueDate = target || hit.dueDate;
-      writePlan(plan);
-      return `🕒 已把「${hit.title}」改期到 ${target}，晨报已更新。`;
+      const hitId = hit.id;
+      return commitPlan(
+        plan,
+        (next) =>
+          [...next.events, ...next.todos].some(
+            (x) =>
+              x.id === hitId &&
+              ('startTime' in x ? x.startTime : x.dueDate) === (target || '')
+          ),
+        `🕒 已把「${hit.title}」改期到 ${target}，晨报已更新。`
+      );
     }
     return `没找到「${kw}」，检查下是不是名称对不上？`;
   }

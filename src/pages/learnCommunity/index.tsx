@@ -7,8 +7,10 @@ import { getAchievements, getLearnerName, setLearnerName, Achievement } from '@/
 import { readLearnStore, getStreak } from '@/utils/learn';
 import { LEARN_LANGS } from '@/data/learn';
 import SubPageHeader from '@/components/SubPageHeader';
-import { useT } from '@/store/language';
+import { useT, useLanguageStore } from '@/store/language';
+import { pressableProps } from '@/utils/a11y';
 import { fromNow } from '@/utils/date';
+import { themeModeClass, useThemeMode } from '@/store/theme';
 import styles from './index.module.scss';
 
 /** H5：learnCommunityStore 在 SYNC_KEYS 里，会同步到用户自己的云端账号（RLS 隔离）；
@@ -32,14 +34,17 @@ interface Post {
 const COMMUNITY_STORE_KEY = 'learnCommunityStore';
 
 /** 种子示例动态：展示社区氛围，真实发帖后排在前面 */
-function seedPosts(): Post[] {
+function seedPosts(lang: 'zh' | 'en'): Post[] {
+  const en = lang === 'en';
   const now = Date.now();
   return [
     {
       id: 'seed-1',
-      name: '柚子同学',
-      langName: '日语',
-      text: 'N5 寒暄课打卡 ✅ こんにちは已经在便利店用上了，店员真的会回你！',
+      name: en ? 'Yuzu' : '柚子同学',
+      langName: en ? 'Japanese' : '日语',
+      text: en
+        ? 'N5 greetings checked in ✅ Used こんにちは at a convenience store and the clerk actually replied!'
+        : 'N5 寒暄课打卡 ✅ こんにちは已经在便利店用上了，店员真的会回你！',
       at: dayjs(now - 3 * 3600 * 1000).toISOString(),
       likes: 12,
       liked: false,
@@ -49,8 +54,10 @@ function seedPosts(): Post[] {
     {
       id: 'seed-2',
       name: 'Kevin',
-      langName: '英语',
-      text: 'A2 餐厅点餐课学完，昨天给外国同事推荐了菜单，成就感和实用性双达标 🥳',
+      langName: en ? 'English' : '英语',
+      text: en
+        ? 'Finished the A2 ordering course and recommended dishes to a foreign colleague yesterday 🥳'
+        : 'A2 餐厅点餐课学完，昨天给外国同事推荐了菜单，成就感和实用性双达标 🥳',
       at: dayjs(now - 26 * 3600 * 1000).toISOString(),
       likes: 8,
       liked: false,
@@ -60,8 +67,10 @@ function seedPosts(): Post[] {
     {
       id: 'seed-3',
       name: 'momo',
-      langName: '韩语',
-      text: '连续打卡 5 天！티켓和환승记住了，下周去首尔地铁实测 🚇',
+      langName: en ? 'Korean' : '韩语',
+      text: en
+        ? '5-day streak! Remembered 티켓 and 환승 — testing them on the Seoul metro next week 🚇'
+        : '连续打卡 5 天！티켓和환승记住了，下周去首尔地铁实测 🚇',
       at: dayjs(now - 2 * 24 * 3600 * 1000).toISOString(),
       likes: 21,
       liked: false,
@@ -92,7 +101,7 @@ function readCommunity(): CommunityStore {
   } catch (err) {
     console.warn('[learnCommunity] read failed:', err);
   }
-  return { posts: seedPosts() };
+  return { posts: seedPosts(useLanguageStore.getState().lang) };
 }
 
 function writeCommunity(store: CommunityStore) {
@@ -103,7 +112,18 @@ function writeCommunity(store: CommunityStore) {
   }
 }
 
+/** 深色下把数据里的深色 accent 提亮（原值是按白底挑的） */
+function tagAccent(hex: string, dark: boolean): string {
+  if (!dark) return hex;
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * 0.55);
+  return `#${[mix((n >> 16) & 255), mix((n >> 8) & 255), mix(n & 255)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
 function LearnCommunityPage() {
+  const { resolved } = useThemeMode();
   const t = useT();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -128,7 +148,7 @@ function LearnCommunityPage() {
   const submitPost = () => {
     const text = draft.trim();
     if (!text) {
-      Taro.showToast({ title: '说点什么再发布吧', icon: 'none' });
+      Taro.showToast({ title: t('community.empty'), icon: 'none' });
       return;
     }
     const post: Post = {
@@ -166,7 +186,7 @@ function LearnCommunityPage() {
   };
 
   return (
-    <View className={styles.page}>
+    <View className={classnames(styles.page, themeModeClass(resolved))}>
       <SubPageHeader fallbackUrl='/pages/learn/index' />
       {/* 头部：学习身份 + 成就进度 */}
       <View className={styles.headCard} style={{ background: lang.accent }}>
@@ -224,7 +244,7 @@ function LearnCommunityPage() {
           onInput={(e) => setDraft(e.detail.value)}
         />
         <View className={styles.postActions}>
-          <Text className={styles.postLangTag} style={{ color: lang.accent, borderColor: lang.accent }}>
+          <Text className={styles.postLangTag} style={{ color: tagAccent(lang.accent, resolved === 'dark'), borderColor: tagAccent(lang.accent, resolved === 'dark') }}>
             {lang.name}
           </Text>
           <Button className={styles.postButton} onClick={submitPost}>
@@ -252,6 +272,7 @@ function LearnCommunityPage() {
               <View
                 className={classnames(styles.likeRow, p.liked && styles.likeOn)}
                 onClick={() => toggleLike(p.id)}
+                {...pressableProps(t('community.likeAction'))}
               >
                 <Text>{p.liked ? '❤️' : '🤍'}</Text>
                 <Text className={styles.likeCount}>{p.likes}</Text>

@@ -120,6 +120,13 @@
   margin: 0 $page-padding $spacing-sm;
 }
 
+.refreshEntry {
+  margin-left: $spacing-sm;
+  color: var(--brand-strong, #c7371a);
+  font-size: $font-size-xs;
+  @include hit-expand-min(44PX, 8PX);
+}
+
 .dataMetaText {
   font-size: $font-size-xs;
   color: $color-text-tertiary; // 5.02:1（原误用禁用灰 1.5:1）
@@ -258,7 +265,7 @@
   flex-shrink: 0;
   // 2026-11-04：实测 64×23（375），低于 44px；视觉不变，透明外扩到 44 高
   // 行距同步加到 48rpx，避免上下相邻两个按钮的外扩热区重叠（23+24=47 > 44）
-  @include hit-expand(6rpx, 21rpx);
+  @include hit-expand-min(44PX, 6PX);
   padding: 4rpx $spacing-sm;
   border-radius: $radius-round;
   background: $color-bg-card;
@@ -389,22 +396,25 @@
 .filterBar {
   padding: 0 $page-padding $spacing-md;
   white-space: nowrap;
-  display: flex;
+  /* flex 下 ScrollView 的宽度按内容算，chip 会钻到右侧「来源」按钮底下（实测 84% 覆盖）。
+     grid 的 minmax(0,1fr) 才是真正的「占满剩余宽度」约束。 */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: $spacing-sm;
 }
 
 .chipScroll {
-  flex: 1;
   min-width: 0;
-  width: auto;
+  width: 100%;
+  overflow: hidden;
 }
 
 /* J9：筛选条右侧的「来源 ⚙」一键入口 */
 .sourceEntry {
   flex-shrink: 0;
   // 2026-11-04：72rpx（375 下 36px）+描边仍不足 44px；视觉保持，外扩到 44
-  @include hit-expand(8rpx, 8rpx);
+  @include hit-expand-min(44PX, 8PX);
   min-height: 72rpx;
   display: inline-flex;
   align-items: center;
@@ -1238,7 +1248,7 @@
 
 .articleCtaBtn {
   flex: 1;
-  background: $color-primary-strong;
+  background: $color-brand-solid;
 }
 
 .articleCloseBtn {

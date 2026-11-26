@@ -398,9 +398,14 @@ assert(
 
 /* ───────────── G. 热点数据源顺序：首屏请求预算 ───────────── */
 {
-  const iSame = cloudTs.indexOf('fetchHotspotJson(SAME_ORIGIN_HOTSPOT_URL)');
-  const iLive = cloudTs.indexOf('fetchHotspotJson(LIVE_HOTSPOT_URL)');
-  const iLocal = cloudTs.indexOf('fetchHotspotJson(LOCAL_API_HOTSPOT_URL)');
+  // 只框 loadHotspotPayload 函数体：#132 之后 refreshHotspotPayload 里也有一次同源调用，
+  // 在整文件里 indexOf 会被那一处兜住 ⇒ 把 load 里的顺序改坏也抓不到（变异实测 NOT-CAUGHT）。
+  const loadStart = cloudTs.indexOf('async function loadHotspotPayload');
+  const loadNext = cloudTs.indexOf('async function', loadStart + 10);
+  const loadBody = cloudTs.slice(loadStart, loadNext > loadStart ? loadNext : undefined);
+  const iSame = loadBody.indexOf('fetchHotspotJson(SAME_ORIGIN_HOTSPOT_URL)');
+  const iLive = loadBody.indexOf('fetchHotspotJson(LIVE_HOTSPOT_URL)');
+  const iLocal = loadBody.indexOf('fetchHotspotJson(LOCAL_API_HOTSPOT_URL)');
   assert(
     'G1 同源 ./api/hotspot.json 是第一优先（无跨域成本；实测那份必然 404 的目录路由不能再排第一）',
     iSame >= 0 && iLive >= 0 && iLocal >= 0 && iSame < iLive && iLive < iLocal,
@@ -409,6 +414,12 @@ assert(
   assert(
     'G2 载荷有内存缓存与 in-flight 去重（跨页不重复下载几百 KB）',
     /hotspotInFlight/.test(cloudTs) && /hotspotCache/.test(cloudTs)
+  );
+  assert(
+    'G4 刷新与首屏加载有代次保护（先发的旧请求晚到不得覆盖新数据）',
+    /let hotspotGeneration = 0/.test(cloudTs) &&
+      /if \(gen !== hotspotGeneration\) return null/.test(cloudTs) &&
+      /if \(gen === hotspotGeneration\) hotspotCache/.test(cloudTs)
   );
   assert(
     'G3 载荷有新鲜度闸（烘焙副本过期才去问远端 ⇒ 常态只有 1 个请求）',

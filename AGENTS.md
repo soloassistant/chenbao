@@ -392,7 +392,7 @@ H5 不走微信云开发，走 WorkBuddy 云库（3 张表）：
 
 | 表 | 用途 | 客户端权限 |
 |---|---|---|
-| `user_kv` | 18 个 `SYNC_KEYS` 的跨设备同步 | 读写自己的（`owner_id = auth.uid()`） |
+| `user_kv` | 43 个 `SYNC_KEYS` 的跨设备同步 | 读写自己的（`owner_id = auth.uid()`） |
 | `llm_events` | AI 用量记账（只增不改） | 写自己的 + 读自己的 |
 | `client_errors` | 客户端崩溃日志（只增不改） | **只能调用 `log_client_error(p_*)` 写，读不到** |
 

@@ -186,9 +186,11 @@ export default function VoiceButton({ disabled = false, compact = false, asrLang
         recorderRef.current.start({ duration: GESTURE.MAX_DURATION_MS, format: 'mp3' });
       }
     } catch (err) {
+      // 用户按下了说话，引擎起不来却不给反馈 = 点了没反应
       console.error('[VoiceButton] start engine failed:', err);
+      showToast('voice.startFailed', 2200);
     }
-  }, [asrLang]);
+  }, [asrLang, showToast]);
 
   const stopEngine = useCallback(() => {
     if (!isWeapp) return;

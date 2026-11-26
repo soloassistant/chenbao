@@ -39,6 +39,9 @@ const virtual = {
       return Promise.resolve({ __mockCloudFunction: name, data: data });
     }
     export function chatLocalStream() { throw new Error('chatLocalStream not used in this test'); }
+    // api.ts 新增的导入：桩必须跟上，否则 esbuild 直接构建失败（2026-11-25 实测）
+    export function chatCloudStream() { return Promise.resolve({ ok: true, text: '' }); }
+    export function getHotspotPayload() { return Promise.resolve({ items: [], updatedAt: '' }); }
   `,
   [V_DS]: `
     export let isWeapp = false;

@@ -268,6 +268,10 @@ jobs:
         #     并断言客户端**从不 SELECT** 这些表（否则收权会弄坏功能）。
         run: npm run verify:db-contract
 
+      - name: 图片 URL 改写与准入（纯函数）
+        # thumbUrl 的后缀/query/hash、isDroppableImage 的三条判据，全部行为断言。
+        run: npm run verify:image-url
+
       - name: 应用数据库线上探针（PG 函数存在与否 / 匿名读到的行数）
         # 必须真的去线上问一次「这个函数到底存不存在」—— 读源码只能证明「有人这么以为」。
         #   · PGRST202 = 不存在；42501 = 存在但匿名无权（**与不存在相反**，别混）。
@@ -288,6 +292,11 @@ jobs:
         # 且云端计数取不到时**降级到本地仍拦**（不能当 0 静默放开）、订阅必须不限。
         # 纯规则模块编成 CJS 直接跑行为用例，不连云。
         run: npm run verify:ai-quota
+
+      - name: AI 新入口闸门（出题 / 讲解 / 外链 / 注销日志）
+        # 2026-11-19 审计补：新 AI 路径曾经绕过额度闸门、把高考题标成 Edexcel A2、
+        # 结果页重复调用；这里按真实调用链跑行为用例，不是文案扫描。
+        run: npm run verify:ai-entry
 
       - name: 身份体系与注销链路门禁
         # 守「注销真的把数据删了」：weapp 注销清单 ↔ 各云函数写入点逐一对齐（漏一个集合
@@ -597,6 +606,9 @@ jobs:
   # 单独成 job：构建 + 无头 Chrome 较重，且不应拖慢上面的离线检查；构建失败只红这一个 job。
   contrast-render:
     runs-on: ubuntu-latest
+    # 三条浏览器门禁共用同一个 Chrome；显式指定，避免各自猜路径猜不到就 SKIP。
+    env:
+      CHROME_BIN: /usr/bin/google-chrome
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -605,6 +617,10 @@ jobs:
           cache: yarn
       - name: 安装依赖
         run: yarn install --frozen-lockfile
+      - name: 确认 Chrome 可用
+        # 没有这一步，Chrome 不在就会走 exit 2 → 步骤按 SKIP 变绿，门禁从没跑过也看不出来。
+        run: test -x "$CHROME_BIN" && "$CHROME_BIN" --version
+
       - name: 构建 H5 产物
         # 真实渲染门禁需要 dist；checks 主任务不构建产物，这里单独构建（与发布构建同源的两步法）。
         env:
@@ -612,16 +628,95 @@ jobs:
         run: |
           node node_modules/@tarojs/cli/bin/taro build --type h5
           node .tools/copy-assets.js dist
+      - name: 启动性能门禁（含变异自检）
+        # 2026-11-25：本门禁此前的 CI 豁免到期条件已满足（本 job 会构建 H5 产物）。
+        run: npm run verify:startup-perf
+
+      - name: 有效命中区（320/375/390 三档）
+        # 口径 = 元素矩形 + ::before 外扩；基线只降不升，防「rpx 外扩在窄屏失效」回归。
+        run: npm run verify:touch-target
+
+      - name: 文字两两重叠（papers / library）
+        # 对比度门禁发现不了「文字被另一个元素盖住」；这里按可见矩形判，滚动容器裁掉的部分不算。
+        run: npm run verify:overlap
+
       - name: 真实渲染对比度门禁（无头 Chrome）
         # runner 已预装 Chrome（/usr/bin/google-chrome），门禁自动识别并对 Linux 加 --no-sandbox。
         # 退出码约定：0 = 全绿或环境不足 SKIP；1 = 有对比度未达标（应让 CI 红，即本门禁存在的意义）；
         # 2 = harness 自身出错（如 Chrome 没起来）→ 按 SKIP 处理，不阻断 CI（非代码缺陷）。
         run: |
           set +e
-          node .tools/verify-contrast-render.mjs
+          # npm 入口是 light + dark 连跑（暗色不可读是 C-4 的复发点）
+          npm run verify:contrast-render
           code=$?
           if [ "$code" -eq 2 ]; then
             echo "::warning::对比度门禁 harness 出错（exit=2），非代码缺陷，按 SKIP 处理"
             exit 0
           fi
           exit "$code"
+
+      - name: 暗色像素判据自测（注入白屏必须判红）
+        # 只跑「平时全绿」不算证明：挂上 theme-dark 再铺全屏白，门禁必须报浅色。
+        run: |
+          set +e
+          node .tools/verify-routes.mjs --selftest-dark
+          code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::自测基线不可用（exit=2），按 SKIP 处理"
+            exit 0
+          fi
+          exit "$code"
+
+      - name: 深色全路由门禁（无头 Chrome）
+        # 与对比度共用同一份 dist；27 个路由 × 3 档视口，断言页面底色不是浅色。
+        # 退出码约定同上：2 = harness 出错按 SKIP，1 = 真有页面没挂主题（应红）。
+        run: |
+          set +e
+          node .tools/verify-routes.mjs --theme=dark
+          code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::暗色门禁 harness 出错（exit=2），非代码缺陷，按 SKIP 处理"
+            exit 0
+          fi
+          exit "$code"
+
+      - name: 打字框对齐门禁（无头 Chrome）
+        # 所有 input/textarea：左边缘对齐、上下内边距对称、高度 ≥36px、不溢出容器。
+        run: |
+          set +e
+          node .tools/verify-inputs.mjs
+          code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::输入框门禁 harness 出错（exit=2），非代码缺陷，按 SKIP 处理"
+            exit 0
+          fi
+          exit "$code"
+
+      - name: 内页布局门禁（无头 Chrome）
+        # 5 个内页 × 375/640：面板几何、是否塌陷、是否白屏、遮罩是否退场。
+        run: |
+          set +e
+          node .tools/verify-layout-pages.mjs
+          code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::布局门禁 harness 出错（exit=2），按 SKIP 处理"
+            exit 0
+          fi
+          exit "$code"
+
+  # 2026-11-25：暗色覆盖曾只修 H5、小程序端 16 页漏挂主题类，而 CI 从不构建 weapp。
+  # 这里只验「小程序产物能构建」，视觉覆盖由 M81 静态门禁守（除 trade 外每页必须有 themeModeClass）。
+  weapp-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - name: 安装依赖
+        run: yarn install --frozen-lockfile
+      - name: 构建小程序产物
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: node node_modules/@tarojs/cli/bin/taro build --type weapp

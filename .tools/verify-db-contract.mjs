@@ -209,22 +209,31 @@ if (LIVE) {
 
   async function call(method, p, body) {
     const t0 = Date.now();
-    try {
-      const res = await fetch(`${BASE}${p}`, {
-        method,
-        headers: {
-          Accept: 'application/json',
-          ...(body ? { 'Content-Type': 'application/json' } : {}),
-          ...(key ? { 'x-wb-webapp-access-key': key } : {})
-        },
-        body: body ? JSON.stringify(body) : undefined
-      });
-      const text = await res.text();
-      let json = null;
-      try { json = JSON.parse(text); } catch { /* 非 JSON */ }
-      return { status: res.status, text, json, ms: Date.now() - t0 };
-    } catch (e) {
-      return { status: 0, text: `NETWORK ${e.message}`, json: null, ms: Date.now() - t0 };
+    // 502/503/504 是网关层抖动，不代表「对象不存在」或「权限被放开」。
+    // 单次失败会把这些判成 unknown/被放开，CI 假红（2026-11-25 实测）。
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const res = await fetch(`${BASE}${p}`, {
+          method,
+          headers: {
+            Accept: 'application/json',
+            ...(body ? { 'Content-Type': 'application/json' } : {}),
+            ...(key ? { 'x-wb-webapp-access-key': key } : {})
+          },
+          body: body ? JSON.stringify(body) : undefined
+        });
+        const text = await res.text();
+        let json = null;
+        try { json = JSON.parse(text); } catch { /* 非 JSON */ }
+        if ([502, 503, 504].includes(res.status) && attempt < 3) {
+          await new Promise((r) => setTimeout(r, 1500));
+          continue;
+        }
+        return { status: res.status, text, json, ms: Date.now() - t0, attempts: attempt };
+      } catch (e) {
+        if (attempt < 3) { await new Promise((r) => setTimeout(r, 1500)); continue; }
+        return { status: 0, text: `NETWORK ${e.message}`, json: null, ms: Date.now() - t0, attempts: attempt };
+      }
     }
   }
 

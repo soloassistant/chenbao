@@ -44,6 +44,48 @@ export function writePlan(plan: DailyPlan) {
   }
 }
 
+/** 排班方案写入本机（H5 唯一真实落库路径）。
+ *  返回 saved 是**回读校验后**的真实条数：writePlan 会吞 storage 异常，
+ *  不回读就宣称成功等于假成功。 */
+export function applyPlanLocally(
+  events: Array<{ eventId?: string; title: string; startTime: string; endTime?: string }>
+): { saved: number; ids: string[]; ok: boolean } {
+  const list = Array.isArray(events) ? events.filter((e) => e && e.title && e.startTime) : [];
+  if (list.length === 0) return { saved: 0, ids: [], ok: false };
+
+  const ids: string[] = [];
+  // 先做改期：updateEvent 自己读改写 storage；若此时还用旧快照 writePlan 会把它覆盖回去
+  const adds: typeof list = [];
+  for (const e of list) {
+    if (e.eventId) {
+      const r = updateEvent(e.eventId, { title: e.title, startTime: e.startTime, endTime: e.endTime ?? null });
+      if (r.ok) ids.push(e.eventId);
+    } else {
+      adds.push(e);
+    }
+  }
+  if (adds.length > 0) {
+    const plan = readPlan();
+    for (const e of adds) {
+      const id = nextId('evt');
+      plan.events.push({
+        id,
+        title: e.title,
+        startTime: e.startTime,
+        endTime: e.endTime,
+        status: 'confirmed',
+        source: 'ai',
+        createTime: new Date().toISOString()
+      });
+      ids.push(id);
+    }
+    writePlan(plan);
+  }
+  const persisted = readPlan();
+  const ok = ids.length === list.length && ids.every((id) => persisted.events.some((ev) => ev.id === id));
+  return { saved: ok ? ids.length : 0, ids: ok ? ids : [], ok };
+}
+
 /** 可编辑字段（undefined = 不改；空串/null = 清空该可选字段） */
 export interface EventPatch {
   title?: string;

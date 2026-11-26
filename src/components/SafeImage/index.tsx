@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Image, Text, View } from '@tarojs/components';
 import type { ITouchEvent } from '@tarojs/components';
 import { thumbUrl } from '@/utils/imageUrl';
+import { useT } from '@/store/language';
 import styles from './index.module.scss';
 
 /**
@@ -32,7 +33,7 @@ export interface SafeImageProps {
   alt?: string;
   /** 是否首屏必现：true → eager + high priority */
   priority?: boolean;
-  /** 失败占位文案（默认「配图加载失败」） */
+  /** 失败占位文案（不传则用 i18n 的 image.failed） */
   fallbackLabel?: string;
   /** 失败占位的来源标注（如「哔哩哔哩」→ 显示「来自哔哩哔哩」） */
   source?: string;
@@ -48,10 +49,11 @@ export default function SafeImage({
   mode = 'aspectFill',
   alt,
   priority = false,
-  fallbackLabel = '配图加载失败',
+  fallbackLabel,
   source,
   onClick
 }: SafeImageProps) {
+  const t = useT();
   const [failed, setFailed] = useState(false);
 
   // 换源（列表复用节点 / 数据轮换）→ 重新给这张图一次机会
@@ -60,7 +62,7 @@ export default function SafeImage({
   }, [src]);
 
   if (!src || failed) {
-    const shown = src ? fallbackLabel : '暂无配图';
+    const shown = src ? fallbackLabel || t('image.failed') : t('image.empty');
     // `safe-image-fallback` 是不经 CSS Modules 的稳定锚点：Taro 的 data-* 在部分节点
     // 不透传到真实 DOM（见 AGENTS §6.3），自动化只能按稳定 className 选。
     return (
@@ -71,7 +73,9 @@ export default function SafeImage({
       >
         <Text className={styles.icon}>{src ? '🖼' : '🎬'}</Text>
         <Text className={styles.label}>{shown}</Text>
-        {src && source ? <Text className={styles.source}>{`来自${source}`}</Text> : null}
+        {src && source ? (
+          <Text className={styles.source}>{t('image.from', { source })}</Text>
+        ) : null}
       </View>
     );
   }

@@ -193,7 +193,7 @@ section('C. 晨报头部问候：不谎报 + 双语');
 
 const BRIEFING = readFileSync(path.join(ROOT, 'src/pages/briefing/index.tsx'), 'utf8');
 const DATE_TS = readFileSync(path.join(ROOT, 'src/utils/date.ts'), 'utf8');
-const LANG = readFileSync(path.join(ROOT, 'src/store/language.ts'), 'utf8');
+const LANG = readFileSync(path.join(ROOT, 'src/store/language.ts'), 'utf8') + readFileSync(path.join(ROOT, 'src/store/language.en.ts'), 'utf8');
 
 // C1 原 getGreeting 在 12–14 点写死「下午的日程在这」，当天没日程就是谎报；且硬编码中文。
 // 只看 import 语句：源码注释里会解释「原 getGreeting 如何谎报」，用 includes 会误伤注释。
@@ -520,6 +520,8 @@ assert(
 section('I. 小程序端按端文案（记忆/数据保存/保险箱）');
 
 const { mod: langMod } = await loadModule('src/store/language.ts');
+// 英文词典是动态 chunk，取 dict.en 前必须先装进来
+if (typeof langMod.loadEnDict === 'function') await langMod.loadEnDict();
 const D = langMod.dict;
 const mineSrc = readFileSync(path.join(ROOT, 'src/pages/mine/index.tsx'), 'utf8');
 const prefsSrc = readFileSync(path.join(ROOT, 'src/pages/prefs/index.tsx'), 'utf8');
@@ -557,6 +559,14 @@ assert(
   /process\.env\.TARO_ENV === 'weapp'[\s\S]{0,200}settings\.memoryPrivacyWeapp/.test(mineSrc) &&
     /process\.env\.TARO_ENV === 'weapp'[\s\S]{0,200}data\.localOnlyBody/.test(mineSrc) &&
     /process\.env\.TARO_ENV === 'weapp'[\s\S]{0,200}data\.vaultNote/.test(prefsSrc)
+);
+
+assert(
+  'I6 跨端/保险箱说明不承诺互通、不上传云端（中英一致）',
+  D.zh['data.crossEndNote'].includes('不互通') &&
+    D.zh['data.vaultNote'].includes('不会上传云端') &&
+    D.en['data.crossEndNote'].includes('not shared') &&
+    D.en['data.vaultNote'].includes('never uploaded')
 );
 
 /* ================================================================== */

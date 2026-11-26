@@ -9,7 +9,7 @@ $ad-section-gap: 48rpx;
       写 px 会被当设计像素换算，点击区凭空小一半且肉眼看不出来。 */
 .backButton {
   // 2026-11-04：80rpx（375 下 40px）差 4px；视觉不变，上下各外扩 4rpx
-  @include hit-expand(0, 4rpx);
+  @include hit-expand-min(44PX, 0);
   display: flex;
   align-items: center;
   gap: $spacing-xs;
@@ -81,7 +81,7 @@ $ad-section-gap: 48rpx;
   align-items: center;
   justify-content: center;
   border-radius: $radius-button;
-  background: var(--brand-strong, #{$color-secondary-strong}); // 白字 5.26:1（原 --brand 白字 2.59:1）
+  background: var(--dm-brand-solid, var(--brand-strong, #{$color-secondary-strong})); // 白字 5.26:1（原 --brand 白字 2.59:1）
   color: $color-text-white;
   font-size: $font-size-md;
   font-weight: $font-weight-medium;

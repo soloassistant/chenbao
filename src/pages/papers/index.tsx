@@ -8,16 +8,17 @@
 import { View } from '@tarojs/components';
 import PaperLibrary from '@/components/PaperLibrary';
 import { useT } from '@/store/language';
-import { brandVars, useThemeStore } from '@/store/theme';
+import { brandVars, useThemeMode, useThemeStore, themeModeClass } from '@/store/theme';
 import { startMockExam } from '@/utils/mockExamNav';
 import type { ExamSystem } from '@/types/questionBank';
 
 export default function PapersPage() {
   const t = useT();
   const { theme } = useThemeStore();
+  const { resolved } = useThemeMode();
 
   return (
-    <View style={brandVars(theme)}>
+    <View className={themeModeClass(resolved)} style={brandVars(theme, resolved)}>
       <PaperLibrary
         showHeader
         onStartMock={({ binding, title, tags }) =>
