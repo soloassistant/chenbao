@@ -124,7 +124,7 @@
   margin-left: $spacing-sm;
   color: var(--brand-strong, #c7371a);
   font-size: $font-size-xs;
-  @include hit-expand(8rpx, 14rpx);
+  @include hit-expand-min(44PX, 8PX);
 }
 
 .dataMetaText {
@@ -265,7 +265,7 @@
   flex-shrink: 0;
   // 2026-11-04：实测 64×23（375），低于 44px；视觉不变，透明外扩到 44 高
   // 行距同步加到 48rpx，避免上下相邻两个按钮的外扩热区重叠（23+24=47 > 44）
-  @include hit-expand(6rpx, 21rpx);
+  @include hit-expand-min(44PX, 6PX);
   padding: 4rpx $spacing-sm;
   border-radius: $radius-round;
   background: $color-bg-card;
@@ -414,7 +414,7 @@
 .sourceEntry {
   flex-shrink: 0;
   // 2026-11-04：72rpx（375 下 36px）+描边仍不足 44px；视觉保持，外扩到 44
-  @include hit-expand(8rpx, 8rpx);
+  @include hit-expand-min(44PX, 8PX);
   min-height: 72rpx;
   display: inline-flex;
   align-items: center;

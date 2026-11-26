@@ -10,7 +10,7 @@
 }
 
 .header { display: flex; align-items: center; gap: $spacing-sm; margin-bottom: $spacing-lg; }
-.back { @include hit-expand(16rpx, 28rpx); display: inline-flex; align-items: center; gap: 4rpx; flex: 0 0 auto; cursor: pointer; }
+.back { @include hit-expand-min(44PX, 16PX); display: inline-flex; align-items: center; gap: 4rpx; flex: 0 0 auto; cursor: pointer; }
 .backIcon { font-size: 34rpx; line-height: 1; color: $color-text-tertiary; }
 .backText { font-size: $font-size-sm; color: $color-text-tertiary; }
 .title { flex: 1; min-width: 0; font-size: $font-size-xxl; font-weight: $font-weight-semibold; }

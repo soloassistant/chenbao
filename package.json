@@ -30,6 +30,7 @@
     "verify:sync-pull": "node .tools/verify-sync-pull.mjs",
     "verify:image-url": "node .tools/verify-image-url.mjs",
     "verify:overlap": "node .tools/verify-overlap.mjs",
+    "verify:touch-target": "node .tools/verify-touch-target.mjs",
     "verify:watchlist-sync": "node .tools/verify-watchlist-sync.mjs",
     "verify:health-consent": "node .tools/verify-health-consent.mjs",
     "verify:account": "node .tools/verify-account-isolation.mjs",

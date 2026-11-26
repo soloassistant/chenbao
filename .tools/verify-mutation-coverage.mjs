@@ -64,6 +64,7 @@ const BROWSER = new Map([
   ['verify-inputs.mjs', 'CDP 驱动真 Chrome 量输入框几何（rect/计算样式，Node 里造不出来）'],
   // 2026-11-25：文字重叠门禁 —— 需要真实布局（rect + overflow 裁剪），Node 里造不出来。
   ['verify-overlap.mjs', 'CDP 驱动真 Chrome 量文字可见矩形与两两重叠（渲染布局，Node 里造不出来）'],
+  ['verify-touch-target.mjs', 'CDP 驱动真 Chrome 量有效命中区（::before 伪元素外扩，Node 里造不出来）'],
 ]);
 
 // ── 承认的缺口：纯静态、可变异，但还没配。**上限锁死**，只许减不许增 ──

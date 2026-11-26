@@ -632,6 +632,10 @@ jobs:
         # 2026-11-25：本门禁此前的 CI 豁免到期条件已满足（本 job 会构建 H5 产物）。
         run: npm run verify:startup-perf
 
+      - name: 有效命中区（320/375/390 三档）
+        # 口径 = 元素矩形 + ::before 外扩；基线只降不升，防「rpx 外扩在窄屏失效」回归。
+        run: npm run verify:touch-target
+
       - name: 文字两两重叠（papers / library）
         # 对比度门禁发现不了「文字被另一个元素盖住」；这里按可见矩形判，滚动容器裁掉的部分不算。
         run: npm run verify:overlap

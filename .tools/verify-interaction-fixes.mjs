@@ -1451,5 +1451,15 @@ if (typeof feedMod.feedRetryDelay === 'function') {
   ok('M93 callLocalAI 仅在开发态访问 8138', body.includes("NODE_ENV !== 'development'") && body.includes('return null'));
 }
 
+/* M94（2026-11-26）：命中区口径固化成门禁 + rpx 外扩清零。 */
+{
+  const t = read('.tools/verify-touch-target.mjs');
+  ok('M94a 命中区门禁按 ::before 有效区判定', t.includes("getComputedStyle(el, '::before')") && t.includes('44'));
+  const files = fs.readdirSync(path.join(ROOT, 'src'), { recursive: true })
+    .filter((f) => String(f).endsWith('.scss'));
+  const joined = files.map((f) => fs.readFileSync(path.join(ROOT, 'src', String(f)), 'utf8')).join('\n');
+  ok('M94b 不再有 @include hit-expand(rpx) 调用', !joined.includes('@include hit-expand('));
+}
+
 console.log(`\nPASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail === 0 ? 0 : 1);
