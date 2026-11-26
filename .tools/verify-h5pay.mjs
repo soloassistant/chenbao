@@ -229,5 +229,18 @@ ok(
   /missing-owner/.test(gw) && /ownerId,/.test(gw)
 );
 
+/* ---------------- C. 账本可恢复 + 请求错误边界（2026-11-26） ---------------- */
+ok('C1 账本缺省路径非空（不再内存态）', /PAY_LEDGER_FILE \|\| join\(process\.cwd\(\), 'pay-orders\.json'\)/.test(gw));
+ok('C2 落盘为原子写（tmp + rename）', gw.includes('renameSync(tmp, LEDGER_FILE)'));
+ok('C3 落盘失败会抛出并标记不可用', /catch \(err\) \{[\s\S]{0,200}ledgerBroken =[\s\S]{0,200}throw err;/.test(gw));
+const createSeg = gw.slice(gw.indexOf("url.pathname === '/order/create'"), gw.indexOf("url.pathname === '/order/claim'"));
+ok('C4 下单前先落账，失败即 503',
+  createSeg.includes("error: 'ledger-unavailable'") &&
+  createSeg.indexOf('persistLedger();') !== -1 &&
+  createSeg.indexOf('persistLedger();') < createSeg.indexOf('createRemoteOrder(order)'));
+ok('C5 notify / claim 都检查账本可用性', (gw.match(/ledgerReady\(\)\) return send\(res, 503/g) || []).length >= 2);
+ok('C6 请求处理有统一错误边界', gw.includes('handleRequest(req, res).catch'));
+ok('C7 读流过限不再立刻 destroy（能回 413）', !/reject\(new Error\('body too large'\)\);\s*req\.destroy\(\)/.test(gw));
+
 console.log(`\n[h5pay] PASS ${pass} / FAIL ${fail}（共 ${pass + fail} 条断言）`);
 process.exit(fail > 0 ? 1 : 0);

@@ -24,7 +24,8 @@
 
 import { createServer } from 'node:http';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 
 /* ---------------- 配置 ---------------- */
 
@@ -65,10 +66,16 @@ const PLANS = {
  *    B 实例查不到。这一点写进部署说明，别当它不存在。
  */
 const orders = new Map();
-const LEDGER_FILE = process.env.PAY_LEDGER_FILE || '';
+// 缺省必须落盘：内存账本重启即失忆，用户付完钱回来签不出凭证（钱收了、权益开不了）。
+// 允许用 PAY_LEDGER_FILE 指到持久卷；写不进去时网关**拒绝接单**（fail-closed），
+// 而不是「先收钱、事后再说」。
+const LEDGER_FILE = process.env.PAY_LEDGER_FILE || join(process.cwd(), 'pay-orders.json');
+/** 非 null = 账本不可用（载入损坏 / 落盘失败）；此时不接新单、不核销 */
+let ledgerBroken = null;
+const ledgerReady = () => ledgerBroken === null;
 
 function loadLedger() {
-  if (!LEDGER_FILE || !existsSync(LEDGER_FILE)) return;
+  if (!existsSync(LEDGER_FILE)) return;
   try {
     const rows = JSON.parse(readFileSync(LEDGER_FILE, 'utf8'));
     for (const o of Array.isArray(rows) ? rows : []) {
@@ -76,16 +83,23 @@ function loadLedger() {
     }
     console.log(`[pay-gateway] 账本已载入 ${orders.size} 笔`);
   } catch (err) {
-    console.error('[pay-gateway] 账本载入失败（继续启动，但重启后的订单签不出凭证）:', String(err?.message || err));
+    ledgerBroken = String(err?.message || err);
+    console.error('[pay-gateway] 账本载入失败，网关进入不可用状态（拒绝新单与核销）:', ledgerBroken);
   }
 }
 
 function persistLedger() {
-  if (!LEDGER_FILE) return;
   try {
-    writeFileSync(LEDGER_FILE, JSON.stringify([...orders.values()], null, 0), 'utf8');
+    mkdirSync(dirname(LEDGER_FILE), { recursive: true });
+    // 原子写：先写临时文件再 rename，避免进程被杀时留下半个 JSON 把账本读坏
+    const tmp = `${LEDGER_FILE}.${process.pid}.tmp`;
+    writeFileSync(tmp, JSON.stringify([...orders.values()], null, 0), { encoding: 'utf8', mode: 0o600 });
+    renameSync(tmp, LEDGER_FILE);
+    ledgerBroken = null;
   } catch (err) {
-    console.error('[pay-gateway] 账本落盘失败:', String(err?.message || err));
+    ledgerBroken = String(err?.message || err);
+    console.error('[pay-gateway] 账本落盘失败，网关进入不可用状态:', ledgerBroken);
+    throw err;
   }
 }
 
@@ -216,22 +230,35 @@ function send(res, code, body, extraHeaders = {}) {
 async function readBody(req, limit = 32 * 1024) {
   return new Promise((resolve, reject) => {
     let size = 0;
+    let settled = false;
     const chunks = [];
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+      // 不立刻 destroy：否则连接被掐断，客户端只会看到 connection reset，
+      // 收不到下面统一错误边界发出的 413。把剩余数据读掉丢弃即可。
+      req.resume();
+    };
     req.on('data', (c) => {
+      if (settled) return;
       size += c.length;
       if (size > limit) {
-        reject(new Error('body too large'));
-        req.destroy();
+        fail(new Error('body too large'));
         return;
       }
       chunks.push(c);
     });
-    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    req.on('error', reject);
+    req.on('end', () => {
+      if (settled) return;
+      settled = true;
+      resolve(Buffer.concat(chunks).toString('utf8'));
+    });
+    req.on('error', fail);
   });
 }
 
-const server = createServer(async (req, res) => {
+async function handleRequest(req, res) {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
 
   if (req.method === 'OPTIONS') return send(res, 204, '');
@@ -240,8 +267,10 @@ const server = createServer(async (req, res) => {
     return send(res, 200, {
       ok: true,
       configured: isConfigured(),
+      // 账本不可写时即便商户参数齐全也不能接单：重启后签不出凭证
+      ledgerReady: ledgerReady(),
       // 只报「有没有配」，绝不回显 secret 本身
-      claimReady: isConfigured() && HMAC_SECRET.length >= 32,
+      claimReady: isConfigured() && ledgerReady() && HMAC_SECRET.length >= 32,
       provider: PROVIDER
     });
   }
@@ -250,6 +279,10 @@ const server = createServer(async (req, res) => {
     // 未配置：如实 503，**不**返回假地址
     if (!isConfigured()) {
       return send(res, 503, { error: 'unconfigured', message: '支付通道未配置（缺 XUNHUPAY_APPID / XUNHUPAY_APPSECRET）' });
+    }
+    // 账本不可写就不收单：收钱容易，重启后签不出凭证等于用户白付
+    if (!ledgerReady()) {
+      return send(res, 503, { error: 'ledger-unavailable', message: '订单账本不可用，暂时不能收款' });
     }
     let body = {};
     try {
@@ -276,12 +309,20 @@ const server = createServer(async (req, res) => {
       createdAt: Date.now()
     };
     orders.set(order.orderId, order);
+    // 先落账再向服务商下单：落不下去就整单取消，绝不产生「远端已下单、本地没记录」
+    try {
+      persistLedger();
+    } catch {
+      orders.delete(order.orderId);
+      return send(res, 503, { error: 'ledger-unavailable', message: '订单账本写入失败，暂时不能收款' });
+    }
 
     let remote;
     try {
       remote = await createRemoteOrder(order);
     } catch (err) {
       orders.delete(order.orderId);
+      try { persistLedger(); } catch { /* 已进入不可用状态，下一次请求会拒绝 */ }
       return send(res, 502, { error: 'gateway-error', message: String(err?.message || err) });
     }
     if (!remote.ok) {
@@ -324,6 +365,8 @@ const server = createServer(async (req, res) => {
    */
   if (url.pathname === '/order/claim' && req.method === 'GET') {
     if (!isConfigured()) return send(res, 503, { error: 'unconfigured' });
+    // 账本不可用时不签发凭证：本机查不到订单，签出来的东西也不可信
+    if (!ledgerReady()) return send(res, 503, { error: 'ledger-unavailable' });
     if (!HMAC_SECRET || HMAC_SECRET.length < 32) {
       // 与「未配置商户参数」同等对待：签不出可信凭证就不签，让页面如实提示
       return send(res, 503, { error: 'unconfigured-claim', message: '缺 PAY_GATEWAY_HMAC_SECRET（需与数据库 app_secrets 同一个值）' });
@@ -381,6 +424,8 @@ const server = createServer(async (req, res) => {
     }
     // 未配置时无法验签 ⇒ 一律拒绝（fail-closed），绝不因为「看起来像成功」而标记已付
     if (!isConfigured()) return send(res, 503, 'unconfigured');
+    // 账本不可用：此时标记已付也留不下来，让服务商重试（别回 success 骗它）
+    if (!ledgerReady()) return send(res, 503, 'ledger-unavailable');
     const got = params.hash || params.sign;
     if (!got || !hashEquals(got, signOf(params, APPSECRET))) {
       return send(res, 400, 'invalid-hash');
@@ -400,6 +445,21 @@ const server = createServer(async (req, res) => {
   }
 
   return send(res, 404, { error: 'not-found' });
+}
+
+const server = createServer((req, res) => {
+  handleRequest(req, res).catch((err) => {
+    // 统一错误边界：readBody 超限/流出错、业务异常都收在这里。
+    // 没有这层，await 的 rejection 会变成 unhandledRejection（Node 默认策略下可能退出进程）。
+    console.error('[pay-gateway] request failed:', String(err?.message || err));
+    if (res.headersSent) {
+      res.destroy();
+      return;
+    }
+    send(res, err && err.message === 'body too large' ? 413 : 500, {
+      error: err && err.message === 'body too large' ? 'body-too-large' : 'internal-error'
+    });
+  });
 });
 
 const isMain = process.argv[1] && process.argv[1].endsWith('index.mjs');
